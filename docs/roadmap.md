@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Next: PR7. Introduce a rapid-fire celebration using the immutable verified successful result and all remaining Pips. Count actual arrivals, add 3/2/1-star ratings, handle the final-attempt success case, and retain the failed-attempt budget.
+Phase 1 ends with PR7. Next: Phase 2, PR8 multi-cannon routing: deterministic capture at marked cannon coordinates, safe route chaining and cycle protection, preserving exact flight and failure behavior. PR9 all-cannon equation planning before launch; PR10 terrain constraints; PR11 diagnostic mathematical feedback; PR12 twelve World 1 levels; PR13 fractional gradients, negative coordinates and complex linear routes for World 2.

@@ -7,6 +7,8 @@ import {attemptDuration,sampleAttempt} from '../animations/attempt';
 import {stageMisfire} from '../animations/misfire';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {createLaunchVisual} from './launchVisual';
+import {makeRapidSchedule,sampleRapidFire,type RapidSchedule,type RapidCounts} from '../animations/rapidFire';
+import {createRapidVisual} from './rapidVisual';
 
 type Inspection={id:string;label:string;detail:string;point:Point};
 const ns='http://www.w3.org/2000/svg';
@@ -31,6 +33,8 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  let startBarrel:Element|undefined,visual:ReturnType<typeof createLaunchVisual>|undefined;
  let active:{result:AttemptResult;started:number;elapsed:number;reduced:boolean;done:()=>void}|undefined,animationId=0;
  let lastResult:AttemptResult|undefined,trace:SVGLineElement|undefined,marker:SVGGElement|undefined;
+ let rapid:{result:AttemptResult;schedule:RapidSchedule;started:number;elapsed:number;variantOffset:number;progress:(counts:RapidCounts)=>void;done:()=>void}|undefined;
+ let rapidVisual:ReturnType<typeof createRapidVisual>|undefined,rapidParent:Element|undefined;
  function paintAttempt(){
   if(!visual||!startBarrel||!trace||!marker)return;
   const result=active?.result??lastResult,frame=active?sampleAttempt(active.elapsed,active.result,active.reduced,misfireStaging):undefined;
@@ -52,6 +56,30 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    el('path',{d:result.event.kind==='exit'?'M-3 0 l2 2 4 -5':'M-2 -2 L2 2 M2 -2 L-2 2',stroke:color,'stroke-width':1.6,fill:'none','stroke-linecap':'round'},marker);
   }
  }
+ function paintRapid(){
+  if(!rapid||!rapidVisual||!startBarrel)return;
+  const frame=sampleRapidFire(rapid.elapsed,rapid.result,rapid.schedule);
+  startBarrel.setAttribute('transform','rotate('+(-rapid.result.angle)+') translate('+(-frame.recoil)+' 0)');
+  rapidVisual.paint(frame,rapid.result,t.toScreen,t.scale,rapid.schedule.reduced);
+ }
+ function rapidStep(now:number){
+  if(!rapid)return;
+  const current=rapid;
+  current.elapsed=Math.max(0,now-current.started);
+  const frame=sampleRapidFire(current.elapsed,current.result,current.schedule);
+  current.progress({dispatched:frame.dispatched,arrived:frame.arrived});
+  if(frame.done){
+   rapidVisual?.hide();rapid=undefined;animationId=0;paintAttempt();current.done();return;
+  }
+  paintRapid();animationId=requestAnimationFrame(rapidStep);
+ }
+ function playRapidFire(result:AttemptResult,count:number,variantOffset:number,progress:(counts:RapidCounts)=>void,done:()=>void):boolean{
+  if(active||rapid||!rapidParent||result!==lastResult)return false;
+  const schedule=makeRapidSchedule(result,count,motion.matches);
+  rapidParent.replaceChildren();rapidVisual=createRapidVisual(rapidParent,count,variantOffset);
+  rapid={result,schedule,started:performance.now(),elapsed:0,variantOffset,progress,done};
+  paintRapid();animationId=requestAnimationFrame(rapidStep);return true;
+ }
  function step(now:number){
   if(!active)return;
   active.elapsed=Math.max(0,now-active.started)*(active.reduced?2:1);
@@ -61,11 +89,11 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   paintAttempt();animationId=requestAnimationFrame(step);
  }
  function playFlight(result:AttemptResult,done:()=>void):boolean{
-  if(active)return false;
+  if(active||rapid)return false;
   lastResult=undefined;active={result,started:performance.now(),elapsed:0,reduced:motion.matches,done};
   paintAttempt();animationId=requestAnimationFrame(step);return true;
  }
- function clearFlight(){if(!active){lastResult=undefined;paintAttempt();}}
+ function clearFlight(){if(!active&&!rapid){lastResult=undefined;rapidVisual?.hide();rapidParent?.replaceChildren();rapidVisual=undefined;paintAttempt();}}
  const plot=()=>({x:viewport.padding,y:viewport.padding,w:viewport.width-2*viewport.padding,h:viewport.height-2*viewport.padding});
  function inspect(){
   if(!tooltip)return;
@@ -96,7 +124,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const {width:W,height:H}=viewport,q=plot();
   t=cameraTransform(level.bounds,viewport,camera);camera={zoom:t.zoom,center:t.center};
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;startBarrel=undefined;visual=undefined;trace=undefined;marker=undefined;
+  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;startBarrel=undefined;visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
   el('stop',{offset:'0%', 'stop-color':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':'#e6f5e6'},sky);
   const portal=el('radialGradient',{id:'portal'},defs);el('stop',{offset:'0%','stop-color':'#fffbea'},portal);el('stop',{offset:'100%','stop-color':'#f8ba48'},portal);
@@ -164,7 +192,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   target(g,{id:'exit',label:'Exit',detail:coord(level.exit),point:level.exit});
   trace=el('line',{'stroke-width':2.6,'stroke-dasharray':'6 4','stroke-linecap':'round','pointer-events':'none','aria-hidden':'true'},content) as SVGLineElement;
   visual=createLaunchVisual(content);
-  marker=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;paintAttempt();
+  rapidParent=el('g',{'pointer-events':'none','aria-hidden':'true'},content);
+  if(rapid)rapidVisual=createRapidVisual(rapidParent,rapid.schedule.count,rapid.variantOffset);
+  marker=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;paintAttempt();paintRapid();
   // Edge tick labels remain visible when the origin is offscreen.
   const bottom=Math.min(q.y+q.h,br.y),left=Math.max(q.x,tl.x);
   for(const x of xs){const s=p({x,y:0});el('text',{x:s.x,y:bottom+15,'text-anchor':'middle','font-size':11,fill:'#23475e','font-weight':650},svg,fmt(x));}
@@ -188,5 +218,5 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
  observer.observe(stage);draw();
- return {playFlight,clearFlight,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;svg.remove();}};
+ return {playFlight,playRapidFire,clearFlight,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
 }
