@@ -21,7 +21,7 @@ export function mountCreatureWorkshop(root:HTMLElement,earned:ReadonlySet<string
  let equipped=store.read(earned),draft={...equipped},slot:PipSlot='fur',pose:PipPose='excited',disposed=false;
  root.replaceChildren();
  const main=node('main','selection-screen workshop-screen',root),top=node('div','selection-top',main);
- const back=button(top,'selection-back','← Home',()=>{if(!disposed)onHome();});
+ button(top,'selection-back','← Home',()=>{if(!disposed)onHome();});
  const title=node('div','selection-heading',top),h1=node('h1','',title,'Creature Workshop');h1.tabIndex=-1;
  node('p','',title,'Make your crew your own');node('div','selection-top-end',top);
  const shell=node('div','workshop-shell',main),left=node('section','workshop-preview-panel',shell),right=node('section','workshop-options-panel',shell);
@@ -90,5 +90,5 @@ export function mountCreatureWorkshop(root:HTMLElement,earned:ReadonlySet<string
   status.textContent=blocked.length?'Preview only. Earn '+[...new Set(blocked.map(c=>achievementFor(c)?.title??'the required achievement'))].join(', ')+' to equip.':changed?'Equip to use this look in every flight.':persisted?'Your current look is ready to fly.':'Local saving is unavailable. Your look may be session only.';
  }
  renderChoices();refresh();h1.focus();
- return ()=>{disposed=true;back.replaceWith(back.cloneNode(true));};
+ return ()=>{disposed=true;};
 }

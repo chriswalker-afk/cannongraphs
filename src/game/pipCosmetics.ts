@@ -65,7 +65,7 @@ const gogglesColours:Readonly<Record<string,readonly [string,string,string]>>={
  brass:['#ae7b30','#96e0e6','#ffe4a3'],emerald:['#356b53','#9de8bf','#d9ffe1'],aurora:['#51437e','#e1b7f5','#b2ecf1']
 };
 export function pipArtColours(look: PipLook=defaultPipLook,variant=0){
- const [fur,light]=furColours[look.fur]??originalColours[((variant%originalColours.length)+originalColours.length)%originalColours.length];
- const [frame,lens,rim]=gogglesColours[look.goggles]??gogglesColours.classic;
+ const [fur,light]=(Object.hasOwn(furColours,look.fur)?furColours[look.fur]:undefined)??originalColours[((variant%originalColours.length)+originalColours.length)%originalColours.length];
+ const [frame,lens,rim]=(Object.hasOwn(gogglesColours,look.goggles)?gogglesColours[look.goggles]:undefined)??gogglesColours.classic;
  return {fur,light,frame,lens,rim};
 }
