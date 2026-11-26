@@ -14,6 +14,7 @@ import {renderFloatingScenery} from './floatingScenery';
 import {renderPeakScenery} from './peakScenery';
 import {renderRuinsScenery} from './ruinsScenery';
 import {renderFactoryScenery} from './factoryScenery';
+import {renderCosmicScenery} from './cosmicScenery';
 import {flightPath} from './flightPath';
 import {renderGem} from './gem';
 import {gemTimeline,gemsAt,bankedGems,type TimedGemHit} from '../animations/gemTimeline';
@@ -173,13 +174,13 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
   svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();cannonTargets=new Map();gemTargets=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
-  const floating=level.world===2,peaks=level.world===3,ruins=level.world===4,factory=level.world===5;
-  el('stop',{offset:'0%', 'stop-color':factory?'#b9c7cb':ruins?'#b7c4ae':peaks?'#aebce8':floating?'#89c5ed':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':factory?'#f4e2c4':ruins?'#f3e2bd':peaks?'#f2e6f6':floating?'#e7e7fa':'#e6f5e6'},sky);
+  const floating=level.world===2,peaks=level.world===3,ruins=level.world===4,factory=level.world===5,cosmic=level.world===6;
+  el('stop',{offset:'0%', 'stop-color':cosmic?'#a8b6df':factory?'#b9c7cb':ruins?'#b7c4ae':peaks?'#aebce8':floating?'#89c5ed':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':cosmic?'#efe0f4':factory?'#f4e2c4':ruins?'#f3e2bd':peaks?'#f2e6f6':floating?'#e7e7fa':'#e6f5e6'},sky);
   const portal=el('radialGradient',{id:'portal'},defs);el('stop',{offset:'0%','stop-color':'#fffbea'},portal);el('stop',{offset:'100%','stop-color':'#f8ba48'},portal);
   const clip=el('clipPath',{id:'plotClip'},defs);el('rect',{x:q.x,y:q.y,width:q.w,height:q.h,rx:5},clip);
   el('rect',{width:W,height:H,fill:'url(#sky)'},svg);
   // Decorative scenery stays behind the grid and has no collision geometry.
-  if(factory)renderFactoryScenery(svg,W,H);else if(ruins)renderRuinsScenery(svg,W,H);else if(peaks)renderPeakScenery(svg,W,H);else if(floating)renderFloatingScenery(svg,W,H);else{
+  if(cosmic)renderCosmicScenery(svg,W,H);else if(factory)renderFactoryScenery(svg,W,H);else if(ruins)renderRuinsScenery(svg,W,H);else if(peaks)renderPeakScenery(svg,W,H);else if(floating)renderFloatingScenery(svg,W,H);else{
   el('circle',{cx:W*.81,cy:H*.16,r:Math.min(W,H)*.08,fill:'#fff7c4',opacity:.65},svg);
   for(const [x,y,s] of [[.12,.18,1],[.47,.10,.7],[.74,.24,.85]]){
    const g=el('g',{transform:'translate('+W*x+' '+H*y+') scale('+Math.min(W,H)*.0015*s+')',fill:'#fff',opacity:.55},svg);
@@ -202,7 +203,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(b.minY<=0&&b.maxY>=0){const a=p({x:b.minX,y:0}),z=p({x:b.maxX,y:0});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315779','stroke-width':2},content);}
   // Artwork and collision both read the same world bounds.
   for(const o of level.obstacles){
-   const g=renderTerrain(content,o,p,scale,floating,peaks,ruins,factory),info=terrainInspection(o,level.world);
+   const g=renderTerrain(content,o,p,scale,floating,peaks,ruins,factory,cosmic),info=terrainInspection(o,level.world);
    target(g,{id:o.id,...info,point:{x:(o.bounds.minX+o.bounds.maxX)/2,y:(o.bounds.minY+o.bounds.maxY)/2},bounds:o.bounds});
   }
   for(const c of level.cannons){
