@@ -1,7 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {contraptionFactory} from '../src/levels/worlds/contraptionFactory';
-import {universePreview} from '../src/levels/worlds/advancedPreviews';
 import {worlds,levels,nextLevel,levelPosition,worldForLevel} from '../src/levels/catalog';
 import type {Level} from '../src/levels/schema';
 import {parseCannonEquation,isAdvanced,evaluateCannonEquation,type CannonEquation,type AdvancedEquation} from '../src/engine/equations/advanced';
@@ -64,6 +63,10 @@ function gap(l:Level,id:string):Interval{
  return [a.maxY,b.minY];
 }
 const fixed=(y:number):Interval=>[y,y];
+function orderedGates(l:Level,from:number,to:number,ids:readonly string[]){
+ let previous=from;
+ for(const id of ids){const b=l.obstacles.find(o=>o.id===id+'-lower')!.bounds;const x=(b.minX+b.maxX)/2;assert.ok(x>previous&&x<to,id);previous=x;}
+}
 function alternating(ys:readonly Interval[]){
  assert.ok(ys.length>=5);
  for(let i=1;i<ys.length;i++){
@@ -76,6 +79,9 @@ function alternating(ys:readonly Interval[]){
 test('nonadjacent cubic shortcuts require more turning points than a genuine cubic can have',()=>{
  const relay=contraptionFactory[10],finale=contraptionFactory[11];
  alternating([fixed(relay.cannons[0].position.y),gap(relay,'upper-press'),gap(relay,'lower-press'),gap(relay,'pressure-slot'),fixed(relay.exit.y)]);
+ orderedGates(relay,relay.cannons[0].position.x,relay.exit.x,['upper-press','lower-press','pressure-slot']);
+ orderedGates(finale,finale.cannons[0].position.x,finale.cannons[2].position.x,['upper-press','lower-press','pressure-slot','return-pressure']);
+ orderedGates(finale,finale.cannons[2].position.x,finale.exit.x,['second-upper','second-lower','finishing-high']);
  // Every target beyond B lies past the return-pressure slice, so all
  // A->C, A->D and A->exit paths encounter the same contradiction.
  alternating([fixed(finale.cannons[0].position.y),gap(finale,'upper-press'),gap(finale,'lower-press'),gap(finale,'pressure-slot'),gap(finale,'return-pressure')]);
@@ -88,6 +94,7 @@ test('a reciprocal branch cannot bypass the second cubic and reach later targets
  assert.ok(gap(l,'second-upper')[0]>gap(l,'pressure-slot')[1]);
  // The second-upper slice occurs before D and the exit. A transformed
  // reciprocal is strictly monotone on each connected domain branch.
+ orderedGates(l,l.cannons[1].position.x,l.cannons[3].position.x,['pressure-slot','second-upper']);
  const e=advanced(11,'B');assert.ok(e.slopeAt(5)<0);assert.ok(e.slopeAt(12)<0);
 });
 test('reverse reciprocal travels leftward without crossing its shifted asymptote',()=>{
@@ -107,7 +114,7 @@ test('a cubic with insufficient turning-point height fails at the upper press',(
  const r=simulateAdvancedAttempt(e,l.cannons[0],l);assert.equal(r.event.kind,'obstacle');
  if(r.event.kind==='obstacle')assert.equal(r.event.obstacleId,'upper-press-lower');
 });
-test('finale rapid-fire follows all four families/legs, retaining gems and creature-based scoring',()=>{
+test('finale rapid-fire follows all four legs across three families, retaining gems and creature-based scoring',()=>{
  const l=contraptionFactory[11],equations=plan(11),r=simulateRoute(l,equations),schedule=makeRapidSchedule(r,4);
  assert.equal(r.event.kind,'exit');assert.equal(r.legs.length,4);assert.equal(bankedGems(r).length,l.gems!.length);
  for(const [i,timing] of schedule.legs.entries()){

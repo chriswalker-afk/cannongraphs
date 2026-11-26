@@ -56,5 +56,7 @@ main[data-world="4"] header,main[data-world="4"] footer,main[data-world="4"] .to
 /* Optional gems use a separate counter and never modify stars. */
 .gem-readout{color:#176e70;font-size:12px;font-weight:800;white-space:nowrap;flex-shrink:0;font-variant-numeric:tabular-nums}.gem-readout[hidden],.resolution-gems[hidden]{display:none}.resolution-gems{color:#176e70;font-weight:750;font-size:12px}.gem-core{opacity:1}.gem-spark{opacity:0;transform-origin:0 0}.trajectory-gem[data-gem-state=collected] .gem-core{opacity:.18}.trajectory-gem[data-gem-state=collected] .gem-spark{animation:gem-flash .42s ease-out both}@keyframes gem-flash{0%{opacity:1;transform:scale(.7)}100%{opacity:0;transform:scale(1.45)}}@media(prefers-reduced-motion:reduce){.trajectory-gem[data-gem-state=collected] .gem-spark{animation:none;opacity:0}}@media(max-width:650px){.gem-readout{font-size:11px}.resolution-gems{font-size:11px}}
 
-/* Provisional advanced-engine preview palettes; full scenery follows PR19/20. */
+/* Factory palette and provisional World 6 palette. */
 main[data-world="5"] header,main[data-world="5"] footer,main[data-world="5"] .toolbar{background:#fff1df}main[data-world="6"] header,main[data-world="6"] footer,main[data-world="6"] .toolbar{background:#edf0ff}.editor-tools{max-width:100%;flex-wrap:wrap}
+
+main[data-world="5"] .stage{background:#c0ccd0}main[data-world="5"] .brand-mark{background:#e6c38b;color:#76502b}main[data-world="5"] .plan-card[aria-pressed=true]{background:#f9e9d4}

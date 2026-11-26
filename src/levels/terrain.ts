@@ -28,7 +28,8 @@ export function narrowPassage(id:string,s:PassageSpec):readonly [Obstacle,Obstac
  if(!id.trim()||!Object.values(s).every(Number.isFinite)||!(s.minY<s.gapBottom&&s.gapBottom<s.gapTop&&s.gapTop<s.maxY)||s.gapTop-s.gapBottom<=2*PIP_RADIUS+GEOMETRY_EPS)throw new RangeError('Passage must have strictly more clearance than the Pip diameter');
  return [wall(id+'-lower',s.minX,s.maxX,s.minY,s.gapBottom),ceiling(id+'-upper',s.minX,s.maxX,s.gapTop,s.maxY)];
 }
-export function terrainLabel(o:Obstacle):string{
+export function terrainLabel(o:Obstacle,world?:number):string{
+ if(world===5)return ({floor:'Factory floor',wall:'Metal wall',platform:'Steel platform',ceiling:'Ceiling panel'})[o.kind];
  return ({floor:'Floor',wall:'Stone wall',platform:'Floating platform',ceiling:'Ceiling'})[o.kind];
 }
 export function terrainDimensions(o:Obstacle){
