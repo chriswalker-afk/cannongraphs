@@ -103,3 +103,58 @@ main.home-screen{height:100dvh;min-height:0;max-width:1600px;display:grid;grid-t
  .home-primary p{font-size:10px}
 }
 @media(max-height:320px){main.home-screen{height:auto;min-height:100dvh;grid-template-rows:auto minmax(130px,1fr) auto;overflow:visible}.home-intro h1{font-size:30px}.home-eyebrow{display:none}.home-play{min-height:36px}}
+
+/* Destination selection: no graph preview, locks or invented progress markers. */
+main.selection-screen{height:auto;min-height:100dvh;max-width:1440px;display:grid;grid-template-rows:auto minmax(0,1fr);gap:clamp(8px,1.8vh,18px);padding:clamp(9px,2vw,24px);background:#f3f1e7;align-content:start;color:#243d50}
+.selection-screen[data-selection=levels]{background:linear-gradient(150deg,var(--world-tint),#faf8ef)}
+.selection-top{display:grid;grid-template-columns:minmax(82px,1fr) minmax(0,4fr) minmax(82px,1fr);align-items:center;gap:10px}
+.selection-back{justify-self:start;background:#fffdf5;color:#315779;border:1px solid #bac9c5;border-radius:10px;padding:10px 13px;font-size:13px;min-height:42px;white-space:nowrap;cursor:pointer}
+.selection-back:hover{background:#eaf2ef}
+.selection-heading{text-align:center;min-width:0}
+.selection-heading h1{font-size:clamp(24px,4vw,42px);font-weight:900;letter-spacing:-.04em;line-height:1.04;color:var(--world-ink,#234d78);margin:0}
+.selection-heading h1:focus{outline:none}
+.selection-heading p{font-size:clamp(11px,1.5vw,14px);margin-top:5px;color:#536d77;font-weight:700}
+.world-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,1.5vw,18px);align-content:center;align-items:stretch;min-width:0}
+.world-card{display:flex;flex-direction:column;min-width:0;text-align:left;padding:0;background:#fffdf8;color:var(--world-ink);border:2px solid var(--world-accent);border-radius:15px;overflow:hidden;box-shadow:0 4px 0 color-mix(in srgb,var(--world-accent) 30%,#fff),0 6px 16px #263b5010;cursor:pointer}
+.world-card:hover{background:var(--world-tint);box-shadow:0 4px 0 var(--world-accent),0 8px 18px #263b5025}
+.world-card:focus-visible{outline:3px solid #234d78;outline-offset:3px}
+.world-card-art{display:block;width:100%;height:clamp(72px,18vh,180px);position:relative;overflow:hidden;background:var(--world-tint)}
+.world-card-art svg,.level-world-art svg{width:100%;height:100%;display:block;pointer-events:none}
+.world-number{position:absolute;top:8px;left:8px;padding:4px 7px;color:white;background:var(--world-ink);border-radius:6px;font-size:10px;letter-spacing:.07em;font-weight:850;line-height:1.1}
+.world-card-copy{display:flex;flex:1;flex-direction:column;gap:3px;padding:clamp(7px,1.1vw,14px);min-width:0}
+.world-card-name{font-size:clamp(15px,2.05vw,25px);font-weight:900;line-height:1.12;overflow-wrap:break-word}
+.world-card-focus{font-size:clamp(11px,1.4vw,14px);font-weight:700;line-height:1.22;color:#405866}
+.world-card-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:3px;font-size:11px;color:var(--world-ink);font-weight:750}
+.world-card-arrow{font-size:22px;line-height:1}
+.level-selection-shell{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:clamp(10px,2vw,24px);align-items:start;align-content:center;min-width:0}
+.level-board,.level-details{background:#fffdf8;border:1px solid color-mix(in srgb,var(--world-accent) 48%,#fff);border-radius:17px;padding:clamp(12px,2vw,25px);box-shadow:0 5px 16px #263b5011;min-width:0}
+.level-board{display:grid;gap:clamp(9px,1.6vh,18px)}
+.level-world-banner{display:grid;grid-template-columns:minmax(108px,.65fr) minmax(0,1fr);gap:14px;align-items:center;min-width:0}
+.level-world-art{aspect-ratio:2/1;min-height:82px;border-radius:11px;overflow:hidden;background:var(--world-tint)}
+.level-world-copy{display:grid;gap:6px;min-width:0}
+.level-world-copy>strong{font-size:clamp(14px,1.9vw,20px);color:var(--world-ink);line-height:1.15}
+.level-world-copy>p{font-size:clamp(12px,1.5vw,14px);line-height:1.35;color:#405866}
+.selection-families{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.selection-family{display:inline-flex;align-items:center;gap:5px;padding:3px 6px 3px 3px;border:1px solid #d0dad7;border-radius:6px;background:#fff;color:#344e62;font-size:11px;line-height:1.1;font-weight:750}
+.selection-family-dot{width:22px;height:21px;border-radius:4px;display:grid;place-items:center;font-size:10px;color:white;font-weight:850}
+.level-board-heading{font-size:16px;color:var(--world-ink);margin:0}
+.level-number-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(6px,1vw,12px);min-width:0}
+.level-number{display:grid;place-items:center;min-width:0;aspect-ratio:1/1;max-height:82px;padding:0;background:var(--world-tint);color:var(--world-ink);border:2px solid var(--world-accent);border-radius:11px;box-shadow:0 3px 0 color-mix(in srgb,var(--world-accent) 38%,#fff);font-size:clamp(17px,3vw,31px);font-weight:900;font-variant-numeric:tabular-nums;cursor:pointer}
+.level-number:hover{background:#fff}
+.level-number[aria-pressed=true]{background:var(--world-ink);color:#fff;border-color:var(--world-ink);box-shadow:0 3px 0 var(--world-accent)}
+.level-number:focus-visible{outline:3px solid #b97427;outline-offset:2px}
+.level-details{display:grid;gap:16px;align-content:start;min-height:246px;border-top:6px solid var(--world-accent)}
+.level-details-info{display:grid;gap:11px;min-width:0}
+.level-details-kicker{font-size:11px;letter-spacing:.11em;font-weight:850;color:var(--world-ink)}
+.level-details-title{font-size:clamp(21px,3vw,32px);margin:0;font-weight:900;letter-spacing:-.035em;line-height:1.12;color:var(--world-ink);overflow-wrap:break-word}
+.level-details-objective{font-size:clamp(13px,1.7vw,16px);line-height:1.38;color:#405866;overflow-wrap:anywhere}
+.level-facts{display:flex;flex-wrap:wrap;gap:6px}
+.level-fact{background:var(--world-tint);color:var(--world-ink);border-radius:6px;padding:5px 7px;font-size:11px;font-weight:750}
+.selection-play{width:100%;min-height:48px;padding:10px 14px;background:#287a4c;border:2px solid #22683f;border-radius:10px;box-shadow:0 3px 0 #1c5636;font-size:17px;font-weight:850;cursor:pointer}
+.selection-play:not(:disabled):hover{background:#22683f}
+.selection-play:disabled{box-shadow:none;cursor:default;background:#dce6dc;color:#486051;border-color:#acbfb0;opacity:1}
+.game-level-menu{display:flex;align-items:center;gap:6px;flex:none;padding:8px 11px;min-height:36px;background:#e4edf2;color:#234d78;border:1px solid #b8cdd8;font-size:13px;white-space:nowrap;cursor:pointer}
+.game-level-menu svg{width:16px;height:16px}
+@media(max-width:800px){.world-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.world-card-art{height:clamp(60px,12.5vh,140px)}.level-selection-shell{grid-template-columns:minmax(0,1fr);align-content:start}.level-world-banner{grid-template-columns:minmax(100px,.45fr) minmax(0,1fr)}.level-world-art{max-height:135px}.level-details{min-height:0}.level-number-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(max-width:480px){main.selection-screen{gap:8px;padding:8px}.selection-top{grid-template-columns:auto minmax(0,1fr);gap:8px}.selection-top-end{display:none}.selection-heading{text-align:left}.selection-heading h1{font-size:clamp(20px,6.6vw,28px)}.selection-heading p{font-size:11px;margin-top:3px}.selection-back{padding:7px 9px;font-size:11px;min-height:40px}.world-grid{gap:8px;align-content:start}.world-card{border-radius:10px}.world-card-art{height:clamp(65px,12.3vh,105px)}.world-card-name{font-size:15px}.world-card-focus{font-size:11px}.world-number{font-size:9px;top:5px;left:5px;padding:3px 5px}.world-card-bottom{padding-top:1px}.world-card-arrow{font-size:18px}.level-board,.level-details{padding:10px;border-radius:11px}.level-board{gap:8px}.level-world-banner{grid-template-columns:82px minmax(0,1fr);gap:8px}.level-world-art{min-height:64px;aspect-ratio:1.25}.level-world-copy{gap:4px}.level-world-copy>p{font-size:11px}.level-world-copy>.selection-families{display:none}.level-number-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}.level-number{min-height:38px;font-size:18px;border-radius:8px}.level-details-info{gap:8px}.level-details{gap:10px}.level-details-title{font-size:22px}.selection-play{min-height:42px;font-size:15px}.game-level-menu{font-size:11px;padding:6px 8px}.game-level-menu svg{width:14px;height:14px}}
+@media(max-height:480px) and (min-width:801px){main.selection-screen{padding:7px 12px;gap:7px}.selection-heading h1{font-size:25px}.selection-heading p{margin-top:2px;font-size:11px}.selection-back{min-height:32px;padding:5px 10px}.world-grid{gap:8px}.world-card-art{height:clamp(55px,15vh,80px)}.world-card-copy{padding:6px 9px;gap:2px}.world-card-name{font-size:16px}.world-card-focus{font-size:11px}.world-card-bottom{padding-top:0}.level-board,.level-details{padding:10px}.level-board{gap:7px}.level-world-art{min-height:62px;max-height:90px}.level-world-copy>p{font-size:11px}.level-number{max-height:47px}.level-details{gap:9px;min-height:0}.level-details-info{gap:7px}.level-details-title{font-size:22px}.selection-play{min-height:35px;font-size:14px;padding:5px 10px}}
