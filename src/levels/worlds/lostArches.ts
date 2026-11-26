@@ -32,7 +32,7 @@ export const lostArches:readonly Level[]=[
  level(7,'Reverse arch','Fire leftward over a maximum; distinguish direction from the sign of the quadratic coefficient.',b7,
   [q('A',6,-1,-1)],p(-2,-1),[perch('launch-perch',6,-1),...gate('west-arch',1.5,2.5,2.25,3.65,b7),perch('exit-perch',-2,-1)]),
  level(8,'Reverse well','Travel leftward through a minimum below the x-axis.',b8,
-  [q('A',5,2,-1)],p(-1,2),[perch('launch-perch',5,2),...gate('west-well',1.6,2.4,-4.65,-3.15,b8),perch('exit-perch',-1,2)]),
+  [q('A',5,2,-1)],p(-1,2),[perch('launch-perch',5,2,2.1),...gate('west-well',1.6,2.4,-4.65,-3.15,b8),perch('exit-perch',-1,2,2.1)]),
  level(9,'Broken symmetry','Use the unequal endpoint heights and both gates to control the turning point.',b9,
   [q('A',-4,3)],p(4,-1),[perch('launch-perch',-4,3),...gate('entry-slot',-2.1,-1.9,-1.85,-.15,b9),
    ...gate('deep-slot',.6,1.4,-3.95,-2.55,b9),perch('exit-perch',4,-1)]),
