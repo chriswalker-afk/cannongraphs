@@ -7,7 +7,7 @@ export interface RapidFrame extends RapidCounts {pips:RapidPip[];recoil:number;b
 const clamp=(p:number)=>Math.max(0,Math.min(1,p));
 export function makeRapidSchedule(result:AttemptResult,count:number,reduced=false):RapidSchedule{
  if(result.event.kind!=='exit'||!Number.isSafeInteger(count)||count<1||!Number.isFinite(result.length)||result.length<=0)throw new RangeError('Rapid fire requires a verified exit route and a nonempty queue');
- const lead=reduced?150:360,interval=reduced?180:260,load=reduced?70:150,flight=reduced?100:Math.max(420,Math.min(1650,result.length*100)),tail=reduced?180:450;
+ const lead=reduced?150:360,interval=reduced?180:260,load=reduced?70:150,flight=reduced?100:Math.round(Math.max(420,Math.min(1650,result.length*100))),tail=reduced?180:450;
  return {count,lead,interval,load,flight,tail,reduced,duration:lead+(count-1)*interval+load+flight+tail};
 }
 function countAt(ms:number,first:number,s:RapidSchedule):number{
@@ -29,7 +29,7 @@ export function sampleRapidFire(ms:number,result:AttemptResult,s:RapidSchedule):
    const distance=s.reduced?-.36:-.65*(1-k);
    pips.push({index:i,point:{x:result.source.x+v.x*distance,y:result.source.y+v.y*distance},phase:'loading',opacity:1,scale:1,stretch:1,tilt:0,trailStart:null});
   }else if(arrival<0){
-   const k=clamp(flightTime/s.flight),progress=s.reduced?(k<.5?0:1):k;
+   const k=clamp(flightTime/s.flight),progress=s.reduced?0:k;
    pips.push({index:i,point:result.pointAt(progress),phase:'flying',opacity:1,scale:1,stretch:s.reduced?1:1+.16*Math.exp(-flightTime/110),tilt:s.reduced?0:-result.angle*result.direction,trailStart:s.reduced?null:result.pointAt(Math.max(0,progress-.13))});
   }else{
    const p=clamp(arrival/s.tail);
