@@ -49,3 +49,6 @@ main[data-world="3"] header,main[data-world="3"] footer,main[data-world="3"] .to
 
 /* The alpine world is visually distinct without changing the coordinate grid. */
 main[data-world="3"] .stage{background:#d8d7ed}main[data-world="3"] .plan-card[aria-pressed=true]{background:#f4e9fb}main[data-world="3"] .plan-card[data-status=tested] .plan-status{color:#287744}
+
+/* Warm stone and moss palette for the Lost Arches. */
+main[data-world="4"] header,main[data-world="4"] footer,main[data-world="4"] .toolbar{background:#faf5e8}main[data-world="4"] .brand-mark{background:#dbd5ad;color:#566f49}main[data-world="4"] .stage{background:#d7d7bf}main[data-world="4"] .plan-card[aria-pressed=true]{background:#f2eddb}

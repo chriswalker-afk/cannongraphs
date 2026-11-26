@@ -20,6 +20,12 @@ const peakPalette={
  platform:{base:'#a59ab7',mortar:'#70677d',light:'#cbbfd7',edge:'#78918e',cap:'#deebeb'},
  ceiling:{base:'#756d8d',mortar:'#534b69',light:'#aaa0bf',edge:'#605776',cap:'#b8aecb'}
 };
+const ruinsPalette={
+ floor:{base:'#a88b65',mortar:'#76634c',light:'#d3b889',edge:'#607d53',cap:'#8ea671'},
+ wall:{base:'#c0a477',mortar:'#877253',light:'#e0c69a',edge:'#677d50',cap:'#98ad77'},
+ platform:{base:'#b39a72',mortar:'#7e6b52',light:'#d6bc90',edge:'#738a5c',cap:'#9fb780'},
+ ceiling:{base:'#82785e',mortar:'#5e584a',light:'#b1a17f',edge:'#72664e',cap:'#b7a684'}
+};
 const f=(n:number)=>String(n===0?0:n);
 export function terrainInspection(o:Obstacle){
  const b=o.bounds,{width,height}=terrainDimensions(o);
@@ -30,8 +36,8 @@ export function terrainInspection(o:Obstacle){
 }
 // A nested SVG gives every texture an exact rectangular clip, including strokes.
 // Local units are world units. Decorative patterning never expands the hitbox.
-export function renderTerrain(parent:Element,o:Obstacle,project:(p:Point)=>Point,scale:number,floating=false,peaks=false):SVGGElement{
- const a=project({x:o.bounds.minX,y:o.bounds.maxY}),{width:w,height:h}=terrainDimensions(o),p=(peaks?peakPalette:floating?skyPalette:palette)[o.kind];
+export function renderTerrain(parent:Element,o:Obstacle,project:(p:Point)=>Point,scale:number,floating=false,peaks=false,ruins=false):SVGGElement{
+ const a=project({x:o.bounds.minX,y:o.bounds.maxY}),{width:w,height:h}=terrainDimensions(o),p=(ruins?ruinsPalette:peaks?peakPalette:floating?skyPalette:palette)[o.kind];
  const group=svgNode('g',{'data-terrain-kind':o.kind},parent) as SVGGElement;
  const art=svgNode('svg',{x:a.x,y:a.y,width:w*scale,height:h*scale,viewBox:'0 0 '+w+' '+h,overflow:'hidden','aria-hidden':'true'},group);
  svgNode('rect',{width:w,height:h,fill:p.base},art);

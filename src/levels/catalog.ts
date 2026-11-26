@@ -2,8 +2,9 @@ import {validateLevel,type Level} from './schema';
 import {meadowLaunchers} from './worlds/meadowLaunchers';
 import {floatingIsles} from './worlds/floatingIsles';
 import {parabolaPeaks} from './worlds/parabolaPeaks';
+import {lostArches} from './worlds/lostArches';
 export interface World {readonly number:number;readonly name:string;readonly levels:readonly Level[]}
-export const worlds:readonly World[]=[{number:1,name:'Meadow Launchers',levels:meadowLaunchers},{number:2,name:'The Floating Isles',levels:floatingIsles},{number:3,name:'Parabola Peaks',levels:parabolaPeaks}];
+export const worlds:readonly World[]=[{number:1,name:'Meadow Launchers',levels:meadowLaunchers},{number:2,name:'The Floating Isles',levels:floatingIsles},{number:3,name:'Parabola Peaks',levels:parabolaPeaks},{number:4,name:'Lost Arches',levels:lostArches}];
 export const levels:readonly Level[]=worlds.flatMap(w=>w.levels);
 const ids=new Set<string>();
 for(const world of worlds){
