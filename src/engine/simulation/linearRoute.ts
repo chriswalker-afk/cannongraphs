@@ -1,5 +1,6 @@
 import {validateLevel,type Level} from '../../levels/schema';
-import type {LinearEquation} from '../equations/linear';
+import {isQuadratic,type FlightEquation} from '../equations/linear';
+import {simulateQuadraticAttempt} from './quadraticAttempt';
 import {simulateLinearAttempt,type AttemptResult,type FlightEvent} from './linearAttempt';
 export interface RouteResult extends AttemptResult {
  readonly legs:readonly AttemptResult[];
@@ -7,17 +8,18 @@ export interface RouteResult extends AttemptResult {
 }
 export function isRouteResult(r:AttemptResult):r is RouteResult{return 'legs' in r;}
 export function routeLegs(r:AttemptResult):readonly AttemptResult[]{return isRouteResult(r)?r.legs:[r];}
-export function simulateLinearRoute(level:Level,equations:ReadonlyMap<string,LinearEquation>):RouteResult{
+export function simulateRoute(level:Level,equations:ReadonlyMap<string,FlightEquation>):RouteResult{
  validateLevel(level);
  // Validate the whole plan before an attempt is reserved, even for a cannon that is bypassed.
- for(const c of level.cannons)if(c.type!=='linear'||!equations.has(c.id))throw new Error('Program every linear cannon before launching.');
+ for(const c of level.cannons){const e=equations.get(c.id);if(!e||c.type!==(isQuadratic(e)?'quadratic':'linear'))throw new Error('Program every '+c.type+' cannon with its own equation family before launching.');}
  const byId=new Map(level.cannons.map(c=>[c.id,c]));
  let current=byId.get(level.startId);if(!current)throw new Error('Missing start cannon');
  const visited=new Set<string>(),legs:AttemptResult[]=[];
  let event:FlightEvent;
  while(true){
   visited.add(current.id);
-  const leg=simulateLinearAttempt(equations.get(current.id)!,current,level);
+  const equation=equations.get(current.id)!;
+  const leg=isQuadratic(equation)?simulateQuadraticAttempt(equation,current,level):simulateLinearAttempt(equation,current,level);
   legs.push(leg);event=leg.event;
   if(event.kind!=='cannon')break;
   if(visited.has(event.cannonId)){event={kind:'loop',cannonId:event.cannonId};break;}
@@ -35,3 +37,6 @@ export function simulateLinearRoute(level:Level,equations:ReadonlyMap<string,Lin
    return {...last.end};
   }});
 }
+
+// Backwards-compatible entry point for existing linear fixtures and integrations.
+export const simulateLinearRoute=simulateRoute;
