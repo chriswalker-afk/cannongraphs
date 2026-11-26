@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phases 1–3 complete: all seven cannon families and 72 levels across six worlds, with optional gems. Phase 4 begins with PR21 animated home screen. PR22 adds illustrated world and numbered level selection. PR23 adds Cadet, Pilot and Ace learning modes. PR24 adds local mode-specific progress, Flight log and achievements. Next: PR25 creature workshop; PR26 cannon customisation; PR27 sound; PR28 classroom QA and accessibility.
+Phases 1–3 complete: all seven cannon families and 72 levels across six worlds, with optional gems. Phase 4 begins with PR21 animated home screen. PR22 adds illustrated world and numbered level selection. PR23 adds Cadet, Pilot and Ace learning modes. PR24 adds local mode-specific progress, Flight log and achievements. PR25 adds achievement-gated Pip cosmetics and the Creature Workshop. Next: PR26 cannon customisation; PR27 sound; PR28 classroom QA and accessibility.
