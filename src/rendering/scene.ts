@@ -14,6 +14,8 @@ import {renderFloatingScenery} from './floatingScenery';
 import {renderPeakScenery} from './peakScenery';
 import {renderRuinsScenery} from './ruinsScenery';
 import {flightPath} from './flightPath';
+import {renderGem} from './gem';
+import {gemTimeline,gemsAt,bankedGems,type TimedGemHit} from '../animations/gemTimeline';
 
 type Inspection={id:string;label:string;detail:string;point:Point;lines?:string[];bounds?:Bounds};
 const ns='http://www.w3.org/2000/svg';
@@ -46,12 +48,22 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  }
  const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
  let barrels=new Map<string,Element>(),visual:ReturnType<typeof createLaunchVisual>|undefined;
- let active:{result:AttemptResult;started:number;elapsed:number;reduced:boolean;done:()=>void}|undefined,animationId=0;
+ let active:{result:AttemptResult;started:number;elapsed:number;reduced:boolean;done:()=>void;gemTimeline:readonly TimedGemHit[];gemIds:readonly string[];onGems?:(ids:readonly string[])=>void}|undefined,animationId=0;
+ let gemTargets=new Map<string,Element>();
  let lastResult:AttemptResult|undefined,trace:SVGGElement|undefined,marker:SVGGElement|undefined;
  let rapid:{result:AttemptResult;schedule:RapidSchedule;started:number;elapsed:number;variantOffset:number;progress:(counts:RapidCounts)=>void;done:()=>void}|undefined;
  let rapidVisual:ReturnType<typeof createRapidVisual>|undefined,rapidParent:Element|undefined;
  function setBarrel(id:string,angle:number,recoil=0){barrels.get(id)?.setAttribute('transform','rotate('+(-angle)+') translate('+(-recoil)+' 0)');}
+ function paintGems(){
+  if(!gemTargets.size)return;
+  const ids=new Set(active?.gemIds??bankedGems(lastResult));
+  for(const [id,g] of gemTargets){
+   const next=ids.has(id)?'collected':'waiting';
+   if(g.getAttribute('data-gem-state')!==next)g.setAttribute('data-gem-state',next);
+  }
+ }
  function paintAttempt(){
+  paintGems();
   if(!visual||!trace||!marker)return;
   for(const id of barrels.keys())setBarrel(id,BARREL_ANGLE);
   const result=active?.result??lastResult,cue=active?sampleRouteAttempt(active.elapsed,active.result,level,active.reduced):undefined;
@@ -106,14 +118,17 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function step(now:number){
   if(!active)return;
   active.elapsed=Math.max(0,now-active.started)*(active.reduced?2:1);
+  const ids=gemsAt(active.gemTimeline,active.elapsed);
+  if(ids.length!==active.gemIds.length){active.gemIds=ids;active.onGems?.(ids);}
   if(active.elapsed>=routeDuration(active.result,active.reduced)){
    const finished=active;lastResult=finished.result;active=undefined;animationId=0;paintAttempt();finished.done();return;
   }
   paintAttempt();animationId=requestAnimationFrame(step);
  }
- function playFlight(result:AttemptResult,done:()=>void):boolean{
+ function playFlight(result:AttemptResult,done:()=>void,onGems?:(ids:readonly string[])=>void):boolean{
   if(active||rapid)return false;
-  lastResult=undefined;active={result,started:performance.now(),elapsed:0,reduced:motion.matches,done};
+  lastResult=undefined;const reduced=motion.matches;
+  active={result,started:performance.now(),elapsed:0,reduced,done,gemTimeline:gemTimeline(result,reduced),gemIds:[],onGems};
   paintAttempt();animationId=requestAnimationFrame(step);return true;
  }
  function clearFlight(){if(!active&&!rapid){lastResult=undefined;rapidVisual?.hide();rapidParent?.replaceChildren();rapidVisual=undefined;paintAttempt();}}
@@ -122,7 +137,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(!tooltip)return;
   tooltip.replaceChildren();
   const item=inspections.get(hovered??focused??pinned??'');
-  controls.info.textContent=item?item.label+' · '+item.detail:'Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.';
+  controls.info.textContent=item?item.label+' · '+item.detail:'Hover, tap or focus an object to inspect its coordinates.';
   if(!item)return;
   const q=plot();let a=t.toScreen(item.point);
   if(item.bounds){
@@ -155,7 +170,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const {width:W,height:H}=viewport,q=plot();
   t=cameraTransform(level.bounds,viewport,camera);camera={zoom:t.zoom,center:t.center};
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();cannonTargets=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;
+  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();cannonTargets=new Map();gemTargets=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
   const floating=level.world===2,peaks=level.world===3,ruins=level.world===4;
   el('stop',{offset:'0%', 'stop-color':ruins?'#b7c4ae':peaks?'#aebce8':floating?'#89c5ed':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':ruins?'#f3e2bd':peaks?'#f2e6f6':floating?'#e7e7fa':'#e6f5e6'},sky);
@@ -217,6 +232,10 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   el('circle',{r:.047,fill:'#fff',stroke:'#7a5a25','stroke-width':.025},g);
   el('text',{x:0,y:-.56,'text-anchor':'middle','font-size':.21,'font-weight':800,fill:'#725024',stroke:'#fff5cf','stroke-width':.05,'paint-order':'stroke'},g,'EXIT');
   target(g,{id:'exit',label:'Exit',detail:coord(level.exit),point:level.exit});
+  for(const gem of level.gems??[]){
+   const art=renderGem(content,gem,p,scale);gemTargets.set(gem.id,art);
+   target(art,{id:gem.id,label:'Optional gem',detail:coord(gem.position),point:gem.position});
+  }
   trace=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;
   visual=createLaunchVisual(content);
   rapidParent=el('g',{'pointer-events':'none','aria-hidden':'true'},content);

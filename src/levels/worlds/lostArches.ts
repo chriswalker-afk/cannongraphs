@@ -1,3 +1,4 @@
+import {withAuthoredGems} from '../gems';
 import type {Bounds,Point} from '../../engine/coordinates';
 import type {Cannon,Level,Obstacle} from '../schema';
 import {floor,wall,platform,ceiling,narrowPassage} from '../terrain';
@@ -60,4 +61,4 @@ export const lostArches:readonly Level[]=[
    ...gate('central-slot',2.65,3.35,-.65,.65,b12),perch('d-perch',6,0),
    ...gate('second-vault',8.55,9.45,3.2,4.65,b12),perch('e-perch',12,0),
    ...gate('second-well',14.55,15.45,-3.65,-2.25,b12),perch('exit-perch',18,0)])
-];
+].map(withAuthoredGems);
