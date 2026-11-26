@@ -75,7 +75,7 @@ levelPicker.disabled=state.phase==='launching'||state.phase==='celebrating';
   const rating=levelStars(state)??0;
   stars.replaceChildren(...Array.from({length:3},(_,i)=>{const star=document.createElement('span');star.textContent='★';star.className=i<rating?'earned':'unearned';star.setAttribute('aria-hidden','true');return star;}));
   stars.setAttribute('aria-label',rating+' out of 3 stars');
-  heading.textContent=success?(!following||following.world!==level.world?'World complete!':'Level complete!'):'Out of Pips!';
+  heading.textContent=success?(!following?'Gauntlet complete!':following.world!==level.world?'World complete!':'Level complete!'):'Out of Pips!';
   detail.textContent=success
    ?state.saved+' of '+state.total+' Pips reached the exit!'+(state.failed?' '+state.failed+' unsuccessful '+(state.failed===1?'attempt.':'attempts.'):' Perfect first flight!')
    :'All '+state.total+' Pips have used their attempts. Try the level again with a revised equation.';
