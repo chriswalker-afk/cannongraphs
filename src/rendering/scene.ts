@@ -3,8 +3,8 @@ import type {Point,Viewport} from '../engine/coordinates';
 import {cannonTypes} from '../game/cannons';
 import type {Level} from '../levels/schema';
 import {BARREL_ANGLE} from '../animations/launch';
-import {attemptDuration,sampleAttempt} from '../animations/attempt';
-import {stageMisfire} from '../animations/misfire';
+import {routeDuration,sampleRouteAttempt} from '../animations/routeAttempt';
+import {routeLegs} from '../engine/simulation/linearRoute';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {createLaunchVisual} from './launchVisual';
 import {makeRapidSchedule,sampleRapidFire,type RapidSchedule,type RapidCounts} from '../animations/rapidFire';
@@ -27,39 +27,46 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
  let inspections=new Map<string,Inspection>(),tooltip:SVGGElement;
  let drag:{id:number;x:number;y:number}|undefined;
- const source=level.cannons.find(c=>c.id===level.startId)!;
- const misfireStaging=stageMisfire(source.position,source.direction,level.bounds,level.obstacles);
  const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
- let startBarrel:Element|undefined,visual:ReturnType<typeof createLaunchVisual>|undefined;
+ let barrels=new Map<string,Element>(),visual:ReturnType<typeof createLaunchVisual>|undefined;
  let active:{result:AttemptResult;started:number;elapsed:number;reduced:boolean;done:()=>void}|undefined,animationId=0;
- let lastResult:AttemptResult|undefined,trace:SVGLineElement|undefined,marker:SVGGElement|undefined;
+ let lastResult:AttemptResult|undefined,trace:SVGGElement|undefined,marker:SVGGElement|undefined;
  let rapid:{result:AttemptResult;schedule:RapidSchedule;started:number;elapsed:number;variantOffset:number;progress:(counts:RapidCounts)=>void;done:()=>void}|undefined;
  let rapidVisual:ReturnType<typeof createRapidVisual>|undefined,rapidParent:Element|undefined;
+ function setBarrel(id:string,angle:number,recoil=0){barrels.get(id)?.setAttribute('transform','rotate('+(-angle)+') translate('+(-recoil)+' 0)');}
  function paintAttempt(){
-  if(!visual||!startBarrel||!trace||!marker)return;
-  const result=active?.result??lastResult,frame=active?sampleAttempt(active.elapsed,active.result,active.reduced,misfireStaging):undefined;
-  const angle=result?.event.kind==='misfire'?BARREL_ANGLE:result?.angle??BARREL_ANGLE;
-  startBarrel.setAttribute('transform','rotate('+(-angle)+') translate('+(-(frame?.recoil??0))+' 0)');
-  if(frame&&result)visual.paint(frame,result.source,result.direction,angle,t.toScreen,t.scale,frame.size);else visual.hide();
-  const to=frame?frame.trace:lastResult?.event.kind==='misfire'?null:lastResult?.end;
-  const resolved=frame?.resolved??!!lastResult;
-  const color=resolved?(result?.event.kind==='exit'?'#16874c':'#cf5148'):'#2583ca';
-  trace.setAttribute('display',to&&result?'inline':'none');
-  if(to&&result){
-   const a=t.toScreen(result.start),b=t.toScreen(to);
-   for(const [k,v] of Object.entries({x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:color}))trace.setAttribute(k,String(v));
+  if(!visual||!trace||!marker)return;
+  for(const id of barrels.keys())setBarrel(id,BARREL_ANGLE);
+  const result=active?.result??lastResult,cue=active?sampleRouteAttempt(active.elapsed,active.result,level,active.reduced):undefined;
+  trace.replaceChildren();marker.replaceChildren();marker.setAttribute('display','none');
+  const drawLeg=(leg:AttemptResult,to:Point,color:string)=>{
+   const a=t.toScreen(leg.start),b=t.toScreen(to);
+   el('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:color,'stroke-width':2.6,'stroke-dasharray':'6 4','stroke-linecap':'round'},trace);
+  };
+  const angle=(leg:AttemptResult)=>leg.event.kind==='misfire'?BARREL_ANGLE:leg.angle;
+  if(!result){visual.hide();return;}
+  const completed=cue?cue.completed:routeLegs(result);
+  for(const leg of completed){
+   setBarrel(leg.cannonId,angle(leg));
+   if(leg.event.kind!=='misfire')drawLeg(leg,leg.end,leg.event.kind==='exit'||leg.event.kind==='cannon'&&!(result.event.kind==='loop'&&leg===completed[completed.length-1]&&!cue)?'#16874c':'#cf5148');
   }
-  marker.replaceChildren();marker.setAttribute('display',resolved&&result?'inline':'none');
-  if(resolved&&result){
-   const p=t.toScreen(result.end);marker.setAttribute('transform','translate('+p.x+' '+p.y+')');
+  if(cue){
+   const {leg,frame}=cue,heading=angle(leg);
+   setBarrel(leg.cannonId,heading,frame.recoil);
+   visual.paint(frame,leg.source,leg.direction,heading,t.toScreen,t.scale,frame.size);
+   if(frame.trace)drawLeg(leg,frame.trace,frame.resolved?(leg.event.kind==='cannon'||leg.event.kind==='exit'?'#16874c':'#cf5148'):'#2583ca');
+  }else{
+   visual.hide();
+   const p=t.toScreen(result.end),ok=result.event.kind==='exit',color=ok?'#16874c':'#cf5148';
+   marker.setAttribute('display','inline');marker.setAttribute('transform','translate('+p.x+' '+p.y+')');
    el('circle',{r:6,fill:'#fffaf0',stroke:color,'stroke-width':2},marker);
-   el('path',{d:result.event.kind==='exit'?'M-3 0 l2 2 4 -5':'M-2 -2 L2 2 M2 -2 L-2 2',stroke:color,'stroke-width':1.6,fill:'none','stroke-linecap':'round'},marker);
+   el('path',{d:ok?'M-3 0 l2 2 4 -5':'M-2 -2 L2 2 M2 -2 L-2 2',stroke:color,'stroke-width':1.6,fill:'none','stroke-linecap':'round'},marker);
   }
  }
  function paintRapid(){
-  if(!rapid||!rapidVisual||!startBarrel)return;
+  if(!rapid||!rapidVisual)return;
   const frame=sampleRapidFire(rapid.elapsed,rapid.result,rapid.schedule);
-  startBarrel.setAttribute('transform','rotate('+(-rapid.result.angle)+') translate('+(-frame.recoil)+' 0)');
+  for(const [i,leg] of routeLegs(rapid.result).entries())setBarrel(leg.cannonId,leg.angle,frame.cannonCues[i].recoil);
   rapidVisual.paint(frame,rapid.result,t.toScreen,t.scale,rapid.schedule.reduced);
  }
  function rapidStep(now:number){
@@ -76,14 +83,14 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function playRapidFire(result:AttemptResult,count:number,variantOffset:number,progress:(counts:RapidCounts)=>void,done:()=>void):boolean{
   if(active||rapid||!rapidParent||result!==lastResult)return false;
   const schedule=makeRapidSchedule(result,count,motion.matches);
-  rapidParent.replaceChildren();rapidVisual=createRapidVisual(rapidParent,count,variantOffset);
+  rapidParent.replaceChildren();rapidVisual=createRapidVisual(rapidParent,count,variantOffset,result);
   rapid={result,schedule,started:performance.now(),elapsed:0,variantOffset,progress,done};
   paintRapid();animationId=requestAnimationFrame(rapidStep);return true;
  }
  function step(now:number){
   if(!active)return;
   active.elapsed=Math.max(0,now-active.started)*(active.reduced?2:1);
-  if(active.elapsed>=attemptDuration(active.result,active.reduced)){
+  if(active.elapsed>=routeDuration(active.result,active.reduced)){
    const finished=active;lastResult=finished.result;active=undefined;animationId=0;paintAttempt();finished.done();return;
   }
   paintAttempt();animationId=requestAnimationFrame(step);
@@ -124,7 +131,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const {width:W,height:H}=viewport,q=plot();
   t=cameraTransform(level.bounds,viewport,camera);camera={zoom:t.zoom,center:t.center};
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;startBarrel=undefined;visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;
+  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
   el('stop',{offset:'0%', 'stop-color':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':'#e6f5e6'},sky);
   const portal=el('radialGradient',{id:'portal'},defs);el('stop',{offset:'0%','stop-color':'#fffbea'},portal);el('stop',{offset:'100%','stop-color':'#f8ba48'},portal);
@@ -172,7 +179,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    el('rect',{x:-.74,y:.35,width:.73,height:.12,rx:.05,fill:'#a77347',stroke:'#694c38','stroke-width':.025},body);
    el('circle',{cx:-.38,cy:.29,r:.18,fill:'#b38856',stroke:'#715039','stroke-width':.035},body);
    const barrel=el('g',{transform:'rotate(-'+BARREL_ANGLE+')'},body);
-   if(c.id===level.startId)startBarrel=barrel;
+   barrels.set(c.id,barrel);
    el('rect',{x:-.70,y:-.17,width:.65,height:.34,rx:.1,fill:style.color,stroke:'#254763','stroke-width':.035},barrel);
    el('path',{d:'M-.60 -.105 H-.23',stroke:'#d9f4ff','stroke-width':.045,'stroke-linecap':'round',opacity:.75},barrel);
    el('rect',{x:-.15,y:-.21,width:.15,height:.42,rx:.035,fill:style.color,stroke:'#254763','stroke-width':.035},barrel);
@@ -190,10 +197,10 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   el('circle',{r:.047,fill:'#fff',stroke:'#7a5a25','stroke-width':.025},g);
   el('text',{x:0,y:-.56,'text-anchor':'middle','font-size':.21,'font-weight':800,fill:'#725024',stroke:'#fff5cf','stroke-width':.05,'paint-order':'stroke'},g,'EXIT');
   target(g,{id:'exit',label:'Exit',detail:coord(level.exit),point:level.exit});
-  trace=el('line',{'stroke-width':2.6,'stroke-dasharray':'6 4','stroke-linecap':'round','pointer-events':'none','aria-hidden':'true'},content) as SVGLineElement;
+  trace=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;
   visual=createLaunchVisual(content);
   rapidParent=el('g',{'pointer-events':'none','aria-hidden':'true'},content);
-  if(rapid)rapidVisual=createRapidVisual(rapidParent,rapid.schedule.count,rapid.variantOffset);
+  if(rapid)rapidVisual=createRapidVisual(rapidParent,rapid.schedule.count,rapid.variantOffset,rapid.result);
   marker=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;paintAttempt();paintRapid();
   // Edge tick labels remain visible when the origin is offscreen.
   const bottom=Math.min(q.y+q.h,br.y),left=Math.max(q.x,tl.x);
