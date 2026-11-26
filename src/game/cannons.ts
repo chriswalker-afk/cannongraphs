@@ -5,6 +5,6 @@ export const cannonTypes={
  reciprocal:{label:'Reciprocal',symbol:'1/x',color:'#168e82',form:'y = a/(x − h) + k'},
  exponential:{label:'Exponential',symbol:'↑',color:'#cb4f55',form:'y = abˣ + c'},
  logarithmic:{label:'Logarithmic',symbol:'log',color:'#b57438',form:'y = a log(x − h) + k'},
- wave:{label:'Wave',symbol:'~',color:'#6472d9',form:'y = a sin(bx + c) + d'}
+ wave:{label:'Wave',symbol:'~',color:'#6472d9',form:'sin, cos, tan · radians'}
 } as const;
 export type CannonType=keyof typeof cannonTypes;
