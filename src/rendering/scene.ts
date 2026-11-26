@@ -4,6 +4,7 @@ import {cannonTypes} from '../game/cannons';
 import type {Level} from '../levels/schema';
 import {BARREL_ANGLE} from '../animations/launch';
 import {attemptDuration,sampleAttempt} from '../animations/attempt';
+import {stageMisfire} from '../animations/misfire';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {createLaunchVisual} from './launchVisual';
 
@@ -25,14 +26,15 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  let inspections=new Map<string,Inspection>(),tooltip:SVGGElement;
  let drag:{id:number;x:number;y:number}|undefined;
  const source=level.cannons.find(c=>c.id===level.startId)!;
+ const misfireStaging=stageMisfire(source.position,source.direction,level.bounds,level.obstacles);
  const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
  let startBarrel:Element|undefined,visual:ReturnType<typeof createLaunchVisual>|undefined;
  let active:{result:AttemptResult;started:number;elapsed:number;reduced:boolean;done:()=>void}|undefined,animationId=0;
  let lastResult:AttemptResult|undefined,trace:SVGLineElement|undefined,marker:SVGGElement|undefined;
  function paintAttempt(){
   if(!visual||!startBarrel||!trace||!marker)return;
-  const result=active?.result??lastResult,frame=active?sampleAttempt(active.elapsed,active.result,active.reduced):undefined;
-  const angle=result?.angle??BARREL_ANGLE;
+  const result=active?.result??lastResult,frame=active?sampleAttempt(active.elapsed,active.result,active.reduced,misfireStaging):undefined;
+  const angle=result?.event.kind==='misfire'?BARREL_ANGLE:result?.angle??BARREL_ANGLE;
   startBarrel.setAttribute('transform','rotate('+(-angle)+') translate('+(-(frame?.recoil??0))+' 0)');
   if(frame&&result)visual.paint(frame,result.source,result.direction,angle,t.toScreen,t.scale,frame.size);else visual.hide();
   const to=frame?frame.trace:lastResult?.event.kind==='misfire'?null:lastResult?.end;

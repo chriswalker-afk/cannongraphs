@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Next: PR6. Add the limited creature budget and deterministic level state machine, retry and reset controls, terminal success/failure, and connect the queue to actual attempts. PR7 adds rapid-fire and stars.
+Next: PR7. Introduce a rapid-fire celebration using the immutable verified successful result and all remaining Pips. Count actual arrivals, add 3/2/1-star ratings, handle the final-attempt success case, and retain the failed-attempt budget.

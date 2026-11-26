@@ -3,7 +3,7 @@ const ns='http://www.w3.org/2000/svg';
 export function svgNode(tag:string,attrs:Record<string,string|number>={},parent?:Element){
  const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));parent?.append(e);return e;
 }
-export interface PipSprite {root:SVGGElement;setPose:(pose:PipPose)=>void;setStretch:(stretch:number)=>void}
+export interface PipSprite {root:SVGGElement;setPose:(pose:PipPose)=>void;setStretch:(stretch:number)=>void;setWalkCycle:(cycle?:number)=>void}
 const colours=[['#ffd78c','#fff0ba'],['#ffc6b9','#fff0df'],['#d8c5f4','#f6eaff'],['#bfe7bb','#ecf8d5'],['#f8d49d','#fff4c7']];
 // Original, reusable vector character. Local origin is the centre of the body,
 // matching the world position supplied by the flight renderer.
@@ -14,8 +14,8 @@ export function createPip(parent:Element,variant=0):PipSprite{
  const shape=(tag:string,attrs:Record<string,string|number>,p:Element=body)=>svgNode(tag,attrs,p);
  // Small fluffy ears, feet and a soft rounded body.
  shape('path',{d:'M-.145 -.10 Q-.245 -.20 -.235 -.055 Q-.224 .015 -.15 -.01 M.145 -.10 Q.245 -.20 .235 -.055 Q.224 .015 .15 -.01',fill:fur,stroke:ink,'stroke-width':.016,'stroke-linejoin':'round'});
- shape('ellipse',{cx:-.095,cy:.172,rx:.067,ry:.038,fill:fur,stroke:ink,'stroke-width':.014});
- shape('ellipse',{cx:.095,cy:.172,rx:.067,ry:.038,fill:fur,stroke:ink,'stroke-width':.014});
+ const footL=shape('ellipse',{cx:-.095,cy:.172,rx:.067,ry:.038,fill:fur,stroke:ink,'stroke-width':.014});
+ const footR=shape('ellipse',{cx:.095,cy:.172,rx:.067,ry:.038,fill:fur,stroke:ink,'stroke-width':.014});
  shape('path',{d:'M-.188 .015 C-.194 -.112 -.136 -.184 -.04 -.184 Q-.07 -.235 .015 -.197 Q.065 -.235 .085 -.17 C.177 -.14 .202 -.043 .184 .065 C.168 .158 .103 .188 0 .186 C-.105 .188 -.176 .148 -.188 .015Z',fill:fur,stroke:ink,'stroke-width':.017,'stroke-linejoin':'round'});
  shape('ellipse',{cx:0,cy:.085,rx:.134,ry:.087,fill:light,opacity:.76});
  // Arms are re-posed on launch so the Pip appears to relish the flight.
@@ -44,14 +44,19 @@ export function createPip(parent:Element,variant=0):PipSprite{
  for(const x of [-.17,.13])shape('path',{d:'M'+x+' -.27 l.025 .045 .05 .005 -.037 .032 .010 .05 -.048 -.023 -.044 .025 .008 -.05 -.038 -.032 .05 -.005Z'},dizzy);
  const dazed=shape('g',{display:'none',stroke:'#49332b','stroke-width':.014,'stroke-linecap':'round',fill:'none'});
  for(const x of [-.066,.066])shape('path',{d:'M'+(x-.022)+' -.012 l.044 .044 M'+(x+.022)+' -.012 l-.044 .044'},dazed);
+ const sadEyes=shape('g',{display:'none',fill:'none',stroke:'#49332b','stroke-width':.014,'stroke-linecap':'round'});
+ for(const x of [-.066,.066]){
+  shape('path',{d:'M'+(x-.022)+' .006 Q'+x+' .023 '+(x+.022)+' .006'},sadEyes);
+  shape('path',{d:'M'+(x-.025)+' -.019 l.041 .010'},sadEyes);
+ }
  const setPose=(pose:PipPose)=>{
-  const flying=pose==='flying',splat=pose==='splat',excited=pose==='excited'||flying;
+  const flying=pose==='flying',splat=pose==='splat',excited=pose==='excited'||flying,sad=pose==='rolling'||pose==='disappointed'||pose==='walking';
   mouth.setAttribute('d',excited?'M-.062 .058 Q0 .079 .062 .058 Q.057 .135 0 .137 Q-.057 .135 -.062 .058Z':'M-.048 .066 Q0 .109 .048 .066');
   mouth.setAttribute('fill',excited?'#6d3b36':'none');tongue.setAttribute('display',excited?'inline':'none');
-  eyes.setAttribute('display',flying||splat?'none':'inline');happyEyes.setAttribute('display',flying?'inline':'none');dazed.setAttribute('display',splat?'inline':'none');dizzy.setAttribute('display',splat?'inline':'none');if(splat)mouth.setAttribute('d','M-.035 .093 Q0 .057 .035 .093');
-  left.setAttribute('d',flying?'M-.165 .045 Q-.255 .010 -.267 -.052':'M-.165 .045 Q-.245 .017 -.221 -.068');
-  right.setAttribute('d',flying?'M.165 .045 Q.255 .010 .267 -.052':'M.165 .045 Q.245 .017 .221 -.068');
+  eyes.setAttribute('display',flying||splat||sad?'none':'inline');happyEyes.setAttribute('display',flying?'inline':'none');dazed.setAttribute('display',splat?'inline':'none');dizzy.setAttribute('display',splat?'inline':'none');sadEyes.setAttribute('display',sad?'inline':'none');if(splat||sad)mouth.setAttribute('d','M-.035 .093 Q0 .057 .035 .093');
+  left.setAttribute('d',flying?'M-.165 .045 Q-.255 .010 -.267 -.052':sad?'M-.165 .045 Q-.192 .088 -.183 .139':'M-.165 .045 Q-.245 .017 -.221 -.068');
+  right.setAttribute('d',flying?'M.165 .045 Q.255 .010 .267 -.052':sad?'M.165 .045 Q.192 .088 .183 .139':'M.165 .045 Q.245 .017 .221 -.068');
  };
  setPose('idle');
- return {root:g,setPose,setStretch:(s)=>body.setAttribute('transform','scale('+s+' '+(1/s)+')')};
+ return {root:g,setPose,setStretch:(s)=>body.setAttribute('transform','scale('+s+' '+(1/s)+')'),setWalkCycle:(cycle)=>{const dy=cycle===undefined?0:.035*Math.sin(cycle*2*Math.PI);footL.setAttribute('transform','translate(0 '+dy+')');footR.setAttribute('transform','translate(0 '+(-dy)+')');}};
 }
