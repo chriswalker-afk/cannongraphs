@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {lostArches} from '../src/levels/worlds/lostArches';
 import {parabolaPeaks} from '../src/levels/worlds/parabolaPeaks';
 import {worlds,levels,worldForLevel,nextLevel,levelPosition} from '../src/levels/catalog';
-import type {Level,Cannon} from '../src/levels/schema';
+import type {Level} from '../src/levels/schema';
 import type {Point} from '../src/engine/coordinates';
 import {auditSolution} from '../src/levels/qa';
 import {parseFlightEquation,parseLinearEquation,parseQuadraticEquation,isQuadratic,evaluateQuadratic,type FlightEquation} from '../src/engine/equations/linear';
@@ -69,7 +69,7 @@ function openHeights(l:Level,x:number):Interval[]{
  for(const {bounds:b} of l.obstacles)if(x>=b.minX&&x<=b.maxX){
   ranges=ranges.flatMap(([lo,hi])=>{
    if(b.maxY<=lo||b.minY>=hi)return [[lo,hi] as Interval];
-   const out:Interval[]=[];if(lo<=b.minY)out.push([lo,b.minY]);if(b.maxY<=hi)out.push([b.maxY,hi]);return out;
+   const out:Interval[]=[];if(lo<b.minY)out.push([lo,b.minY]);if(b.maxY<hi)out.push([b.maxY,hi]);return out;
   });
  }
  return ranges;
