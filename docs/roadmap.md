@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Next: PR2. Ensure the marked anchor coincides with the grid, equal coordinate scales survive resize, hover/tap/focus reveals precise coordinates, and all scenery uses world units. Test narrow and short screens. No flight engine yet.
+Next: PR5. Reuse the Pip and launch cues, compute the true flight and first collision/capture event in world units, animate the actual equation until that event, and show a harmless splat or exit arrival. Keep attempt accounting for PR6.
