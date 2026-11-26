@@ -24,10 +24,10 @@ const logMid=1+Math.E,logEnd=1+Math.E**2;
 export const beyondGraphiverse:readonly Level[]=[
  level(1,'Starburst','Use exponential growth with base 2.',b1,
   [cannon('A','exponential',0,1)],p(3,8),[
-   perch('launch-stand',0,1),...gate('growth-slot',2,.12,3.15,4.9,b1),perch('exit-stand',3,8,2.8)],[[1,2],[2,4]]),
+   perch('launch-stand',0,1),...gate('growth-slot',2,.12,2.95,5.3,b1),perch('exit-stand',3,8,2.8)],[[1,2],[2,4]]),
  level(2,'Fading signal','Use exponential decay, with a base between zero and one.',b2,
   [cannon('A','exponential',0,8)],p(3,1),[
-   perch('launch-stand',0,8,2.8),...gate('decay-slot',1,.10,3.1,5,b2),perch('exit-stand',3,1)],[[1,4],[2,2]]),
+   perch('launch-stand',0,8,2.8),...gate('decay-slot',1,.10,2.85,5.25,b2),perch('exit-stand',3,1)],[[1,4],[2,2]]),
  level(3,'Natural reversal','Reflect and translate a natural exponential. Exact x: gem 1+ln(2), exit 1+ln(4).',b3,
   [cannon('A','exponential',1,5)],p(naturalEnd,2),[
    perch('launch-stand',1,5,1.9),...gate('natural-slot',naturalMid,.07,3.25,4.75,b3),perch('exit-stand',naturalEnd,2,2.1)],[[naturalMid,4]]),
@@ -56,7 +56,7 @@ export const beyondGraphiverse:readonly Level[]=[
    perch('launch-stand',-1,0,2),...gate('tangent-slot',0,.15,1.15,2.85,b10),perch('exit-stand',1,4,2.4)],[[0,2]]),
  level(11,'Deep-space relay','Combine exponential growth, a decreasing logarithm and a two-period sine wave.',b11,
   [cannon('A','exponential',0,1),cannon('B','logarithmic',2,4),cannon('C','wave',5,2)],p(13,2),[
-   perch('launch-stand',0,1),...gate('boost-slot',1.8,.07,2.95,4.1,b11),perch('relay-stand',2,4,2),
+   perch('launch-stand',0,1),...gate('boost-slot',1.8,.04,2.65,4.5,b11),perch('relay-stand',2,4,2),
    ...gate('log-transfer',3.5,.12,1.8,3.2,b11),perch('wave-stand',5,2,2),
    ...gate('wave-crest-one',6,.15,3.3,4.7,b11),...gate('wave-trough-one',8,.15,-.7,.7,b11),
    ...gate('wave-crest-two',10,.15,3.3,4.7,b11),...gate('wave-trough-two',12,.15,-.7,.7,b11),
