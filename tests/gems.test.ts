@@ -62,8 +62,9 @@ test('continuous linear contact includes a tangent and excludes a nearby miss',(
 });
 test('quadratic contact follows the curve rather than its chord, including vertex tangency',()=>{
  const l=get('3-01'),leg=simulateQuadraticAttempt(parseQuadraticEquation('x²'),l.cannons[0],l);
- assert.deepEqual(collectRouteGems([gem('on-curve',2,4),gem('on-chord',2,5)],[leg]).map(h=>h.gemId),['on-curve']);
+ assert.deepEqual(collectRouteGems([gem('on-curve',2,4)],[leg]).map(h=>h.gemId),['on-curve']);
  const arch=solve('3-10').legs[0],r=PIP_RADIUS+GEM_RADIUS;
+ assert.deepEqual(collectRouteGems([gem('on-arch',4,6.5),gem('on-chord',4,2)],[arch]).map(h=>h.gemId),['on-arch']);
  const tangent=collectRouteGems([gem('touch',4,6.5+r),gem('miss',4,6.5+r+.00001)],[arch]);
  assert.deepEqual(tangent.map(h=>h.gemId),['touch']);near(tangent[0].progress,.5,2e-6);
 });
@@ -97,7 +98,7 @@ test('pickup timeline never credits a gem before the corresponding leg reaches i
  assert.deepEqual(gemsAt(reduced,Infinity),bankedGems(r));
 });
 test('gems are optional and do not change creature scoring or multiply on rapid-fire',()=>{
- const l=get('3-01'),alternative=simulateRoute(l,new Map([['A',parseQuadraticEquation('x²/2+2x-3/2')]]));
+ const l=get('3-01'),alternative=simulateRoute(l,new Map([['A',parseQuadraticEquation('-x²+8x-6')]]));
  assert.equal(alternative.event.kind,'exit');assert.ok(alternative.gemHits.length<l.gems!.length);
  const all=solve('3-01');
  for(const result of [all,alternative]){

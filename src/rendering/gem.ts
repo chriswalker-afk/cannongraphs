@@ -8,6 +8,8 @@ export function renderGem(parent:Element,gem:Gem,project:(p:Point)=>Point,scale:
  const p=project(gem.position),g=el('g',{transform:'translate('+p.x+' '+p.y+') scale('+scale+')',class:'trajectory-gem','data-gem-state':'waiting'},parent) as SVGGElement;
  el('circle',{r:Math.max(GEM_RADIUS,9/scale),fill:'transparent'},g);
  const core=el('g',{class:'gem-core','pointer-events':'none'},g);
+ // A non-colliding locator ring keeps the tiny gem discoverable at wide zooms.
+ el('circle',{r:Math.max(.22,5/scale),fill:'none',stroke:'#176e70','stroke-width':Math.max(.02,1.15/scale),'stroke-dasharray':Math.max(.035,2/scale)+' '+Math.max(.035,2/scale),opacity:.85},core);
  el('path',{d:'M0 -.14 L.12 -.045 .08 .075 0 .14 -.08 .075 -.12 -.045Z',fill:'#45c6bc',stroke:'#175e64','stroke-width':.022,'stroke-linejoin':'round'},core);
  el('path',{d:'M0 -.14 L.04 -.04 0 .14 -.04 -.04Z',fill:'#b9fff0',opacity:.8},core);
  el('path',{d:'M-.12 -.045 H.12 L.04 -.04 0 .14 -.04 -.04Z',fill:'#198d92',opacity:.65},core);
