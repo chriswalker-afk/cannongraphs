@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phases 1–3 complete: all seven cannon families and 72 levels across six worlds, with optional gems. Next Phase 4: PR21 animated home screen; PR22 world and level selection; PR23 learning modes; PR24 progress and achievements; PR25 creature workshop; PR26 cannon customisation; PR27 sound; PR28 classroom QA and accessibility.
+Phases 1–3 complete: all seven cannon families and 72 levels across six worlds, with optional gems. Phase 4 begins with PR21 animated home screen. Next: PR22 world and level selection; PR23 learning modes; PR24 progress and achievements; PR25 creature workshop; PR26 cannon customisation; PR27 sound; PR28 classroom QA and accessibility.
