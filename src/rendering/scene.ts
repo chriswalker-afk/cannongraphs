@@ -17,6 +17,7 @@ import {renderFactoryScenery} from './factoryScenery';
 import {renderCosmicScenery} from './cosmicScenery';
 import {flightPath} from './flightPath';
 import {renderGem} from './gem';
+import {renderCannonArt} from './cannonArt';
 import {gemTimeline,gemsAt,bankedGems,type TimedGemHit} from '../animations/gemTimeline';
 
 type Inspection={id:string;label:string;detail:string;point:Point;lines?:string[];bounds?:Bounds};
@@ -211,17 +212,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    g.classList.add('cannon-target');cannonTargets.set(c.id,g);
    const body=el('g',{transform:'scale('+c.direction+' 1)'},g);
    el('rect',{x:-.84,y:-.30,width:1.16,height:.93,rx:.18,fill:'#fff1bd','fill-opacity':.65,stroke:'#a86e24','stroke-width':.037,'stroke-dasharray':'.085 .045',class:'planning-halo','pointer-events':'none'},body);
-   // Mouth is at (0,0); artwork extends away from the exact launch point.
-   el('ellipse',{cx:-.37,cy:.47,rx:.37,ry:.09,fill:'#584d42','fill-opacity':.35},body);
-   el('rect',{x:-.74,y:.35,width:.73,height:.12,rx:.05,fill:'#a77347',stroke:'#694c38','stroke-width':.025},body);
-   el('circle',{cx:-.38,cy:.29,r:.18,fill:'#b38856',stroke:'#715039','stroke-width':.035},body);
-   const barrel=el('g',{transform:'rotate(-'+BARREL_ANGLE+')'},body);
-   barrels.set(c.id,barrel);
-   el('rect',{x:-.70,y:-.17,width:.65,height:.34,rx:.1,fill:style.color,stroke:'#254763','stroke-width':.035},barrel);
-   el('path',{d:'M-.60 -.105 H-.23',stroke:'#d9f4ff','stroke-width':.045,'stroke-linecap':'round',opacity:.75},barrel);
-   el('rect',{x:-.15,y:-.21,width:.15,height:.42,rx:.035,fill:style.color,stroke:'#254763','stroke-width':.035},barrel);
-   el('ellipse',{cx:0,cy:0,rx:.045,ry:.16,fill:'#153147'},barrel);
-   el('text',{x:-.37,y:.06,'text-anchor':'middle','font-size':.21,fill:'white','font-weight':800},barrel,style.symbol);
+   const barrel=renderCannonArt(body,c.type,BARREL_ANGLE);barrels.set(c.id,barrel);
    el('circle',{r:.12,fill:'white','fill-opacity':.2,stroke:'#fff','stroke-width':.028},g);
    el('circle',{r:.044,fill:'#fff',stroke:'#203d54','stroke-width':.022},g);
    el('text',{x:0,y:-.35,'text-anchor':'middle','font-size':.25,'font-weight':800,fill:'#203d54',stroke:'#eaf8f8','stroke-width':.05,'paint-order':'stroke'},g,c.id+(c.direction===-1?' ←':' →'));

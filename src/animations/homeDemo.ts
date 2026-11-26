@@ -15,7 +15,7 @@ const wide:Level={
  cannons:[{id:'A',type:'linear',position:{x:1.5,y:2},direction:1},{id:'B',type:'quadratic',position:{x:6,y:4},direction:1},{id:'C',type:'cubic',position:{x:12,y:4},direction:1},{id:'D',type:'wave',position:{x:18,y:6},direction:1}],
  exit:{x:24,y:6},obstacles:[
   floor({minX:-1,maxX:26,minY:0,maxY:10},.35),
-  platform('start-isle',.35,2.2,.4,.85),platform('arch-isle',5.25,6.65,2.2,2.65),
+  platform('start-isle',-.95,2.2,.4,.85),platform('arch-isle',5.25,6.65,2.2,2.65),
   wall('arch-ridge',8.5,9.5,.35,5.65),platform('cubic-isle',11.35,12.65,2.1,2.6),
   platform('wave-isle',17.4,18.65,4.1,4.6),platform('distant-isle',20.4,21.6,2.2,2.75),
   platform('portal-isle',23.65,24.8,4.1,4.6)
@@ -26,7 +26,7 @@ const compact:Level={
  cannons:[{id:'A',type:'linear',position:{x:1,y:2},direction:1},{id:'B',type:'quadratic',position:{x:6,y:3},direction:-1},{id:'C',type:'wave',position:{x:2,y:7},direction:1}],
  exit:{x:7,y:7},obstacles:[
   floor({minX:-.7,maxX:8.4,minY:0,maxY:9.5},.35),
-  platform('start-isle',.25,1.5,.5,.85),platform('turn-isle',5.85,6.8,1.55,1.9),
+  platform('start-isle',-.65,1.5,.5,.85),platform('turn-isle',5.85,6.8,1.55,1.9),
   platform('wave-isle',1.65,2.5,5.25,5.65),platform('portal-isle',6.65,7.65,5.1,5.55)
  ]
 };
