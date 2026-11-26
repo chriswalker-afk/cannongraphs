@@ -10,7 +10,7 @@ export function createLaunchVisual(parent:Element){
  const pip=createPip(layer);
  const hide=()=>layer.setAttribute('display','none');
  hide();
- return {hide,paint(frame:DemoFrame,origin:Point,direction:1|-1,angle:number,project:(p:Point)=>Point,scale:number){
+ return {hide,paint(frame:DemoFrame,origin:Point,direction:1|-1,angle:number,project:(p:Point)=>Point,scale:number,size=1){
   layer.setAttribute('display','inline');
   const a=project(origin),v=barrelVector(direction,angle);
   smoke.setAttribute('transform','translate('+a.x+' '+a.y+') scale('+scale+')');
@@ -27,7 +27,7 @@ export function createLaunchVisual(parent:Element){
   if(frame.pip){
    const p=project(frame.pip);
    pip.root.setAttribute('display','inline');pip.root.setAttribute('opacity',String(frame.opacity));
-   pip.root.setAttribute('transform','translate('+p.x+' '+p.y+') scale('+scale+') rotate('+frame.tilt+')');
+   pip.root.setAttribute('transform','translate('+p.x+' '+p.y+') scale('+(scale*size)+') rotate('+frame.tilt+')');
    pip.setPose(frame.pose);pip.setStretch(frame.stretch);
   }else pip.root.setAttribute('display','none');
  }};

@@ -1,0 +1,11 @@
+# PR5 — Real flight and collision engine
+
+Launch now accepts a syntactically valid linear equation and snapshots it before firing. No path is displayed while editing. The cannon rotates only on launch to avoid revealing the gradient beforehand. The Pip's centre follows the computed line, with no gravity or trajectory correction. A source mismatch causes a local harmless misfire rather than teleporting the Pip. The queue is a repeatable practice queue for this PR; no lives are consumed and no scoring or auto-fire occurs until PR6/7.
+
+Geometry: continuous swept disk with nominal radius 0.20 world units against the same axis-aligned terrain rectangles used by rendering. The disk is a simplified body hitbox; decorative ears, limbs, squash/stretch and scenery are not collidable. Strip and rounded-corner intersection finds the first contact, including tangent contact. The world boundary limits the Pip's centre. Exit capture requires the line's y value at the marked exit x to match within 1e-7 world units, with no snapping; obstacles at or before capture take precedence. Source tolerance remains 1e-9. These tolerances are numerical, not a broad visual hitbox. Only the exit is a destination in this single-cannon PR; cannon chaining arrives in PR8.
+
+Animated phases reuse loading, charge, recoil, smoke and Pip artwork. The attempted line appears progressively, stops at the event, and remains as a dashed trace until editing or launching again. Misfires have no fictitious trace. Failure shows comic flattening/dizzy stars and a red marker; success uses a shrinking Pip and green marker. Reduced motion uses discrete flight poses and suppresses strong motion. Editor and launch are locked while the attempt runs, camera controls remain available. Outcome text comes from the actual result.
+
+Manual QA pending: try y=x (exit), y=2-x (floor), y=1 (wall), y=x+1 (misfire), invalid x² (launch disabled), y=1.01x-.01 (near miss). Check equation edits clear old trails, resize and zoom during flight, repeated clicks, reduced motion and narrow screen layout. The nine new pure tests cover mathematical accuracy and continuous collision behavior, not visual browser QA.
+
+Next: PR6 — attempt budget, immutable state machine, retry/reset, terminal success/failure; PR7 will add rapid-fire and scoring.

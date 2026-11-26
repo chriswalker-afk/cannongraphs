@@ -11,7 +11,7 @@ export function mountPipQueue(root:HTMLElement,total:number){
  }
  const setBusy=(busy:boolean)=>{
   icons[0]?.classList.toggle('demo-away',busy);
-  count.textContent=busy?(total-1)+' waiting · 1 rehearsing':total+' Pips ready';
+  count.textContent=busy?(total-1)+' waiting · 1 flying':total+' Pips ready';
   root.setAttribute('aria-label',count.textContent);
  };
  setBusy(false);return {setBusy};
