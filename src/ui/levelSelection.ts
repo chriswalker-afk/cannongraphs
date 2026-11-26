@@ -6,8 +6,9 @@ import {beginSelection,selectWorld,selectMode,backToModes,selectLevel,backToWorl
 import {renderWorldMenuArt} from '../rendering/worldMenuArt';
 import {learningModes,modePolicy,modeBudgetLabel,modeObjective,type LearningMode} from '../game/learningModes';
 import {createPip,svgNode} from '../rendering/pip';
+import {emptyProgress,getRecord,recordStars,summarizeProgress,type Progress} from '../game/progress';
 
-interface Options {preferredId?:string;preferredMode?:LearningMode;openCurrentWorld?:boolean;onHome:()=>void;onPlay:(level:Level,mode:LearningMode)=>void}
+interface Options {progress?:Progress;preferredId?:string;preferredMode?:LearningMode;openCurrentWorld?:boolean;onHome:()=>void;onPlay:(level:Level,mode:LearningMode)=>void}
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,className:string,parent:Element,text?:string):HTMLElementTagNameMap[K]{
  const e=document.createElement(tag);e.className=className;if(text!==undefined)e.textContent=text;parent.append(e);return e;
 }
@@ -23,6 +24,7 @@ function familyChip(parent:Element,type:CannonType,count?:number){
  element('span','',chip,cannonTypes[type].label+(count!==undefined&&count>1?' ×'+count:''));
 }
 export function mountLevelSelection(root:HTMLElement,options:Options){
+ const progress=options.progress??emptyProgress();
  let state=beginSelection(options.preferredId,options.openCurrentWorld,options.preferredMode),disposed=false;
  let refreshLevel:()=>void=()=>{};
  function screen(title:string,subtitle:string,backText:string,back:()=>void){
@@ -42,13 +44,13 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   const grid=element('div','world-grid',main);grid.setAttribute('role','group');grid.setAttribute('aria-label','Worlds');
   const cards=new Map<number,HTMLButtonElement>();
   for(const w of worlds){
-   const identity=identityForWorld(w.number);
+   const identity=identityForWorld(w.number),summary=summarizeProgress(progress,w.levels);
    const card=action(grid,'world-card','',()=>{
     if(disposed)return;
     state=selectWorld(state,w.number);if(state.step==='modes')renderModes();
    });
    theme(card,w);cards.set(w.number,card);
-   card.setAttribute('aria-label','World '+w.number+': '+w.name+'. '+identity.focus+'. '+w.levels.length+' levels.');
+   card.setAttribute('aria-label','World '+w.number+': '+w.name+'. '+identity.focus+'. '+summary.completed+' of '+w.levels.length+' levels completed.');
    const art=element('span','world-card-art',card);art.setAttribute('aria-hidden','true');renderWorldMenuArt(art,w.number);
    const flag=element('span','world-number',art,'WORLD '+String(w.number).padStart(2,'0'));
    flag.setAttribute('aria-hidden','true');
@@ -56,7 +58,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
    element('strong','world-card-name',copy,w.name);
    element('span','world-card-focus',copy,identity.focus);
    const row=element('span','world-card-bottom',copy);
-   element('span','',row,w.levels.length+' levels');
+   element('span','',row,summary.completed+' / '+w.levels.length+' completed');
    element('span','world-card-arrow',row,'→').setAttribute('aria-hidden','true');
   }
   if(focusNumber!==undefined&&cards.has(focusNumber))cards.get(focusNumber)!.focus();
@@ -79,7 +81,8 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
    const copy=element('span','mode-card-copy',card);
    element('strong','mode-card-name',copy,p.name);element('span','mode-card-tagline',copy,p.tagline);
    element('span','mode-card-budget',copy,modeBudgetLabel(p.id));element('span','mode-card-description',copy,p.description);
-   element('span','mode-card-rating',copy,p.unlimited?'Practice completion · no ranked stars':'Up to 3 stars');
+   const summary=summarizeProgress(progress,w.levels).modes[p.id];
+   element('span','mode-card-rating',copy,summary.completed+' / '+w.levels.length+' completed'+(p.unlimited?' · Practice':' · '+summary.stars+' stars'));
    element('span','mode-card-action',copy,'Choose '+p.name+' →');
   }
   if(focusCard)focusCard.focus();else h1.focus();
@@ -110,7 +113,9 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
     if(disposed)return;
     state=selectLevel(state,l.id);refreshLevel();
    });
-   tile.setAttribute('aria-label','Level '+(i+1));tile.setAttribute('aria-pressed','false');buttons.set(l.id,tile);
+   const record=getRecord(progress,l.id,mode),rating=recordStars(record,l,mode);
+   if(record){tile.dataset.completed='true';const mark=element('span','level-progress-mark',tile,rating===null?'✓':'★'.repeat(rating));mark.setAttribute('aria-hidden','true');}
+   tile.setAttribute('aria-label','Level '+(i+1)+(record?(rating===null?', practice complete':', '+rating+' out of 3 stars'):', not completed'));tile.setAttribute('aria-pressed','false');buttons.set(l.id,tile);
   }
   const panel=element('section','level-details',shell);panel.setAttribute('aria-label','Selected level');
   const info=element('div','level-details-info',panel);info.setAttribute('aria-live','polite');info.setAttribute('aria-atomic','true');
@@ -138,7 +143,9 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
    element('span','level-fact',facts,s.cannonCount+' '+(s.cannonCount===1?'cannon':'cannons'));
    element('span','level-fact',facts,modeBudgetLabel(mode,level));
    if(s.gemCount)element('span','level-fact',facts,s.gemCount+' optional '+(s.gemCount===1?'gem':'gems'));
-   play.textContent='Play level '+s.index+' ▶';
+   const record=getRecord(progress,level.id,mode),rating=recordStars(record,level,mode);
+   if(record){const best=element('div','level-best',info);element('strong','',best,rating===null?'✓ Practice completed':'★'.repeat(rating)+' · Best '+rating+'/3 stars');element('span','',best,'Fewest test flights: '+record.bestAttempts+(s.gemCount?' · Gems: '+record.gems.length+'/'+s.gemCount:''));}
+   play.textContent=(record?'Replay level ':'Play level ')+s.index+' ▶';
   };
   refreshLevel();h1.focus();
  }

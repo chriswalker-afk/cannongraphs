@@ -4,6 +4,7 @@ import {learningModes,modeBudget,type LearningMode} from './learningModes';
 import type {LevelState} from './levelState';
 import {scoreStars,type Stars} from './scoring';
 import {bankedGems} from '../animations/gemTimeline';
+import {CAPTURE_EPSILON} from '../engine/simulation/linearAttempt';
 export interface LevelRecord {readonly bestAttempts:number;readonly gems:readonly string[]}
 export type ModeRecords=Readonly<Partial<Record<LearningMode,LevelRecord>>>;
 export interface Progress {readonly version:1;readonly records:Readonly<Partial<Record<string,ModeRecords>>>}
@@ -30,7 +31,9 @@ function addRecord(p:Progress,l:Level,mode:LearningMode,next:LevelRecord):Progre
 export function recordCompletion(p:Progress,level:Level,mode:LearningMode,s:LevelState):Progress{
  if(!levels.includes(level)||!learningModes.some(m=>m.id===mode))return p;
  const total=modeBudget(mode,level),unlimited=mode==='cadet';
+ const source=level.cannons.find(c=>c.id===level.startId)!.position;
  if(s.phase!=='success'||s.lastResult?.event.kind!=='exit'||s.active||s.celebration||s.waiting!==0||
+  !s.lastResult||Math.abs(s.lastResult.end.x-level.exit.x)>CAPTURE_EPSILON||Math.abs(s.lastResult.end.y-level.exit.y)>CAPTURE_EPSILON||s.lastResult.source.x!==source.x||s.lastResult.source.y!==source.y||
   s.total!==total||s.unlimited!==unlimited||!Number.isSafeInteger(s.failed)||s.failed<0||
   s.saved!==(unlimited?total:total-s.failed)||s.saved<1||!Number.isSafeInteger(s.failed+1))return p;
  return addRecord(p,level,mode,{bestAttempts:s.failed+1,gems:bankedGems(s.lastResult)});

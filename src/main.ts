@@ -17,19 +17,23 @@ import {levelStars} from './game/scoring';
 import {bankedGems} from './animations/gemTimeline';
 import {mountHomeScreen} from './ui/homeScreen';
 import {mountLevelSelection} from './ui/levelSelection';
-const app=document.querySelector<HTMLDivElement>('#app')!;
+import {browserProgressStore,type ProgressUpdate} from './game/progressStore';
+import {mountFlightLog} from './ui/flightLog';
+import {getRecord,recordStars} from './game/progress';
+const app=document.querySelector<HTMLDivElement>('#app')!,progressStore=browserProgressStore();
 let cleanup:()=>void=()=>{};
 let lastLevel:Level|undefined,lastMode:LearningMode='pilot';
 function showHome(focusPlay=false){
- cleanup();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay);
+ cleanup();const progress=progressStore.read();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay,{progress,persisted:progressStore.persisted(),onOpen:showFlightLog});
 }
+function showFlightLog(){cleanup();const progress=progressStore.read();cleanup=mountFlightLog(app,progress,progressStore.persisted(),()=>showHome(true));}
 function showSelection(openCurrentWorld=false){
- cleanup();cleanup=mountLevelSelection(app,{preferredId:lastLevel?.id,preferredMode:lastMode,openCurrentWorld,onHome:()=>showHome(true),onPlay:(level,mode)=>{mountLevel(level,mode);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();}});
+ cleanup();cleanup=mountLevelSelection(app,{progress:progressStore.read(),preferredId:lastLevel?.id,preferredMode:lastMode,openCurrentWorld,onHome:()=>showHome(true),onPlay:(level,mode)=>{mountLevel(level,mode);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();}});
 }
 function mountLevel(level:Level,mode:LearningMode){
  cleanup();lastLevel=level;lastMode=mode;
  const policy=modePolicy(mode),budget=modeBudget(mode,level);
-app.innerHTML=`<main><header><div class="brand"><button class="brand-mark home-return" id="home-return" type="button" aria-label="Return to home" title="Return to home (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><button class="game-level-menu" id="level-menu" type="button" title="Choose levels (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.4" fill="currentColor"/></svg><span>Levels</span></button></header><div class="toolbar"><div id="inspect-info" role="status">Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.</div><button type="button" id="graph-preview" class="graph-preview-toggle" aria-pressed="false" hidden>Show graph</button><span id="gem-readout" class="gem-readout" role="status" hidden></span><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><p id="resolution-gems" class="resolution-gems" hidden></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><footer class="planning-footer"><div class="planning-editor"><div id="flight-plan"></div><div id="equation-editor" class="equation-editor"></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label">Planning</small></div></footer></main>`;
+app.innerHTML=`<main><header><div class="brand"><button class="brand-mark home-return" id="home-return" type="button" aria-label="Return to home" title="Return to home (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><button class="game-level-menu" id="level-menu" type="button" title="Choose levels (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.4" fill="currentColor"/></svg><span>Levels</span></button></header><div class="toolbar"><div id="inspect-info" role="status">Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.</div><button type="button" id="graph-preview" class="graph-preview-toggle" aria-pressed="false" hidden>Show graph</button><span id="gem-readout" class="gem-readout" role="status" hidden></span><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><p id="resolution-gems" class="resolution-gems" hidden></p><p id="resolution-record" class="resolution-record" hidden></p><p id="resolution-achievements" class="resolution-achievements" hidden></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><footer class="planning-footer"><div class="planning-editor"><div id="flight-plan"></div><div id="equation-editor" class="equation-editor"></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label">Planning</small></div></footer></main>`;
 const world=worldForLevel(level.id)!,position=levelPosition(level.id)!,following=nextLevel(level.id);
 app.querySelector('main')!.dataset.world=String(world.number);app.querySelector('main')!.dataset.mode=mode;
 app.querySelector<HTMLElement>('#world-label')!.textContent=world.name+' · '+position.index+' / '+position.total+' · '+policy.name;
@@ -60,6 +64,17 @@ const status=app.querySelector<HTMLElement>('#flight-result')!,phaseLabel=app.qu
 const resolution=app.querySelector<HTMLElement>('#level-resolution')!,heading=app.querySelector<HTMLElement>('#resolution-heading')!,detail=app.querySelector<HTMLElement>('#resolution-detail')!,icon=app.querySelector<HTMLElement>('#resolution-icon')!;
 const stars=app.querySelector<HTMLElement>('#resolution-stars')!;
 let state=createLevelState(budget,1,policy.unlimited),feedbackHistory=createFeedbackHistory(),liveGemCount=0;
+let completion:ProgressUpdate|undefined;
+const recordText=app.querySelector<HTMLElement>('#resolution-record')!,achievementText=app.querySelector<HTMLElement>('#resolution-achievements')!;
+function updateCompletion(){
+ if(state.phase==='success'&&!completion)completion=progressStore.complete(level,mode,state);
+ const update=state.phase==='success'?completion:undefined;
+ recordText.hidden=!update;achievementText.hidden=!update?.unlocked.length;
+ if(!update)return;
+ const best=getRecord(update.after,level.id,mode),rating=recordStars(best,level,mode);
+ recordText.textContent=(update.improved?'New record! ':'Best record retained. ')+(rating===null?'Practice complete':rating+'/3 best stars')+(update.persisted?' · Saved':' · Session only (not saved)');
+ achievementText.textContent=update.unlocked.length?'✦ '+update.unlocked.map(a=>a.title).join(' · '):'';
+}
 const gemTotal=level.gems?.length??0,gemReadout=app.querySelector<HTMLElement>('#gem-readout')!,gemResult=app.querySelector<HTMLElement>('#resolution-gems')!;
 function updateGemReadout(){
  gemReadout.hidden=gemTotal===0;if(!gemTotal)return;
@@ -70,6 +85,7 @@ function updateGemReadout(){
 const hintView=mountFlightHint(app.querySelector<HTMLElement>('#flight-hint')!);
 function sync(){
  const editable=canPlan(state),terminal=isTerminal(state),success=state.phase==='success';
+ updateCompletion();
  const ready=countReady(plan);
  dock.update(plan,selected,editable);scene.setPlanningSelection(selected,editable);
  previewButton.disabled=!policy.preview||!editable||!editor.getDraft().equation;if(!editable&&previewOn)clearPreview();
@@ -118,7 +134,7 @@ function celebrate(){
 function hideStatus(){status.hidden=true;status.textContent='';delete status.dataset.outcome;hintView.update(null);}
 function reset(keepEquation:boolean){
  const next=restartLevel(state);if(next===state)return;
- state=next;clearPreview();feedbackHistory=createFeedbackHistory();scene.clearFlight();hideStatus();
+ state=next;completion=undefined;clearPreview();feedbackHistory=createFeedbackHistory();scene.clearFlight();hideStatus();
  plan=keepEquation?clearEvidence(plan):createFlightPlan(ids);selectCannon(level.startId,true);
  sync();editor.focus();
 }
