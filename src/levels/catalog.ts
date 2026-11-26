@@ -3,9 +3,10 @@ import {meadowLaunchers} from './worlds/meadowLaunchers';
 import {floatingIsles} from './worlds/floatingIsles';
 import {parabolaPeaks} from './worlds/parabolaPeaks';
 import {lostArches} from './worlds/lostArches';
-import {factoryPreview,universePreview} from './worlds/advancedPreviews';
+import {contraptionFactory} from './worlds/contraptionFactory';
+import {universePreview} from './worlds/advancedPreviews';
 export interface World {readonly number:number;readonly name:string;readonly levels:readonly Level[]}
-export const worlds:readonly World[]=[{number:1,name:'Meadow Launchers',levels:meadowLaunchers},{number:2,name:'The Floating Isles',levels:floatingIsles},{number:3,name:'Parabola Peaks',levels:parabolaPeaks},{number:4,name:'Lost Arches',levels:lostArches},{number:5,name:'Contraption Factory (preview)',levels:[factoryPreview]},{number:6,name:'Beyond the Graphiverse (preview)',levels:[universePreview]}];
+export const worlds:readonly World[]=[{number:1,name:'Meadow Launchers',levels:meadowLaunchers},{number:2,name:'The Floating Isles',levels:floatingIsles},{number:3,name:'Parabola Peaks',levels:parabolaPeaks},{number:4,name:'Lost Arches',levels:lostArches},{number:5,name:'Contraption Factory',levels:contraptionFactory},{number:6,name:'Beyond the Graphiverse (preview)',levels:[universePreview]}];
 export const levels:readonly Level[]=worlds.flatMap(w=>w.levels);
 const ids=new Set<string>();
 for(const world of worlds){

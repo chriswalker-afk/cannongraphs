@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phases 1–2 complete. PR14–17 add quadratic worlds and optional gems. PR18 adds the five advanced function families, connected-domain flight, bounded continuous collisions and two playable engine previews. Next PR19: full Contraption Factory cubic/reciprocal curriculum and environment; PR20: full Beyond the Graphiverse exponential/logarithmic/trigonometric curriculum and environment.
+Phases 1–2 complete. PR14–19 add quadratic and advanced function flight, optional gems and five complete worlds. Next PR20: full Beyond the Graphiverse exponential/logarithmic/trigonometric curriculum and environment; then Phase 4: animated home, selection, learning modes, progress and achievements, creature/cannon customisation, sound and classroom QA.
