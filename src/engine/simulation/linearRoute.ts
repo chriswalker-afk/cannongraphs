@@ -1,4 +1,4 @@
-import type {Level} from '../../levels/schema';
+import {validateLevel,type Level} from '../../levels/schema';
 import type {LinearEquation} from '../equations/linear';
 import {simulateLinearAttempt,type AttemptResult,type FlightEvent} from './linearAttempt';
 export interface RouteResult extends AttemptResult {
@@ -8,6 +8,7 @@ export interface RouteResult extends AttemptResult {
 export function isRouteResult(r:AttemptResult):r is RouteResult{return 'legs' in r;}
 export function routeLegs(r:AttemptResult):readonly AttemptResult[]{return isRouteResult(r)?r.legs:[r];}
 export function simulateLinearRoute(level:Level,equations:ReadonlyMap<string,LinearEquation>):RouteResult{
+ validateLevel(level);
  // Validate the whole plan before an attempt is reserved, even for a cannon that is bypassed.
  for(const c of level.cannons)if(c.type!=='linear'||!equations.has(c.id))throw new Error('Program every linear cannon before launching.');
  const byId=new Map(level.cannons.map(c=>[c.id,c]));

@@ -8,8 +8,8 @@ export const meadowRelay:Level={id:'1-02',world:1,title:'Cannon relay',objective
  {id:'B',type:'linear',position:{x:5,y:5},direction:1}
 ],exit:{x:10,y:2},obstacles:[
  {id:'floor',kind:'floor',bounds:{minX:0,maxX:12,minY:0,maxY:.4}},
- {id:'relay-ledge',kind:'platform',bounds:{minX:4.25,maxX:5.25,minY:3.45,maxY:3.85}},
+ {id:'relay-wall',kind:'wall',bounds:{minX:2.7,maxX:3.2,minY:.4,maxY:2.1}},
+ {id:'relay-ledge',kind:'platform',bounds:{minX:4.65,maxX:5.8,minY:3.85,maxY:4.25}},
  {id:'exit-ledge',kind:'platform',bounds:{minX:9.8,maxX:10.7,minY:1.25,maxY:1.48}}
 ]};
-// Intended route: y=x, then y=-3x/5+8. The platform under B is behind
-// the muzzle and sufficiently low to leave clearance for the incoming line.
+// Intended route: y=x, then y=-3x/5+8. The wall blocks the direct shortcut, and the ledge leaves clearance for both legs.

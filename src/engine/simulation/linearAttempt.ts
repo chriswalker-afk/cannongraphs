@@ -42,13 +42,13 @@ export function simulateLinearAttempt(e:LinearEquation,cannon:Cannon,level:Level
  // A capture uses the exact marked coordinate and must occur ahead of the source.
  // The closest capture wins, independent of cannon array order. Exit wins an exact tie.
  const targets:{position:Point;event:FlightEvent}[]=[{position:level.exit,event:{kind:'exit'}},...level.cannons.filter(c=>c.id!==cannon.id).sort((a,b)=>a.id.localeCompare(b.id)).map(c=>({position:c.position,event:{kind:'cannon' as const,cannonId:c.id}}))];
+ let alreadyCaptured=false;
  for(const target of targets){
   const forward=(target.position.x-start.x)*direction;
   if(forward<=GEOMETRY_EPS)continue;
   const targetY=evaluateLinear(e,target.position.x),dist=forward/Math.abs(v.x);
-  const alreadyCaptured=event.kind==='exit'||event.kind==='cannon';
   if(Math.abs(targetY-target.position.y)<=CAPTURE_EPSILON&&dist<=length+GEOMETRY_EPS&&(!alreadyCaptured||dist<length)){
-   length=dist;end={x:target.position.x,y:targetY};event=target.event;
+   length=dist;end={x:target.position.x,y:targetY};event=target.event;alreadyCaptured=true;
   }
  }
  // The earliest solid contact wins; contact at the capture instant also fails.
