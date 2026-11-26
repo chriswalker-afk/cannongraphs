@@ -1,7 +1,5 @@
 import './style.css';
-import {meadowPreview,meadowRelay} from './levels/worlds/meadow';
-import {terrainPreviews} from './levels/worlds/terrainPreviews';
-import {validateLevel} from './levels/schema';
+import {levels,worldForLevel,levelPosition,nextLevel} from './levels/catalog';
 import {mountScene} from './rendering/scene';
 import {mountEquationEditor} from './ui/equationEditor';
 import {mountPipQueue} from './ui/pipQueue';
@@ -14,12 +12,14 @@ import {createFeedbackHistory,recordAttemptFeedback} from './game/flightDiagnosi
 import {mountFlightHint} from './ui/flightHint';
 import {createLevelState,canPlan,canLaunch,beginAttempt,finishAttempt,restartLevel,isTerminal,advanceCelebration,finishCelebration} from './game/levelState';
 import {levelStars} from './game/scoring';
-const levels=[meadowPreview,meadowRelay,...terrainPreviews];levels.forEach(validateLevel);
 const app=document.querySelector<HTMLDivElement>('#app')!;
 let cleanup:()=>void=()=>{};
 function mountLevel(level:Level){
  cleanup();
-app.innerHTML=`<main><header><div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><div><h1>Cannon Graphs!</h1><p>Meadow Launchers</p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><div class="level"><label for="level-picker" class="picker-label">Level</label><select id="level-picker" aria-label="Choose preview level"></select></div></header><div class="toolbar"><div id="inspect-info" role="status">Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.</div><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><button id="replay-level" type="button"></button></div></section><footer class="planning-footer"><div class="planning-editor"><div id="flight-plan"></div><div id="equation-editor" class="equation-editor"></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label">Planning</small></div></footer></main>`;
+app.innerHTML=`<main><header><div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><div class="level"><label for="level-picker" class="picker-label">Level</label><select id="level-picker" aria-label="Choose level"></select></div></header><div class="toolbar"><div id="inspect-info" role="status">Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.</div><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><footer class="planning-footer"><div class="planning-editor"><div id="flight-plan"></div><div id="equation-editor" class="equation-editor"></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label">Planning</small></div></footer></main>`;
+const world=worldForLevel(level.id)!,position=levelPosition(level.id)!,following=nextLevel(level.id);
+app.querySelector<HTMLElement>('#world-label')!.textContent=world.name+' · '+position.index+' / '+position.total;
+app.querySelector<HTMLElement>('#level-objective')!.textContent=level.objective;
 const button=(id:string)=>document.querySelector<HTMLButtonElement>('#'+id)!;
 const scene=mountScene(app.querySelector<HTMLElement>('.stage')!,level,{in:button('zoom-in'),out:button('zoom-out'),reset:button('zoom-reset'),left:button('pan-left'),right:button('pan-right'),up:button('pan-up'),down:button('pan-down'),readout:document.querySelector('#zoom-readout')!,info:document.querySelector('#inspect-info')!,onCannonSelect:chooseCannon});
 
@@ -40,7 +40,7 @@ function chooseCannon(id:string){
  if(!canPlan(state))return;selectCannon(id);sync();editor.focus();
 }
 const queue=mountPipQueue(app.querySelector<HTMLElement>('#pip-queue')!,level.creatures);
-const launchButton=button('launch'),restartButton=button('restart-level'),replay=button('replay-level');
+const launchButton=button('launch'),restartButton=button('restart-level'),replay=button('replay-level'),advance=button('next-level');
 const status=app.querySelector<HTMLElement>('#flight-result')!,phaseLabel=app.querySelector<HTMLElement>('#phase-label')!;
 const resolution=app.querySelector<HTMLElement>('#level-resolution')!,heading=app.querySelector<HTMLElement>('#resolution-heading')!,detail=app.querySelector<HTMLElement>('#resolution-detail')!,icon=app.querySelector<HTMLElement>('#resolution-icon')!;
 const stars=app.querySelector<HTMLElement>('#resolution-stars')!;
@@ -58,13 +58,14 @@ levelPicker.disabled=state.phase==='launching'||state.phase==='celebrating';
  queue.update(state);
  phaseLabel.textContent=({planning:'Planning',launching:'Launching…',retry:'Adjust and retry',celebrating:'Rapid fire!',success:'Level complete',gameOver:'No Pips left'} as const)[state.phase];
  resolution.hidden=!terminal;
+ advance.hidden=!success||!following;
  if(terminal){
   resolution.dataset.outcome=success?'success':'failure';
   icon.textContent=success?'✦':'↻';
   const rating=levelStars(state)??0;
   stars.replaceChildren(...Array.from({length:3},(_,i)=>{const star=document.createElement('span');star.textContent='★';star.className=i<rating?'earned':'unearned';star.setAttribute('aria-hidden','true');return star;}));
   stars.setAttribute('aria-label',rating+' out of 3 stars');
-  heading.textContent=success?'Level complete!':'Out of Pips!';
+  heading.textContent=success?(!following||following.world!==level.world?'World complete!':'Level complete!'):'Out of Pips!';
   detail.textContent=success
    ?state.saved+' of '+state.total+' Pips reached the exit!'+(state.failed?' '+state.failed+' unsuccessful '+(state.failed===1?'attempt.':'attempts.'):' Perfect first flight!')
    :'All '+state.total+' Pips have used their attempts. Try the level again with a revised equation.';
@@ -102,6 +103,7 @@ editorRoot.addEventListener('equationchange',()=>{
 levelPicker.addEventListener('change',()=>{const next=levels.find(l=>l.id===levelPicker.value);if(next&&next!==level&&state.phase!=='launching'&&state.phase!=='celebrating')mountLevel(next);});
 restartButton.addEventListener('click',()=>reset(false));
 replay.addEventListener('click',()=>reset(true));
+advance.addEventListener('click',()=>{if(state.phase==='success'&&following){mountLevel(following);app.querySelector<HTMLSelectElement>('#level-picker')?.focus();}});
 launchButton.addEventListener('click',()=>{
  if(!canLaunch(state))return;
  const equations=snapshotPlan(plan);if(!equations)return;
@@ -121,4 +123,4 @@ sync();
 
 cleanup=scene.destroy;
 }
-mountLevel(meadowPreview);
+mountLevel(levels[0]);
