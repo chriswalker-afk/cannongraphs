@@ -1,3 +1,4 @@
+import {withAuthoredGems} from '../gems';
 import type {Bounds,Point} from '../../engine/coordinates';
 import type {Cannon,Level,Obstacle} from '../schema';
 import {floor,wall,ceiling,platform,narrowPassage} from '../terrain';
@@ -40,4 +41,4 @@ export const floatingIsles:readonly Level[]=[
   [island('launch-isle',-8,-4),platform('west-block',-6,-5.6,-2.4,4.8),
    ...narrowPassage('switchback-gate',{minX:-2,maxX:-1.6,minY:-7.6,maxY:4.25,gapBottom:-1.55,gapTop:-.25}),
    island('relay-isle',4,2),island('return-isle',-4,6),island('high-isle',8,6,2.4),island('exit-isle',12,-2)])
-];
+].map(withAuthoredGems);

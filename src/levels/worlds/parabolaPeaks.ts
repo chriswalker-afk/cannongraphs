@@ -1,3 +1,4 @@
+import {withAuthoredGems} from '../gems';
 import type {Bounds,Point} from '../../engine/coordinates';
 import type {Cannon,Level,Obstacle} from '../schema';
 import {floor,wall,platform,ceiling,narrowPassage} from '../terrain';
@@ -47,4 +48,4 @@ export const parabolaPeaks:readonly Level[]=[
    ...gate('valley-slot',9.5,10.5,-1.8,-.2,b12),perch('middle-perch',13,2,1.6),
    wall('second-peak',15,17,-3.6,4.6),perch('last-perch',19,2,1.6),
    ...gate('summit-slot',21.8,22.2,1.35,2.65,b12),perch('exit-perch',25,2,1.1)])
-];
+].map(withAuthoredGems);

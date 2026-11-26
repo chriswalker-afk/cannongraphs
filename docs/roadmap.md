@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phases 1–2 complete. PR14–16 introduce quadratic flight and the two complete quadratic worlds. Next: PR17 optional trajectory collectibles, with accurate continuous contact, attempt-local collection, successful-route replay, scoring integration and authored examples; PR18 advanced function framework; PR19 Contraption Factory; PR20 Beyond Graphiverse.
+Phases 1–2 complete. PR14–16 introduce quadratic flight and two quadratic worlds; PR17 adds optional trajectory gems, attempt-local collection and independent reward counts. Next: PR18 advanced function framework — safe family-aware input, domains and continuous trajectory/collision contracts; PR19 Contraption Factory; PR20 Beyond Graphiverse.

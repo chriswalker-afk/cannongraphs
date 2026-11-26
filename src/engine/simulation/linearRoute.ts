@@ -1,13 +1,16 @@
 import {validateLevel,type Level} from '../../levels/schema';
 import {isQuadratic,type FlightEquation} from '../equations/linear';
 import {simulateQuadraticAttempt} from './quadraticAttempt';
+import {collectRouteGems,type GemHit} from './gemContacts';
 import {simulateLinearAttempt,type AttemptResult,type FlightEvent} from './linearAttempt';
 export interface RouteResult extends AttemptResult {
  readonly legs:readonly AttemptResult[];
  readonly terminalCannonId:string;
+ readonly gemHits:readonly GemHit[];
 }
 export function isRouteResult(r:AttemptResult):r is RouteResult{return 'legs' in r;}
 export function routeLegs(r:AttemptResult):readonly AttemptResult[]{return isRouteResult(r)?r.legs:[r];}
+export function routeGemHits(r:AttemptResult):readonly GemHit[]{return isRouteResult(r)?r.gemHits:[];}
 export function simulateRoute(level:Level,equations:ReadonlyMap<string,FlightEquation>):RouteResult{
  validateLevel(level);
  // Validate the whole plan before an attempt is reserved, even for a cannon that is bypassed.
@@ -28,7 +31,7 @@ export function simulateRoute(level:Level,equations:ReadonlyMap<string,FlightEqu
  const first=legs[0],last=legs[legs.length-1],length=legs.reduce((sum,leg)=>sum+leg.length,0);
  // Summary retains the full path, not a straight line between the first and last points.
  return Object.freeze({cannonId:first.cannonId,event,source:first.source,start:first.start,end:last.end,
-  direction:first.direction,angle:first.angle,length,legs:Object.freeze(legs),terminalCannonId:last.cannonId,
+  direction:first.direction,angle:first.angle,length,legs:Object.freeze(legs),terminalCannonId:last.cannonId,gemHits:collectRouteGems(level.gems??[],legs),
   pointAt(progress:number){
    if(!Number.isFinite(progress)||progress<0||progress>1)throw new RangeError('Invalid route progress');
    if(progress===1)return {...last.end};

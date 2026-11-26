@@ -1,3 +1,4 @@
+import {withAuthoredGems} from '../gems';
 import type {Bounds,Point} from '../../engine/coordinates';
 import type {Cannon,Level,Obstacle} from '../schema';
 import {floor,platform,wall,ceiling,narrowPassage} from '../terrain';
@@ -52,4 +53,4 @@ export const meadowLaunchers:readonly Level[]=[
    perch('last-ledge',12,8,.25,.5,1.0),
    ...narrowPassage('final-gate',{minX:14,maxX:14.3,minY:.4,maxY:10,gapBottom:5.3,gapTop:6.6}),
    perch('exit-ledge',16,4,.12,.45,.9)])
-];
+].map(withAuthoredGems);
