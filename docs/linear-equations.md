@@ -1,0 +1,9 @@
+# PR 3: Linear equations
+
+The cannon editor accepts a typed expression or y = expression. It includes a compact symbol toolbar, fraction/bracket insertion at the caret, exact rational MathML typesetting, and accessible syntax/family feedback. A custom lightweight editor was chosen to avoid an external math-field dependency at this stage. It is not a full two-dimensional WYSIWYG equation editor: fractions are entered with slash and brackets and displayed as stacked fractions after successful parsing.
+
+The parser uses bounded exact rational polynomial arithmetic, no eval or generated code. It accepts horizontal lines, negative and fractional coefficients, decimals, implicit multiplication, parentheses and equivalent polynomial forms that simplify to a line. Powers have explicit bounds. Multiplication and division associate left to right, so 1/2x means (1/2)x; use 1/(2x) for a variable denominator, which is rejected because the function may be undefined. Variable denominators are intentionally rejected even if cancellation appears possible. Other function families are not implemented yet.
+
+The pure trajectory module evaluates y=mx+c at any world x and returns deterministic source-to-horizontal-boundary data and pointAt(progress). It never snaps the graph onto the source. A 1e-9 world-unit source tolerance handles numeric rounding; destination capture and obstacle clearance are deferred. The interface only validates syntax and family, not source, destination or obstacles. No graph preview, creature consumption or firing is enabled.
+
+Manual browser QA remaining: enter equivalent expressions, use toolbar with selected text and keyboard navigation, test errors and responsive footer, ensure no route is revealed and launch remains disabled. Next: PR4 character artwork, idle queue, loading and firing animation groundwork.
