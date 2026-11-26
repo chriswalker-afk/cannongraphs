@@ -1,0 +1,9 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {cameraTransform,initialCamera,panCamera,zoomCamera} from '../src/engine/camera';
+const bounds={minX:-4,maxX:12,minY:-3,maxY:7};
+const near=(a:number,b:number)=>assert.ok(Math.abs(a-b)<1e-8,a+' ≠ '+b);
+test('equal unit scales and exact round trip at desktop, short and portrait sizes',()=>{for(const v of [{width:960,height:540,padding:34},{width:320,height:440,padding:27},{width:850,height:180,padding:27}]){for(const zoom of [1,1.5,2.5]){const t=cameraTransform(bounds,v,{...initialCamera(bounds),zoom});const a=t.toScreen({x:2,y:3}),b=t.toScreen({x:3,y:4});near(b.x-a.x,t.scale);near(a.y-b.y,t.scale);const q=t.toWorld(a);near(q.x,2);near(q.y,3);}}});
+test('fit keeps all world corners inside padding',()=>{const v={width:320,height:440,padding:27},t=cameraTransform(bounds,v,initialCamera(bounds)),a=t.toScreen({x:bounds.minX,y:bounds.maxY}),b=t.toScreen({x:bounds.maxX,y:bounds.minY});assert.ok(a.x>=v.padding-1e-8&&a.y>=v.padding-1e-8&&b.x<=v.width-v.padding+1e-8&&b.y<=v.height-v.padding+1e-8);});
+test('zoom is bounded and selected anchor remains fixed when not clamped',()=>{const v={width:800,height:500,padding:20},c=initialCamera(bounds),t=cameraTransform(bounds,v,c),anchor={x:4.5,y:2.5},z=zoomCamera(bounds,v,c,2,anchor),u=cameraTransform(bounds,v,z);near(t.toScreen(anchor).x,u.toScreen(anchor).x);near(t.toScreen(anchor).y,u.toScreen(anchor).y);assert.equal(zoomCamera(bounds,v,c,99).zoom,2.5);assert.equal(zoomCamera(bounds,v,c,0).zoom,1);});
+test('pan stays within world and fit resets centre',()=>{const v={width:800,height:500,padding:20},c=zoomCamera(bounds,v,initialCamera(bounds),2.5),t=cameraTransform(bounds,v,panCamera(bounds,v,c,-100000,100000));assert.ok(t.visible.maxX<=bounds.maxX+1e-8&&t.visible.maxY<=bounds.maxY+1e-8);assert.deepEqual(zoomCamera(bounds,v,{zoom:2.5,center:{x:11,y:6}},1),initialCamera(bounds));});
