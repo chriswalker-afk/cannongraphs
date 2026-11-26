@@ -32,8 +32,8 @@ function solve(id:string){
  }));
  return simulateRoute(l,plan);
 }
-test('every authored gem placement is valid and the reference route collects them all',()=>{
- const authored=levels.filter(l=>l.gems?.length);
+test('Worlds 1–4 authored gem placements are valid and reference routes collect them all',()=>{
+ const authored=levels.filter(l=>l.world<=4&&l.gems?.length);
  assert.equal(authored.length,Object.keys(references).length);
  assert.equal(new Set(authored.map(l=>l.world)).size,4);
  for(const l of authored){

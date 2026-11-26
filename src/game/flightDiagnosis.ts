@@ -68,7 +68,7 @@ export function diagnoseFlight(level:Level,result:AttemptResult,equations:Readon
   const above=hit.normal.y>.8,below=hit.normal.y<-.8;
   const check=above?'Check the height of your graph above the obstacle.':below?'Check the height of your graph below the obstacle.':'Check the height of your graph across the obstacle’s width.';
   const comparison=above?'For a route above it, y must stay sufficiently above its top.':below?'For a route below it, y must stay sufficiently below its bottom.':'Decide whether the route should pass above or below it.';
-  const name=terrainLabel(o);
+  const name=terrainLabel(o,level.world);
   return make('collision','collision:'+o.id,'Clear the '+name.toLowerCase(),'The Pip hit the '+face+' with its centre near '+point(leg.end)+'. '+name+' spans x = '+n(b.minX)+' to '+n(b.maxX)+' and y = '+n(b.minY)+' to '+n(b.maxY)+'.',[
    check,
    'Use the obstacle’s bounds to compare the '+graph+'’s y-values with its top and bottom. '+comparison,

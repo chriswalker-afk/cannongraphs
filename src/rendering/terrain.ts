@@ -26,24 +26,43 @@ const ruinsPalette={
  platform:{base:'#b39a72',mortar:'#7e6b52',light:'#d6bc90',edge:'#738a5c',cap:'#9fb780'},
  ceiling:{base:'#82785e',mortar:'#5e584a',light:'#b1a17f',edge:'#72664e',cap:'#b7a684'}
 };
+const factoryPalette={
+ floor:{base:'#6d7c80',mortar:'#49595f',light:'#aebdc0',edge:'#80572c',cap:'#d6aa5e'},
+ wall:{base:'#89999b',mortar:'#56676c',light:'#b9c6c5',edge:'#806033',cap:'#d8b273'},
+ platform:{base:'#83979d',mortar:'#526a72',light:'#bdcdcc',edge:'#7c623e',cap:'#d9b882'},
+ ceiling:{base:'#6d7f8a',mortar:'#4d5e6a',light:'#adbbc4',edge:'#795c38',cap:'#c9aa76'}
+};
 const f=(n:number)=>String(n===0?0:n);
-export function terrainInspection(o:Obstacle){
+export function terrainInspection(o:Obstacle,world?:number){
  const b=o.bounds,{width,height}=terrainDimensions(o);
  const lines=['x: ['+f(b.minX)+', '+f(b.maxX)+']','y: ['+f(b.minY)+', '+f(b.maxY)+']'];
  // Bounds use authored coordinates; dimensions are rounded only for display.
  const size='Width '+f(Number(width.toFixed(6)))+' · height '+f(Number(height.toFixed(6)));
- return {label:terrainLabel(o),lines:[...lines,size],detail:lines.join(' · ')+' · '+size};
+ return {label:terrainLabel(o,world),lines:[...lines,size],detail:lines.join(' · ')+' · '+size};
 }
 // A nested SVG gives every texture an exact rectangular clip, including strokes.
 // Local units are world units. Decorative patterning never expands the hitbox.
-export function renderTerrain(parent:Element,o:Obstacle,project:(p:Point)=>Point,scale:number,floating=false,peaks=false,ruins=false):SVGGElement{
- const a=project({x:o.bounds.minX,y:o.bounds.maxY}),{width:w,height:h}=terrainDimensions(o),p=(ruins?ruinsPalette:peaks?peakPalette:floating?skyPalette:palette)[o.kind];
+export function renderTerrain(parent:Element,o:Obstacle,project:(p:Point)=>Point,scale:number,floating=false,peaks=false,ruins=false,factory=false):SVGGElement{
+ const a=project({x:o.bounds.minX,y:o.bounds.maxY}),{width:w,height:h}=terrainDimensions(o),p=(factory?factoryPalette:ruins?ruinsPalette:peaks?peakPalette:floating?skyPalette:palette)[o.kind];
  const group=svgNode('g',{'data-terrain-kind':o.kind},parent) as SVGGElement;
  const art=svgNode('svg',{x:a.x,y:a.y,width:w*scale,height:h*scale,viewBox:'0 0 '+w+' '+h,overflow:'hidden','aria-hidden':'true'},group);
  svgNode('rect',{width:w,height:h,fill:p.base},art);
  const cap=Math.min(h*.27,.14),isRoof=o.kind==='ceiling',top=isRoof?0:cap,bottom=isRoof?h-cap:h;
  const inner=Math.max(0,bottom-top);
- if(inner>0){
+ if(factory&&inner>0){
+  // Broad steel panels, inset bolt heads and a brass rim, all inside the clip.
+  const rows=Math.min(24,Math.max(1,Math.ceil(inner/.85))),rowH=inner/rows,cols=Math.min(24,Math.max(1,Math.ceil(w/1.25))),colW=w/cols;
+  for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
+   const x=col*colW,y=top+row*rowH;
+   svgNode('rect',{x,y,width:colW,height:rowH,fill:row%2===col%2?p.light:p.base,'fill-opacity':.16,stroke:p.mortar,'stroke-width':.024},art);
+   if(colW>.26&&rowH>.22){const r=Math.min(.048,colW*.13,rowH*.13);
+    for(const bx of [x+colW*.18,x+colW*.82])for(const by of [y+rowH*.22,y+rowH*.78]){
+     svgNode('circle',{cx:bx,cy:by,r,fill:p.mortar},art);
+     svgNode('circle',{cx:bx-r*.2,cy:by-r*.22,r:r*.4,fill:p.light},art);
+    }
+   }
+  }
+ }else if(inner>0){
   const rows=Math.min(28,Math.max(1,Math.ceil(inner/.32))),rowH=inner/rows,brick=Math.max(.64,w/36);
   for(let row=0;row<rows;row++){
    const y=top+row*rowH;

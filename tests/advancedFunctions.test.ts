@@ -8,6 +8,7 @@ import {simulateAdvancedAttempt} from '../src/engine/simulation/advancedAttempt'
 import {simulateRoute} from '../src/engine/simulation/linearRoute';
 import {auditSolution} from '../src/levels/qa';
 import {factoryPreview,universePreview} from '../src/levels/worlds/advancedPreviews';
+import {contraptionFactory} from '../src/levels/worlds/contraptionFactory';
 import {worlds,nextLevel,levels} from '../src/levels/catalog';
 import {flightPath} from '../src/rendering/flightPath';
 import {collectRouteGems} from '../src/engine/simulation/gemContacts';
@@ -114,7 +115,7 @@ function solve(l:Level,refs:Record<string,string>){
 }
 test('both new previews have continuous audited solutions and all existing levels remain available',()=>{
  assert.equal(worlds.slice(0,4).flatMap(w=>w.levels).length,48);
- assert.equal(nextLevel('4-12'),factoryPreview);assert.equal(nextLevel(factoryPreview.id),universePreview);
+ assert.equal(nextLevel('4-12'),contraptionFactory[0]);assert.equal(nextLevel(contraptionFactory[11].id),worlds[5].levels[0]);
  assert.equal(new Set(levels.map(l=>l.id)).size,levels.length);
  for(const [l,refs] of [[factoryPreview,factoryRefs],[universePreview,universeRefs]] as const){
   const audit=auditSolution(l,refs,l.cannons.map(c=>c.id));assert.equal(audit.result.event.kind,'exit');assert.ok(audit.minimumClearance>.025,l.id+' clearance '+audit.minimumClearance);
