@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phases 1–2 complete. PR14 introduces genuine quadratic input, continuous curve collisions, tangent animation, curved traces and mixed-family routes. Next: PR15 World 3 — Parabola Peaks, a full sequenced quadratic curriculum replacing the engine preview; PR16 Lost Arches; PR17 collectibles; PR18 advanced function framework; PR19 Contraption Factory; PR20 Beyond Graphiverse.
+Phases 1–2 complete. PR14 adds quadratic flight; PR15 provides twelve audited Parabola Peaks levels. Next: PR16 World 4 — Lost Arches, advanced quadratic reasoning, signed coordinates and more constrained mixed-family routes. PR17 collectibles; PR18 advanced function framework; PR19 Contraption Factory; PR20 Beyond Graphiverse.
