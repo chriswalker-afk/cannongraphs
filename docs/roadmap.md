@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phase 1 complete. PR8 introduced linear relay routes and route replays; PR9 adds visible per-cannon planning cards, scene selection, readiness and local tested/revise evidence. Next: PR10 reusable terrain and obstacle constraints, with clearance checks and authored examples. PR11 diagnostic mathematical feedback; PR12 twelve World 1 levels; PR13 World 2.
+Phase 1 complete. PR8–10 add multi-cannon routes, planning and reusable terrain with authored clearance checks. Next: PR11 diagnostic mathematical feedback based on actual failed legs, source mismatch, missed captures and collision constraints, without revealing solutions. PR12 twelve World 1 levels; PR13 World 2.

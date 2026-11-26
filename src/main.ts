@@ -1,5 +1,6 @@
 import './style.css';
 import {meadowPreview,meadowRelay} from './levels/worlds/meadow';
+import {terrainPreviews} from './levels/worlds/terrainPreviews';
 import {validateLevel} from './levels/schema';
 import {mountScene} from './rendering/scene';
 import {mountEquationEditor} from './ui/equationEditor';
@@ -11,7 +12,7 @@ import type {Level} from './levels/schema';
 import {attemptFeedback} from './game/attemptFeedback';
 import {createLevelState,canPlan,canLaunch,beginAttempt,finishAttempt,restartLevel,isTerminal,advanceCelebration,finishCelebration} from './game/levelState';
 import {levelStars} from './game/scoring';
-const levels=[meadowPreview,meadowRelay];levels.forEach(validateLevel);
+const levels=[meadowPreview,meadowRelay,...terrainPreviews];levels.forEach(validateLevel);
 const app=document.querySelector<HTMLDivElement>('#app')!;
 let cleanup:()=>void=()=>{};
 function mountLevel(level:Level){

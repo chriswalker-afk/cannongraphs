@@ -1,5 +1,5 @@
 import {cameraTransform,initialCamera,panCamera,zoomCamera,MIN_ZOOM,MAX_ZOOM,type Camera} from '../engine/camera';
-import type {Point,Viewport} from '../engine/coordinates';
+import type {Bounds,Point,Viewport} from '../engine/coordinates';
 import {cannonTypes} from '../game/cannons';
 import type {Level} from '../levels/schema';
 import {BARREL_ANGLE} from '../animations/launch';
@@ -9,8 +9,9 @@ import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {createLaunchVisual} from './launchVisual';
 import {makeRapidSchedule,sampleRapidFire,type RapidSchedule,type RapidCounts} from '../animations/rapidFire';
 import {createRapidVisual} from './rapidVisual';
+import {renderTerrain,terrainInspection} from './terrain';
 
-type Inspection={id:string;label:string;detail:string;point:Point};
+type Inspection={id:string;label:string;detail:string;point:Point;lines?:string[];bounds?:Bounds};
 const ns='http://www.w3.org/2000/svg';
 function el(tag:string,attrs:Record<string,string|number>={},parent?:Element,content?:string){
  const e=document.createElementNS(ns,tag);
@@ -120,13 +121,18 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const item=inspections.get(hovered??focused??pinned??'');
   controls.info.textContent=item?item.label+' · '+item.detail:'Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.';
   if(!item)return;
-  const a=t.toScreen(item.point),q=plot();
-  if(a.x<q.x||a.x>q.x+q.w||a.y<q.y||a.y>q.y+q.h)return;
-  const w=Math.min(Math.max(108,item.detail.length*6.7+20,item.label.length*7+20),viewport.width-12),h=44;
+  const q=plot();let a=t.toScreen(item.point);
+  if(item.bounds){
+   const lo=t.toScreen({x:item.bounds.minX,y:item.bounds.maxY}),hi=t.toScreen({x:item.bounds.maxX,y:item.bounds.minY});
+   const x1=Math.max(q.x,lo.x),x2=Math.min(q.x+q.w,hi.x),y1=Math.max(q.y,lo.y),y2=Math.min(q.y+q.h,hi.y);
+   if(x2<x1||y2<y1)return;a={x:(x1+x2)/2,y:(y1+y2)/2};
+  }else if(a.x<q.x||a.x>q.x+q.w||a.y<q.y||a.y>q.y+q.h)return;
+  const lines=item.lines??[item.detail];
+  const w=Math.min(Math.max(108,...lines.map(line=>line.length*6.7+20),item.label.length*7+20),viewport.width-12),h=26+18*lines.length;
   const x=Math.max(6,Math.min(viewport.width-w-6,a.x-w/2)),y=Math.max(4,Math.min(viewport.height-h-4,a.y>h+15?a.y-h-13:a.y+16));
   el('rect',{x,y,width:w,height:h,rx:8,fill:'#fffaf0',stroke:'#315779','stroke-width':1.5},tooltip);
   el('text',{x:x+w/2,y:y+15,'text-anchor':'middle','font-size':11,fill:'#536579','font-weight':700},tooltip,item.label);
-  el('text',{x:x+w/2,y:y+33,'text-anchor':'middle','font-size':13,fill:'#203e55','font-weight':700},tooltip,item.detail);
+  lines.forEach((line,i)=>el('text',{x:x+w/2,y:y+33+i*18,'text-anchor':'middle','font-size':Math.min(13,(w-12)/Math.max(1,line.length*.60)),fill:'#203e55','font-weight':700},tooltip,line));
  }
  function target(g:Element,item:Inspection,isCannon=false){
   inspections.set(item.id,item);
@@ -172,19 +178,10 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   for(const y of ys){const a=p({x:b.minX,y}),z=p({x:b.maxX,y});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':.26},content);}
   if(b.minX<=0&&b.maxX>=0){const a=p({x:0,y:b.minY}),z=p({x:0,y:b.maxY});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315779','stroke-width':2},content);}
   if(b.minY<=0&&b.maxY>=0){const a=p({x:b.minX,y:0}),z=p({x:b.maxX,y:0});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315779','stroke-width':2},content);}
-  // All solid terrain is drawn from the same world rectangles the future collision engine will use.
+  // Artwork and collision both read the same world bounds.
   for(const o of level.obstacles){
-   const a=p({x:o.bounds.minX,y:o.bounds.maxY}),z=p({x:o.bounds.maxX,y:o.bounds.minY}),w=z.x-a.x,h=z.y-a.y;
-   const g=el('g',{},content),grass=Math.min(h*.28,scale*.12);
-   el('rect',{x:a.x,y:a.y,width:w,height:h,fill:'#a18d78',stroke:'#6e665e','stroke-width':1},g);
-   for(let row=1;row<Math.ceil(h/(scale*.28));row++){
-    const y=a.y+row*scale*.28;if(y>=z.y)break;
-    el('line',{x1:a.x,x2:z.x,y1:y,y2:y,stroke:'#73665d','stroke-opacity':.55},g);
-    for(let x=a.x+(row%2===0?.28:.56)*scale;x<z.x;x+=scale*.65)el('line',{x1:x,x2:x,y1:y,y2:Math.min(z.y,y+scale*.28),stroke:'#73665d','stroke-opacity':.5},g);
-   }
-   el('rect',{x:a.x,y:a.y,width:w,height:grass,fill:'#79a94f'},g);
-   el('line',{x1:a.x,y1:a.y+grass,x2:z.x,y2:a.y+grass,stroke:'#4e803e','stroke-width':1},g);
-   target(g,{id:o.id,label:o.kind==='floor'?'Floor':o.kind==='platform'?'Platform':o.kind==='wall'?'Stone wall':'Ceiling',detail:'x: '+fmt(o.bounds.minX)+' to '+fmt(o.bounds.maxX)+' · y: '+fmt(o.bounds.minY)+' to '+fmt(o.bounds.maxY),point:{x:(o.bounds.minX+o.bounds.maxX)/2,y:o.bounds.maxY}});
+   const g=renderTerrain(content,o,p,scale),info=terrainInspection(o);
+   target(g,{id:o.id,...info,point:{x:(o.bounds.minX+o.bounds.maxX)/2,y:(o.bounds.minY+o.bounds.maxY)/2},bounds:o.bounds});
   }
   for(const c of level.cannons){
    const a=p(c.position),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content),style=cannonTypes[c.type];
