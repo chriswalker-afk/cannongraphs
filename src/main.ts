@@ -130,7 +130,7 @@ previewButton.addEventListener('click',()=>{
  if(!policy.preview||!canPlan(state)||previewButton.disabled)return;
  if(previewOn){clearPreview();return;}
  const equation=editor.getDraft().equation;if(!equation)return;
- try{scene.setGraphPreview(graphPreview(equation,level.bounds));previewOn=true;previewButton.textContent='Hide graph';previewButton.setAttribute('aria-pressed','true');}catch{clearPreview();}
+ try{const paths=graphPreview(equation,level.bounds);scene.setGraphPreview(paths);if(!paths.length){previewButton.textContent='Graph outside view';return;}previewOn=true;previewButton.textContent='Hide graph';previewButton.setAttribute('aria-pressed','true');}catch{clearPreview();}
 });
 levelMenu.addEventListener('click',()=>{if(!levelMenu.disabled)showSelection(true);});
 homeButton.addEventListener('click',()=>{if(!homeButton.disabled)showHome(true);});
