@@ -10,5 +10,5 @@ export function validateLevel(l:Level):void{
  const ids=new Set<string>(),anchors=new Set<string>([l.exit.x+','+l.exit.y]);
  for(const c of l.cannons){if(!c.id||c.id==='exit'||ids.has(c.id)||anchors.has(c.position.x+','+c.position.y)||!Object.hasOwn(cannonTypes,c.type)||!inside(c.position)||![1,-1].includes(c.direction))throw new Error('Invalid cannon');ids.add(c.id);anchors.add(c.position.x+','+c.position.y);}
  if(!ids.has(l.startId)||!inside(l.exit))throw new Error('Invalid start or exit');
- for(const o of l.obstacles){if(!o.id||o.id==='exit'||ids.has(o.id)||!validBounds(o.bounds)||!inside({x:o.bounds.minX,y:o.bounds.minY})||!inside({x:o.bounds.maxX,y:o.bounds.maxY}))throw new Error('Invalid obstacle');ids.add(o.id);}
+ for(const o of l.obstacles){if(!o.id||o.id==='exit'||ids.has(o.id)||!['floor','wall','platform','ceiling'].includes(o.kind)||!validBounds(o.bounds)||!inside({x:o.bounds.minX,y:o.bounds.minY})||!inside({x:o.bounds.maxX,y:o.bounds.maxY}))throw new Error('Invalid obstacle');ids.add(o.id);}
 }

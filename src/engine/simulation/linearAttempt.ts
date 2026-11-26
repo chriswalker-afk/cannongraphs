@@ -3,7 +3,8 @@ import type {Cannon,Level,Obstacle} from '../../levels/schema';
 import {evaluateLinear,type LinearEquation} from '../equations/linear';
 import {buildLinearFlight} from '../trajectories/linear';
 import {along,GEOMETRY_EPS,sweepDiskRectangle} from '../collisions/sweep';
-export const PIP_RADIUS=.20;
+import {PIP_RADIUS} from '../collisions/clearance';
+export {PIP_RADIUS} from '../collisions/clearance';
 // A destination is a marked mathematical point, not the entire decorative portal.
 export const CAPTURE_EPSILON=1e-7;
 export type FlightEvent=
