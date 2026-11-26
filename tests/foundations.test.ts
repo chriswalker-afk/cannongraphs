@@ -1,0 +1,5 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {coordinateSystem} from '../src/engine/coordinates';import {validateLevel} from '../src/levels/schema';import {meadowPreview} from '../src/levels/worlds/meadow';
+test('equal scales and inverted y with negative coordinates',()=>{const t=coordinateSystem({minX:-4,maxX:8,minY:-3,maxY:7},{width:900,height:500,padding:20});const a=t.toScreen({x:0,y:0}),b=t.toScreen({x:1,y:1});assert.ok(Math.abs(b.x-a.x-t.scale)<1e-9);assert.ok(Math.abs(a.y-b.y-t.scale)<1e-9);const p=t.toWorld(t.toScreen({x:-2,y:4}));assert.ok(Math.abs(p.x+2)<1e-9&&Math.abs(p.y-4)<1e-9);});
+test('invalid viewport is rejected',()=>assert.throws(()=>coordinateSystem(meadowPreview.bounds,{width:20,height:20,padding:20})));
+test('preview validates',()=>assert.doesNotThrow(()=>validateLevel(meadowPreview)));
+test('invalid start and duplicate cannons fail',()=>{assert.throws(()=>validateLevel({...meadowPreview,startId:'missing'}));assert.throws(()=>validateLevel({...meadowPreview,cannons:[...meadowPreview.cannons,...meadowPreview.cannons]}));});
