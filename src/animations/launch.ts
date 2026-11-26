@@ -2,12 +2,12 @@ import type {Point} from '../engine/coordinates';
 export const BARREL_ANGLE=35;
 export const LOAD_MS=520, FIRE_MS=820, CUE_END_MS=1180, DEMO_END_MS=1500;
 export type LaunchPhase='loading'|'charging'|'firing'|'recovering'|'done';
-export type PipPose='idle'|'excited'|'flying'|'splat';
+export type PipPose='idle'|'excited'|'flying'|'splat'|'rolling'|'disappointed'|'walking';
 export interface LaunchCue {
  phase:LaunchPhase;loadingPoint:Point|null;recoil:number;burst:number|null;charge:number;
 }
 export interface DemoFrame extends LaunchCue {
- pip:Point|null;pose:PipPose;opacity:number;stretch:number;tilt:number;
+ pip:Point|null;pose:PipPose;opacity:number;stretch:number;tilt:number;walkCycle?:number;
 }
 const clamp=(x:number)=>Math.max(0,Math.min(1,x));
 const smooth=(x:number)=>x*x*(3-2*x);

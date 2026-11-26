@@ -28,7 +28,7 @@ export function createLaunchVisual(parent:Element){
    const p=project(frame.pip);
    pip.root.setAttribute('display','inline');pip.root.setAttribute('opacity',String(frame.opacity));
    pip.root.setAttribute('transform','translate('+p.x+' '+p.y+') scale('+(scale*size)+') rotate('+frame.tilt+')');
-   pip.setPose(frame.pose);pip.setStretch(frame.stretch);
+   pip.setPose(frame.pose);pip.setStretch(frame.stretch);pip.setWalkCycle(frame.walkCycle);
   }else pip.root.setAttribute('display','none');
  }};
 }
