@@ -140,3 +140,10 @@ export function parseFlightEquation(input:string,family:'linear'|'quadratic'):Fl
 export function equationCoefficients(e:FlightEquation):readonly RationalCoefficient[]{
  return isQuadratic(e)?[e.exactQuadratic,e.exactLinear,e.exactConstant]:[e.exactGradient,e.exactIntercept];
 }
+
+// Reuse exact rational polynomial normalization for the genuine cubic family.
+export function parseCubicCoefficients(input:string):readonly RationalCoefficient[]{
+ const p=new Parser(tokenize(input)).parse();
+ if(p.length!==4)throw new EquationError('nonlinear','This cannon needs a genuine cubic equation with a nonzero x³ term.');
+ return p.slice().reverse().map(coefficient);
+}
