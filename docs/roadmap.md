@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Next: PR5. Reuse the Pip and launch cues, compute the true flight and first collision/capture event in world units, animate the actual equation until that event, and show a harmless splat or exit arrival. Keep attempt accounting for PR6.
+Next: PR6. Add the limited creature budget and deterministic level state machine, retry and reset controls, terminal success/failure, and connect the queue to actual attempts. PR7 adds rapid-fire and stars.

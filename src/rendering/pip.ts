@@ -40,11 +40,15 @@ export function createPip(parent:Element,variant=0):PipSprite{
  for(const x of [-.117,.117])shape('ellipse',{cx:x,cy:.055,rx:.030,ry:.017,fill:'#f19b84',opacity:.85});
  const mouth=shape('path',{d:'M-.048 .066 Q0 .109 .048 .066',fill:'none',stroke:'#5b392f','stroke-width':.017,'stroke-linecap':'round'});
  const tongue=shape('ellipse',{cx:0,cy:.112,rx:.034,ry:.012,fill:'#f29289',display:'none'});
+ const dizzy=shape('g',{display:'none',fill:'#f8cf65',stroke:'#b47d34','stroke-width':.009});
+ for(const x of [-.17,.13])shape('path',{d:'M'+x+' -.27 l.025 .045 .05 .005 -.037 .032 .010 .05 -.048 -.023 -.044 .025 .008 -.05 -.038 -.032 .05 -.005Z'},dizzy);
+ const dazed=shape('g',{display:'none',stroke:'#49332b','stroke-width':.014,'stroke-linecap':'round',fill:'none'});
+ for(const x of [-.066,.066])shape('path',{d:'M'+(x-.022)+' -.012 l.044 .044 M'+(x+.022)+' -.012 l-.044 .044'},dazed);
  const setPose=(pose:PipPose)=>{
-  const flying=pose==='flying',excited=pose!=='idle';
+  const flying=pose==='flying',splat=pose==='splat',excited=pose==='excited'||flying;
   mouth.setAttribute('d',excited?'M-.062 .058 Q0 .079 .062 .058 Q.057 .135 0 .137 Q-.057 .135 -.062 .058Z':'M-.048 .066 Q0 .109 .048 .066');
   mouth.setAttribute('fill',excited?'#6d3b36':'none');tongue.setAttribute('display',excited?'inline':'none');
-  eyes.setAttribute('display',flying?'none':'inline');happyEyes.setAttribute('display',flying?'inline':'none');
+  eyes.setAttribute('display',flying||splat?'none':'inline');happyEyes.setAttribute('display',flying?'inline':'none');dazed.setAttribute('display',splat?'inline':'none');dizzy.setAttribute('display',splat?'inline':'none');if(splat)mouth.setAttribute('d','M-.035 .093 Q0 .057 .035 .093');
   left.setAttribute('d',flying?'M-.165 .045 Q-.255 .010 -.267 -.052':'M-.165 .045 Q-.245 .017 -.221 -.068');
   right.setAttribute('d',flying?'M.165 .045 Q.255 .010 .267 -.052':'M.165 .045 Q.245 .017 .221 -.068');
  };

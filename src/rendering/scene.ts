@@ -2,7 +2,9 @@ import {cameraTransform,initialCamera,panCamera,zoomCamera,MIN_ZOOM,MAX_ZOOM,typ
 import type {Point,Viewport} from '../engine/coordinates';
 import {cannonTypes} from '../game/cannons';
 import type {Level} from '../levels/schema';
-import {BARREL_ANGLE,DEMO_END_MS,sampleDemoFrame} from '../animations/launch';
+import {BARREL_ANGLE} from '../animations/launch';
+import {attemptDuration,sampleAttempt} from '../animations/attempt';
+import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {createLaunchVisual} from './launchVisual';
 
 type Inspection={id:string;label:string;detail:string;point:Point};
@@ -25,24 +27,43 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  const source=level.cannons.find(c=>c.id===level.startId)!;
  const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
  let startBarrel:Element|undefined,visual:ReturnType<typeof createLaunchVisual>|undefined;
- let rehearsal:{started:number;elapsed:number;reduced:boolean;done:()=>void}|undefined,animationId=0;
- function paintRehearsal(){
-  if(!visual||!startBarrel)return;
-  if(!rehearsal){visual.hide();startBarrel.setAttribute('transform','rotate(-'+BARREL_ANGLE+')');return;}
-  const f=sampleDemoFrame(rehearsal.elapsed,source.position,source.direction,rehearsal.reduced);
-  startBarrel.setAttribute('transform','rotate(-'+BARREL_ANGLE+') translate('+(-f.recoil)+' 0)');
-  visual.paint(f,source.position,source.direction,BARREL_ANGLE,t.toScreen,t.scale);
+ let active:{result:AttemptResult;started:number;elapsed:number;reduced:boolean;done:()=>void}|undefined,animationId=0;
+ let lastResult:AttemptResult|undefined,trace:SVGLineElement|undefined,marker:SVGGElement|undefined;
+ function paintAttempt(){
+  if(!visual||!startBarrel||!trace||!marker)return;
+  const result=active?.result??lastResult,frame=active?sampleAttempt(active.elapsed,active.result,active.reduced):undefined;
+  const angle=result?.angle??BARREL_ANGLE;
+  startBarrel.setAttribute('transform','rotate('+(-angle)+') translate('+(-(frame?.recoil??0))+' 0)');
+  if(frame&&result)visual.paint(frame,result.source,result.direction,angle,t.toScreen,t.scale,frame.size);else visual.hide();
+  const to=frame?frame.trace:lastResult?.event.kind==='misfire'?null:lastResult?.end;
+  const resolved=frame?.resolved??!!lastResult;
+  const color=resolved?(result?.event.kind==='exit'?'#16874c':'#cf5148'):'#2583ca';
+  trace.setAttribute('display',to&&result?'inline':'none');
+  if(to&&result){
+   const a=t.toScreen(result.start),b=t.toScreen(to);
+   for(const [k,v] of Object.entries({x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:color}))trace.setAttribute(k,String(v));
+  }
+  marker.replaceChildren();marker.setAttribute('display',resolved&&result?'inline':'none');
+  if(resolved&&result){
+   const p=t.toScreen(result.end);marker.setAttribute('transform','translate('+p.x+' '+p.y+')');
+   el('circle',{r:6,fill:'#fffaf0',stroke:color,'stroke-width':2},marker);
+   el('path',{d:result.event.kind==='exit'?'M-3 0 l2 2 4 -5':'M-2 -2 L2 2 M2 -2 L-2 2',stroke:color,'stroke-width':1.6,fill:'none','stroke-linecap':'round'},marker);
+  }
  }
  function step(now:number){
-  if(!rehearsal)return;
-  rehearsal.elapsed=Math.max(0,now-rehearsal.started)*(rehearsal.reduced?2:1);
-  if(rehearsal.elapsed>=DEMO_END_MS){const done=rehearsal.done;rehearsal=undefined;animationId=0;paintRehearsal();done();return;}
-  paintRehearsal();animationId=requestAnimationFrame(step);
+  if(!active)return;
+  active.elapsed=Math.max(0,now-active.started)*(active.reduced?2:1);
+  if(active.elapsed>=attemptDuration(active.result,active.reduced)){
+   const finished=active;lastResult=finished.result;active=undefined;animationId=0;paintAttempt();finished.done();return;
+  }
+  paintAttempt();animationId=requestAnimationFrame(step);
  }
- function previewLaunch(done:()=>void):boolean{
-  if(rehearsal)return false;
-  rehearsal={started:performance.now(),elapsed:0,reduced:motion.matches,done};paintRehearsal();animationId=requestAnimationFrame(step);return true;
+ function playFlight(result:AttemptResult,done:()=>void):boolean{
+  if(active)return false;
+  lastResult=undefined;active={result,started:performance.now(),elapsed:0,reduced:motion.matches,done};
+  paintAttempt();animationId=requestAnimationFrame(step);return true;
  }
+ function clearFlight(){if(!active){lastResult=undefined;paintAttempt();}}
  const plot=()=>({x:viewport.padding,y:viewport.padding,w:viewport.width-2*viewport.padding,h:viewport.height-2*viewport.padding});
  function inspect(){
   if(!tooltip)return;
@@ -73,7 +94,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const {width:W,height:H}=viewport,q=plot();
   t=cameraTransform(level.bounds,viewport,camera);camera={zoom:t.zoom,center:t.center};
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;startBarrel=undefined;visual=undefined;
+  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;startBarrel=undefined;visual=undefined;trace=undefined;marker=undefined;
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
   el('stop',{offset:'0%', 'stop-color':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':'#e6f5e6'},sky);
   const portal=el('radialGradient',{id:'portal'},defs);el('stop',{offset:'0%','stop-color':'#fffbea'},portal);el('stop',{offset:'100%','stop-color':'#f8ba48'},portal);
@@ -139,7 +160,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   el('circle',{r:.047,fill:'#fff',stroke:'#7a5a25','stroke-width':.025},g);
   el('text',{x:0,y:-.56,'text-anchor':'middle','font-size':.21,'font-weight':800,fill:'#725024',stroke:'#fff5cf','stroke-width':.05,'paint-order':'stroke'},g,'EXIT');
   target(g,{id:'exit',label:'Exit',detail:coord(level.exit),point:level.exit});
-  visual=createLaunchVisual(content);paintRehearsal();
+  trace=el('line',{'stroke-width':2.6,'stroke-dasharray':'6 4','stroke-linecap':'round','pointer-events':'none','aria-hidden':'true'},content) as SVGLineElement;
+  visual=createLaunchVisual(content);
+  marker=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;paintAttempt();
   // Edge tick labels remain visible when the origin is offscreen.
   const bottom=Math.min(q.y+q.h,br.y),left=Math.max(q.x,tl.x);
   for(const x of xs){const s=p({x,y:0});el('text',{x:s.x,y:bottom+15,'text-anchor':'middle','font-size':11,fill:'#23475e','font-weight':650},svg,fmt(x));}
@@ -163,5 +186,5 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
  observer.observe(stage);draw();
- return {previewLaunch,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);const done=rehearsal?.done;rehearsal=undefined;done?.();svg.remove();}};
+ return {playFlight,clearFlight,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;svg.remove();}};
 }

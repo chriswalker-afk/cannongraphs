@@ -2,7 +2,7 @@ import type {Point} from '../engine/coordinates';
 export const BARREL_ANGLE=35;
 export const LOAD_MS=520, FIRE_MS=820, CUE_END_MS=1180, DEMO_END_MS=1500;
 export type LaunchPhase='loading'|'charging'|'firing'|'recovering'|'done';
-export type PipPose='idle'|'excited'|'flying';
+export type PipPose='idle'|'excited'|'flying'|'splat';
 export interface LaunchCue {
  phase:LaunchPhase;loadingPoint:Point|null;recoil:number;burst:number|null;charge:number;
 }
