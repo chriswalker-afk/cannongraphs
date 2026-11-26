@@ -1,5 +1,5 @@
 import './style.css';
-import {levels,worldForLevel,levelPosition,nextLevel} from './levels/catalog';
+import {worlds,levels,worldForLevel,levelPosition,nextLevel} from './levels/catalog';
 import {mountScene} from './rendering/scene';
 import {mountEquationEditor} from './ui/equationEditor';
 import {mountPipQueue} from './ui/pipQueue';
@@ -18,13 +18,14 @@ function mountLevel(level:Level){
  cleanup();
 app.innerHTML=`<main><header><div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><div class="level"><label for="level-picker" class="picker-label">Level</label><select id="level-picker" aria-label="Choose level"></select></div></header><div class="toolbar"><div id="inspect-info" role="status">Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.</div><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><footer class="planning-footer"><div class="planning-editor"><div id="flight-plan"></div><div id="equation-editor" class="equation-editor"></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label">Planning</small></div></footer></main>`;
 const world=worldForLevel(level.id)!,position=levelPosition(level.id)!,following=nextLevel(level.id);
+app.querySelector('main')!.dataset.world=String(world.number);
 app.querySelector<HTMLElement>('#world-label')!.textContent=world.name+' · '+position.index+' / '+position.total;
 app.querySelector<HTMLElement>('#level-objective')!.textContent=level.objective;
 const button=(id:string)=>document.querySelector<HTMLButtonElement>('#'+id)!;
 const scene=mountScene(app.querySelector<HTMLElement>('.stage')!,level,{in:button('zoom-in'),out:button('zoom-out'),reset:button('zoom-reset'),left:button('pan-left'),right:button('pan-right'),up:button('pan-up'),down:button('pan-down'),readout:document.querySelector('#zoom-readout')!,info:document.querySelector('#inspect-info')!,onCannonSelect:chooseCannon});
 
 const levelPicker=app.querySelector<HTMLSelectElement>('#level-picker')!;
-for(const item of levels){const option=document.createElement('option');option.value=item.id;option.textContent=item.id+' · '+item.title;levelPicker.append(option);}levelPicker.value=level.id;
+for(const group of worlds){const optgroup=document.createElement('optgroup');optgroup.label=group.name;for(const item of group.levels){const option=document.createElement('option');option.value=item.id;option.textContent=item.id+' · '+item.title;optgroup.append(option);}levelPicker.append(optgroup);}levelPicker.value=level.id;
 const editorRoot=app.querySelector<HTMLElement>('#equation-editor')!;
 const ids=level.cannons.map(c=>c.id);
 let plan=createFlightPlan(ids),selected=level.startId,switching=false;
@@ -59,6 +60,7 @@ levelPicker.disabled=state.phase==='launching'||state.phase==='celebrating';
  phaseLabel.textContent=({planning:'Planning',launching:'Launching…',retry:'Adjust and retry',celebrating:'Rapid fire!',success:'Level complete',gameOver:'No Pips left'} as const)[state.phase];
  resolution.hidden=!terminal;
  advance.hidden=!success||!following;
+ advance.textContent=following&&following.world!==level.world?'Next world →':'Next level →';
  if(terminal){
   resolution.dataset.outcome=success?'success':'failure';
   icon.textContent=success?'✦':'↻';

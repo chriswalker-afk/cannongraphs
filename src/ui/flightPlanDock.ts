@@ -23,7 +23,7 @@ export function mountFlightPlanDock(root:HTMLElement,cannons:readonly Cannon[],o
   button.dataset.cannonId=c.id;button.setAttribute('aria-controls','equation-editor');
   const glyph=node('span','plan-glyph',button,type.symbol);glyph.setAttribute('aria-hidden','true');
   const copy=node('span','plan-copy',button);
-  node('span','plan-cannon',copy,'Cannon '+c.id+' · '+type.label);
+  node('span','plan-cannon',copy,'Cannon '+c.id+(c.direction===1?' →':' ←')+' · '+type.label);
   const equation=node('span','plan-equation',copy),status=node('span','plan-status',copy);
   button.addEventListener('click',()=>onSelect(c.id));elements.set(c.id,{button,equation,status});
  }
@@ -37,7 +37,7 @@ export function mountFlightPlanDock(root:HTMLElement,cannons:readonly Cannon[],o
    const c=cannons.find(c=>c.id===entry.id)!,state=planStatus(entry),d=descriptions[state],active=selected===entry.id;
    const raw=entry.text.trim(),display=raw?(/^y\s*=/i.test(raw)?raw:'y = '+raw):'Enter equation…';
    els.button.dataset.status=state;els.button.setAttribute('aria-pressed',String(active));els.button.disabled=!editable;
-   els.button.setAttribute('aria-label','Cannon '+c.id+', '+cannonTypes[c.type].label+', '+display+'. '+d.label+'. '+d.detail);
+   els.button.setAttribute('aria-label','Cannon '+c.id+', fires '+(c.direction===1?'right':'left')+', '+cannonTypes[c.type].label+', '+display+'. '+d.label+'. '+d.detail);
    els.button.title=display+' — '+d.detail;
    els.equation.textContent=display;els.status.textContent=d.icon+' '+d.label;
   }

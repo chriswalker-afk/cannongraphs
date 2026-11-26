@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phase 1 complete. PR8–12 add multi-cannon routes, planning, terrain, mathematical feedback and the twelve-level Meadow Launchers curriculum. Next: PR13 World 2 — The Floating Isles: fractional gradients, negative marked coordinates, longer and more varied linear chains, with verified routes and a distinct environment.
+Phase 1 complete. PR8–13 implement both linear worlds, multi-cannon routing, planning, terrain and mathematical feedback. Next: Phase 3, PR14 quadratic cannon — safe quadratic parsing, world-coordinate curve flight, exact capture, robust continuous collision, tangent-based barrel alignment and quadratic-aware feedback. PR15 Parabola Peaks; PR16 Lost Arches; PR17 collectibles; PR18 advanced function framework; PR19 Contraption Factory; PR20 Beyond Graphiverse.

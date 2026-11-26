@@ -10,6 +10,7 @@ import {createLaunchVisual} from './launchVisual';
 import {makeRapidSchedule,sampleRapidFire,type RapidSchedule,type RapidCounts} from '../animations/rapidFire';
 import {createRapidVisual} from './rapidVisual';
 import {renderTerrain,terrainInspection} from './terrain';
+import {renderFloatingScenery} from './floatingScenery';
 
 type Inspection={id:string;label:string;detail:string;point:Point;lines?:string[];bounds?:Bounds};
 const ns='http://www.w3.org/2000/svg';
@@ -154,11 +155,13 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
   svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();cannonTargets=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
-  el('stop',{offset:'0%', 'stop-color':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':'#e6f5e6'},sky);
+  const floating=level.world===2;
+  el('stop',{offset:'0%', 'stop-color':floating?'#89c5ed':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':floating?'#e7e7fa':'#e6f5e6'},sky);
   const portal=el('radialGradient',{id:'portal'},defs);el('stop',{offset:'0%','stop-color':'#fffbea'},portal);el('stop',{offset:'100%','stop-color':'#f8ba48'},portal);
   const clip=el('clipPath',{id:'plotClip'},defs);el('rect',{x:q.x,y:q.y,width:q.w,height:q.h,rx:5},clip);
   el('rect',{width:W,height:H,fill:'url(#sky)'},svg);
   // Decorative scenery stays behind the grid and has no collision geometry.
+  if(floating)renderFloatingScenery(svg,W,H);else{
   el('circle',{cx:W*.81,cy:H*.16,r:Math.min(W,H)*.08,fill:'#fff7c4',opacity:.65},svg);
   for(const [x,y,s] of [[.12,.18,1],[.47,.10,.7],[.74,.24,.85]]){
    const g=el('g',{transform:'translate('+W*x+' '+H*y+') scale('+Math.min(W,H)*.0015*s+')',fill:'#fff',opacity:.55},svg);
@@ -166,6 +169,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   }
   el('path',{d:'M0 '+H*.73+' Q'+W*.13+' '+H*.35+' '+W*.30+' '+H*.69+' T'+W*.63+' '+H*.61+' T'+W+' '+H*.55+' V'+H+' H0Z',fill:'#86b9bd',opacity:.46},svg);
   el('path',{d:'M0 '+H*.88+' Q'+W*.22+' '+H*.6+' '+W*.43+' '+H*.82+' T'+W+' '+H*.72+' V'+H+' H0Z',fill:'#88b89b',opacity:.65},svg);
+  }
   const content=el('g',{'clip-path':'url(#plotClip)'},svg);
   const b=level.bounds,p=t.toScreen,v=t.visible,scale=t.scale;
   const loX=Math.max(b.minX,v.minX),hiX=Math.min(b.maxX,v.maxX),loY=Math.max(b.minY,v.minY),hiY=Math.min(b.maxY,v.maxY);
@@ -180,7 +184,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(b.minY<=0&&b.maxY>=0){const a=p({x:b.minX,y:0}),z=p({x:b.maxX,y:0});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315779','stroke-width':2},content);}
   // Artwork and collision both read the same world bounds.
   for(const o of level.obstacles){
-   const g=renderTerrain(content,o,p,scale),info=terrainInspection(o);
+   const g=renderTerrain(content,o,p,scale,floating),info=terrainInspection(o);
    target(g,{id:o.id,...info,point:{x:(o.bounds.minX+o.bounds.maxX)/2,y:(o.bounds.minY+o.bounds.maxY)/2},bounds:o.bounds});
   }
   for(const c of level.cannons){
@@ -201,8 +205,8 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    el('text',{x:-.37,y:.06,'text-anchor':'middle','font-size':.21,fill:'white','font-weight':800},barrel,style.symbol);
    el('circle',{r:.12,fill:'white','fill-opacity':.2,stroke:'#fff','stroke-width':.028},g);
    el('circle',{r:.044,fill:'#fff',stroke:'#203d54','stroke-width':.022},g);
-   el('text',{x:0,y:-.35,'text-anchor':'middle','font-size':.25,'font-weight':800,fill:'#203d54',stroke:'#eaf8f8','stroke-width':.05,'paint-order':'stroke'},g,c.id);
-   target(g,{id:c.id,label:'Cannon '+c.id+' · '+style.label,detail:coord(c.position),point:c.position},true);
+   el('text',{x:0,y:-.35,'text-anchor':'middle','font-size':.25,'font-weight':800,fill:'#203d54',stroke:'#eaf8f8','stroke-width':.05,'paint-order':'stroke'},g,c.id+(c.direction===-1?' ←':' →'));
+   target(g,{id:c.id,label:'Cannon '+c.id+' · '+style.label,detail:coord(c.position)+' · fires '+(c.direction===1?'right':'left'),point:c.position},true);
   }
   const a=p(level.exit),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content);
   el('path',{d:'M-.43 .44 V-.06 A.43 .43 0 0 1 .43 -.06 V.44Z',fill:'#b5a38b',stroke:'#6b665c','stroke-width':.04},g);
