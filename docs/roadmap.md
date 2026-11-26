@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phase 1 ends with PR7. Next: Phase 2, PR8 multi-cannon routing: deterministic capture at marked cannon coordinates, safe route chaining and cycle protection, preserving exact flight and failure behavior. PR9 all-cannon equation planning before launch; PR10 terrain constraints; PR11 diagnostic mathematical feedback; PR12 twelve World 1 levels; PR13 fractional gradients, negative coordinates and complex linear routes for World 2.
+Phase 1 complete. PR8 introduces linear relay routes, captures, cycle protection and route replays. Next: PR9 all-cannon planning interface: visible equation slots, selected-cannon highlighting, readiness and tested-state feedback, responsive layout. PR10 terrain constraints; PR11 diagnostic mathematical feedback; PR12 twelve World 1 levels; PR13 World 2.
