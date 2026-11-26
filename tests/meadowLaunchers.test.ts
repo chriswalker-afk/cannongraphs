@@ -18,11 +18,11 @@ const references:readonly Readonly<Record<string,string>>[]=[
  {A:'2x',B:'12-x',C:'x-4',D:'20-x'}
 ];
 test('World 1 contains twelve accessible levels in deliberate curriculum order',()=>{
- assert.equal(worlds.length,1);assert.equal(levels.length,12);
- assert.deepEqual(levels.map(l=>l.id),Array.from({length:12},(_,i)=>'1-'+String(i+1).padStart(2,'0')));
- assert.deepEqual(levels.map(l=>l.cannons.length),[1,1,1,1,1,1,1,1,1,2,3,4]);
- assert.equal(new Set(levels.map(l=>l.title)).size,12);
- for(const l of levels){
+ assert.equal(worlds[0].levels,meadowLaunchers);assert.equal(meadowLaunchers.length,12);
+ assert.deepEqual(meadowLaunchers.map(l=>l.id),Array.from({length:12},(_,i)=>'1-'+String(i+1).padStart(2,'0')));
+ assert.deepEqual(meadowLaunchers.map(l=>l.cannons.length),[1,1,1,1,1,1,1,1,1,2,3,4]);
+ assert.equal(new Set(meadowLaunchers.map(l=>l.title)).size,12);
+ for(const l of meadowLaunchers){
   assert.equal(l.creatures,5);assert.equal(l.world,1);assert.ok(l.objective.length>10);
   assert.ok(l.cannons.every(c=>c.type==='linear'&&c.direction===1&&Number.isInteger(c.position.x)&&Number.isInteger(c.position.y)));
   assert.ok(Number.isInteger(l.exit.x)&&Number.isInteger(l.exit.y));
@@ -60,8 +60,8 @@ test('every possible forward shortcut in each relay fails to reach the skipped d
   }
  }
 });
-test('next-level navigation follows catalog order without locking levels or wrapping the finale',()=>{
- for(let i=0;i<levels.length;i++){
+test('Meadow navigation follows catalog order without locking levels',()=>{
+ for(let i=0;i<meadowLaunchers.length;i++){
   assert.deepEqual(levelPosition(levels[i].id),{index:i+1,total:12});
   assert.equal(nextLevel(levels[i].id),levels[i+1]);
  }

@@ -1,7 +1,8 @@
 import {validateLevel,type Level} from './schema';
 import {meadowLaunchers} from './worlds/meadowLaunchers';
+import {floatingIsles} from './worlds/floatingIsles';
 export interface World {readonly number:number;readonly name:string;readonly levels:readonly Level[]}
-export const worlds:readonly World[]=[{number:1,name:'Meadow Launchers',levels:meadowLaunchers}];
+export const worlds:readonly World[]=[{number:1,name:'Meadow Launchers',levels:meadowLaunchers},{number:2,name:'The Floating Isles',levels:floatingIsles}];
 export const levels:readonly Level[]=worlds.flatMap(w=>w.levels);
 const ids=new Set<string>();
 for(const world of worlds){
