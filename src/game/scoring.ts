@@ -7,5 +7,6 @@ export function scoreStars(saved:number,total:number):Stars{
  return saved===0?0:saved===total?3:saved>=Math.ceil(total*.6)?2:1;
 }
 export function levelStars(s:LevelState):Stars|null{
+ if(s.unlimited)return null;
  return s.phase==='success'||s.phase==='gameOver'?scoreStars(s.saved,s.total):null;
 }

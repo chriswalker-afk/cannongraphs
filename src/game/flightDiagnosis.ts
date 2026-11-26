@@ -110,11 +110,11 @@ export function diagnoseFlight(level:Level,result:AttemptResult,equations:Readon
  }
  return null;
 }
-export function recordAttemptFeedback(history:FeedbackHistory,attemptId:number,level:Level,result:AttemptResult,equations:ReadonlyMap<string,CannonEquation>):FeedbackHistory{
+export function recordAttemptFeedback(history:FeedbackHistory,attemptId:number,level:Level,result:AttemptResult,equations:ReadonlyMap<string,CannonEquation>,minimumSupport:SupportLevel=1):FeedbackHistory{
  if(!Number.isSafeInteger(attemptId)||attemptId<=history.lastAttemptId)return history;
  const diagnosis=diagnoseFlight(level,result,equations);
  if(!diagnosis)return {...history,lastAttemptId:attemptId,latest:null};
- const occurrence=(history.counts.get(diagnosis.key)??0)+1,support=Math.min(3,occurrence) as SupportLevel;
+ const occurrence=(history.counts.get(diagnosis.key)??0)+1,support=Math.min(3,Math.max(minimumSupport,occurrence+(minimumSupport-1))) as SupportLevel;
  const counts=new Map(history.counts);counts.set(diagnosis.key,occurrence);
  return {lastAttemptId:attemptId,counts,latest:{...diagnosis,attemptId,occurrence,support,prompt:diagnosis.prompts[support-1]}};
 }
