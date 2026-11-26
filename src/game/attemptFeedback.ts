@@ -1,6 +1,6 @@
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {isRouteResult} from '../engine/simulation/linearRoute';
-const fmt=(x:number)=>String(Number(x.toFixed(3)));
+import {feedbackNumber as fmt} from './feedbackNumbers';
 export function attemptFeedback(result:AttemptResult):string{
  if(isRouteResult(result)){
   if(result.event.kind==='loop')return 'Loop! Your Pip returned to cannon '+result.event.cannonId+'. Adjust the route to reach the exit.';
