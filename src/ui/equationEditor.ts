@@ -1,7 +1,9 @@
-import {EquationError,parseLinearEquation,type LinearEquation,type RationalCoefficient} from '../engine/equations/linear';
+import {EquationError,parseFlightEquation,isQuadratic,equationCoefficients,type FlightEquation,type RationalCoefficient} from '../engine/equations/linear';
 import {buildLinearFlight,type LinearFlight} from '../engine/trajectories/linear';
 import type {Cannon,Level} from '../levels/schema';
-export interface EquationDraft {text:string;equation:LinearEquation|null;flight:LinearFlight|null}
+import {cannonTypes} from '../game/cannons';
+import {quadraticSegment,type QuadraticSegment} from '../engine/trajectories/quadratic';
+export interface EquationDraft {text:string;equation:FlightEquation|null;flight:LinearFlight|QuadraticSegment|null}
 const mathNS='http://www.w3.org/1998/Math/MathML';
 function mathNode(name:string,value?:string){const node=document.createElementNS(mathNS,name);if(value!==undefined)node.textContent=value;return node;}
 function magnitude(r:RationalCoefficient){
@@ -9,25 +11,25 @@ function magnitude(r:RationalCoefficient){
  if(r.denominator==='1')return n;
  const f=mathNode('mfrac');f.append(n,mathNode('mn',r.denominator));return f;
 }
-function displayEquation(container:HTMLElement,e:LinearEquation|null){
- container.replaceChildren();
- if(!e)return;
- const math=mathNode('math');math.setAttribute('aria-label','Equivalent linear equation');const row=mathNode('mrow');
+function displayEquation(container:HTMLElement,e:FlightEquation|null){
+ container.replaceChildren();if(!e)return;
+ const math=mathNode('math');math.setAttribute('aria-label',isQuadratic(e)?'Equivalent quadratic equation':'Equivalent linear equation');const row=mathNode('mrow');
  row.append(mathNode('mi','y'),mathNode('mo','='));
- const m=e.exactGradient,c=e.exactIntercept;
- if(m.numerator!=='0'){
-  if(m.numerator.startsWith('-'))row.append(mathNode('mo','−'));
-  if(m.numerator.replace(/^-/,'')!==m.denominator)row.append(magnitude(m));
-  row.append(mathNode('mi','x'));
- }
- if(c.numerator!=='0'||m.numerator==='0'){
-  if(c.numerator.startsWith('-'))row.append(mathNode('mo','−'));else if(m.numerator!=='0')row.append(mathNode('mo','+'));
-  row.append(magnitude(c));
- }
+ const coefficients=equationCoefficients(e);let written=false;
+ coefficients.forEach((r,i)=>{
+  const power=coefficients.length-i-1;
+  if(r.numerator==='0'&&(power!==0||written))return;
+  if(r.numerator.startsWith('-'))row.append(mathNode('mo','−'));else if(written)row.append(mathNode('mo','+'));
+  if(power===0||r.numerator.replace(/^-/,'')!==r.denominator)row.append(magnitude(r));
+  if(power===1)row.append(mathNode('mi','x'));
+  if(power===2){const exponent=mathNode('msup');exponent.append(mathNode('mi','x'),mathNode('mn','2'));row.append(exponent);}
+  written=true;
+ });
  math.append(row);container.append(math);
 }
 export function mountEquationEditor(root:HTMLElement,cannon:Cannon,level:Level){
- root.innerHTML=`<div class="editor-top"><label for="equation-input">Cannon <span id="editor-cannon"></span> · Linear</label><span class="editor-family">y = mx + c</span></div><div class="editor-entry"><span aria-hidden="true" class="equation-prefix">y =</span><input id="equation-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="180" aria-label="Right-hand side of the equation, or a full equation beginning y equals" aria-describedby="equation-message" placeholder="Enter a flight equation"><span id="equation-typeset" class="equation-typeset"></span></div><div class="editor-tools" role="group" aria-label="Mathematical input tools"><button type="button" data-insert="x" aria-label="Insert x">x</button><button type="button" data-insert="fraction" aria-label="Insert fraction">a/b</button><button type="button" data-insert="brackets" aria-label="Insert brackets">( )</button><button type="button" data-insert="minus" aria-label="Insert minus">−</button><button type="button" data-insert="multiply" aria-label="Insert multiplication">×</button><button type="button" data-insert="clear" aria-label="Clear equation">Clear</button></div><p id="equation-message" role="status" class="equation-message"></p>`;
+ const family=cannon.type,style=cannonTypes[family];
+ root.innerHTML=`<div class="editor-top"><label for="equation-input">Cannon <span id="editor-cannon"></span> · ${style.label}</label><span class="editor-family">${style.form}</span></div><div class="editor-entry"><span aria-hidden="true" class="equation-prefix">y =</span><input id="equation-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="180" aria-label="Right-hand side of the equation, or a full equation beginning y equals" aria-describedby="equation-message" placeholder="Enter a flight equation"><span id="equation-typeset" class="equation-typeset"></span></div><div class="editor-tools" role="group" aria-label="Mathematical input tools"><button type="button" data-insert="x" aria-label="Insert x">x</button>${family==='quadratic'?'<button type="button" data-insert="square" aria-label="Insert squared">x²</button>':''}<button type="button" data-insert="fraction" aria-label="Insert fraction">a/b</button><button type="button" data-insert="brackets" aria-label="Insert brackets">( )</button><button type="button" data-insert="minus" aria-label="Insert minus">−</button><button type="button" data-insert="multiply" aria-label="Insert multiplication">×</button><button type="button" data-insert="clear" aria-label="Clear equation">Clear</button></div><p id="equation-message" role="status" class="equation-message"></p>`;
  root.querySelector('#editor-cannon')!.textContent=cannon.id;
  const input=root.querySelector<HTMLInputElement>('input')!,message=root.querySelector<HTMLElement>('#equation-message')!,typeset=root.querySelector<HTMLElement>('#equation-typeset')!,prefix=root.querySelector<HTMLElement>('.equation-prefix')!;
  let draft:EquationDraft={text:'',equation:null,flight:null};
@@ -38,8 +40,9 @@ export function mountEquationEditor(root:HTMLElement,cannon:Cannon,level:Level){
   let state='empty';
   if(text.trim()){
    try{
-    const equation=parseLinearEquation(text),flight=buildLinearFlight(equation,cannon.position,cannon.direction,level.bounds);
-    draft={text,equation,flight};state='ready';message.textContent='Linear equation ready.';
+    if(family!=='linear'&&family!=='quadratic')throw new EquationError('nonlinear','This cannon family is not available yet.');
+    const equation=parseFlightEquation(text,family),flight=isQuadratic(equation)?quadraticSegment(equation,cannon.position.x,cannon.direction===1?level.bounds.maxX:level.bounds.minX):buildLinearFlight(equation,cannon.position,cannon.direction,level.bounds);
+    draft={text,equation,flight};state='ready';message.textContent=style.label+' equation ready.';
    }catch(error){
     if(error instanceof EquationError){state=error.code==='empty'?'empty':'invalid';message.textContent=error.message;}
     else{state='invalid';message.textContent='The equation could not be evaluated. Try a simpler expression.';}
@@ -60,6 +63,7 @@ export function mountEquationEditor(root:HTMLElement,cannon:Cannon,level:Level){
     case 'fraction':replacement='('+selected+')/()';cursor=selected?start+replacement.length-1:start+1;break;
     case 'brackets':replacement='('+selected+')';cursor=selected?start+replacement.length:start+1;break;
     case 'x':replacement='x';cursor=start+1;break;
+    case 'square':replacement=selected?'('+selected+')²':'x²';cursor=start+replacement.length;break;
     case 'minus':replacement='−';cursor=start+1;break;
     case 'multiply':replacement='×';cursor=start+1;break;
     case 'clear':input.value='';input.focus();input.setSelectionRange(0,0);update();return;

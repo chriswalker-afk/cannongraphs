@@ -3,12 +3,13 @@ import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import type {RapidFrame} from '../animations/rapidFire';
 import {createPip,svgNode} from './pip';
 import {routeLegs} from '../engine/simulation/linearRoute';
+import {flightPath} from './flightPath';
 export function createRapidVisual(parent:Element,count:number,variantOffset:number,result:AttemptResult){
  const layer=svgNode('g',{'pointer-events':'none','aria-hidden':'true','data-rapid-visual':''},parent);
  const trailLayer=svgNode('g',{},layer),spritesLayer=svgNode('g',{},layer);
  // Pool only the visible celebration's sprites; redraw restores the same sample.
  const slots=Array.from({length:count},(_,i)=>{
-  const trail=svgNode('line',{'stroke-width':2.5,'stroke-linecap':'round',stroke:'#f1b346',opacity:.8},trailLayer);
+  const trail=svgNode('path',{fill:'none','stroke-width':2.5,'stroke-linecap':'round',stroke:'#f1b346',opacity:.8},trailLayer);
   const pip=createPip(spritesLayer,variantOffset+i);return {trail,pip};
  });
  const smokeGroups=routeLegs(result).map(leg=>{const smoke=svgNode('g',{},layer);const clouds=Array.from({length:5},()=>svgNode('circle',{fill:'#fff8e5',stroke:'#b9b4a9','stroke-width':.01},smoke));return {leg,smoke,clouds};});
@@ -24,7 +25,7 @@ export function createRapidVisual(parent:Element,count:number,variantOffset:numb
    pip.root.setAttribute('display','inline');pip.root.setAttribute('opacity',String(f.opacity));
    pip.root.setAttribute('transform','translate('+p.x+' '+p.y+') scale('+(scale*f.scale)+') rotate('+f.tilt+')');
    pip.setPose(f.phase==='flying'?'flying':'excited');pip.setStretch(f.stretch);
-   if(f.trailStart){const a=project(f.trailStart);trail.setAttribute('display','inline');for(const [k,v] of Object.entries({x1:a.x,y1:a.y,x2:p.x,y2:p.y}))trail.setAttribute(k,String(v));}
+   if(f.trailStart){trail.setAttribute('display','inline');trail.setAttribute('d',flightPath(routeLegs(result)[f.legIndex],f.trailStart,f.point,project));}
   }
   const b=project(result.end);
   smokeGroups.forEach(({leg,smoke,clouds},i)=>{

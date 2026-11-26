@@ -39,7 +39,7 @@ export function sampleRapidFire(ms:number,result:AttemptResult,s:RapidSchedule):
    pips.push({index:i,point:{x:leg.source.x+v.x*distance,y:leg.source.y+v.y*distance},phase:'loading',opacity:1,scale:1,stretch:1,tilt:0,trailStart:null,legIndex:j});
   }else if(flightTime<timing.flight){
    const progress=s.reduced?0:clamp(flightTime/timing.flight);
-   pips.push({index:i,point:leg.pointAt(progress),phase:'flying',opacity:1,scale:1,stretch:s.reduced?1:1+.16*Math.exp(-flightTime/110),tilt:s.reduced?0:-leg.angle*leg.direction,trailStart:s.reduced?null:leg.pointAt(Math.max(0,progress-.13)),legIndex:j});
+   pips.push({index:i,point:leg.pointAt(progress),phase:'flying',opacity:1,scale:1,stretch:s.reduced?1:1+.16*Math.exp(-flightTime/110),tilt:s.reduced?0:-(leg.angleAt?.(progress)??leg.angle)*leg.direction,trailStart:s.reduced?null:leg.pointAt(Math.max(0,progress-.13)),legIndex:j});
   }else{
    const p=clamp((flightTime-timing.flight)/Math.max(1,timing.handoff));
    pips.push({index:i,point:leg.end,phase:'arriving',opacity:1-p,scale:s.reduced?1:Math.max(.08,1-p),stretch:1,tilt:0,trailStart:null,legIndex:j});

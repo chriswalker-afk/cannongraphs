@@ -3,7 +3,7 @@ import {worlds,levels,worldForLevel,levelPosition,nextLevel} from './levels/cata
 import {mountScene} from './rendering/scene';
 import {mountEquationEditor} from './ui/equationEditor';
 import {mountPipQueue} from './ui/pipQueue';
-import {simulateLinearRoute} from './engine/simulation/linearRoute';
+import {simulateRoute} from './engine/simulation/linearRoute';
 import {createFlightPlan,getPlanEntry,editPlan,countReady,snapshotPlan,recordFlightEvidence,clearEvidence} from './game/flightPlan';
 import {mountFlightPlanDock} from './ui/flightPlanDock';
 import type {Level} from './levels/schema';
@@ -109,7 +109,7 @@ advance.addEventListener('click',()=>{if(state.phase==='success'&&following){mou
 launchButton.addEventListener('click',()=>{
  if(!canLaunch(state))return;
  const equations=snapshotPlan(plan);if(!equations)return;
- const launched=plan,result=simulateLinearRoute(level,equations),previous=state,next=beginAttempt(state,result);
+ const launched=plan,result=simulateRoute(level,equations),previous=state,next=beginAttempt(state,result);
  if(!next.active||next===state)return;
  const id=next.active.id;
  state=next;hintView.update(null);status.hidden=false;status.dataset.outcome='flying';status.textContent='Here we go!';sync();

@@ -44,3 +44,5 @@
 
 /* World 2 keeps the plotting grid and hitboxes unchanged; only presentation varies. */
 main[data-world="2"] header,main[data-world="2"] footer,main[data-world="2"] .toolbar{background:#f5f7ff}main[data-world="2"] .brand-mark{background:#c4d8ef;color:#3e648b}main[data-world="2"] .stage{background:#c8dcf1}.plan-cannon{overflow:hidden;text-overflow:ellipsis}
+
+main[data-world="3"] header,main[data-world="3"] footer,main[data-world="3"] .toolbar{background:#faf4ff}main[data-world="3"] .brand-mark{background:#e3c9f0;color:#78519b}.editor-tools{flex-wrap:wrap}

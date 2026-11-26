@@ -11,6 +11,7 @@ import {makeRapidSchedule,sampleRapidFire,type RapidSchedule,type RapidCounts} f
 import {createRapidVisual} from './rapidVisual';
 import {renderTerrain,terrainInspection} from './terrain';
 import {renderFloatingScenery} from './floatingScenery';
+import {flightPath} from './flightPath';
 
 type Inspection={id:string;label:string;detail:string;point:Point;lines?:string[];bounds?:Bounds};
 const ns='http://www.w3.org/2000/svg';
@@ -54,8 +55,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const result=active?.result??lastResult,cue=active?sampleRouteAttempt(active.elapsed,active.result,level,active.reduced):undefined;
   trace.replaceChildren();marker.replaceChildren();marker.setAttribute('display','none');
   const drawLeg=(leg:AttemptResult,to:Point,color:string)=>{
-   const a=t.toScreen(leg.start),b=t.toScreen(to);
-   el('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:color,'stroke-width':2.6,'stroke-dasharray':'6 4','stroke-linecap':'round'},trace);
+   el('path',{d:flightPath(leg,leg.start,to,t.toScreen),fill:'none',stroke:color,'stroke-width':2.6,'stroke-dasharray':'6 4','stroke-linecap':'round'},trace);
   };
   const angle=(leg:AttemptResult)=>leg.event.kind==='misfire'?BARREL_ANGLE:leg.angle;
   if(!result){visual.hide();return;}

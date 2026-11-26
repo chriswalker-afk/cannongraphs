@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phase 1 complete. PR8–13 implement both linear worlds, multi-cannon routing, planning, terrain and mathematical feedback. Next: Phase 3, PR14 quadratic cannon — safe quadratic parsing, world-coordinate curve flight, exact capture, robust continuous collision, tangent-based barrel alignment and quadratic-aware feedback. PR15 Parabola Peaks; PR16 Lost Arches; PR17 collectibles; PR18 advanced function framework; PR19 Contraption Factory; PR20 Beyond Graphiverse.
+Phases 1–2 complete. PR14 introduces genuine quadratic input, continuous curve collisions, tangent animation, curved traces and mixed-family routes. Next: PR15 World 3 — Parabola Peaks, a full sequenced quadratic curriculum replacing the engine preview; PR16 Lost Arches; PR17 collectibles; PR18 advanced function framework; PR19 Contraption Factory; PR20 Beyond Graphiverse.
