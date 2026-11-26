@@ -4,6 +4,7 @@ import {createHomeDemo,homeLayout,homeElapsed,sampleHomeDemo,stillHomeDemo,type 
 import {createHomeClock} from '../animations/homeClock';
 import type {RapidFrame} from '../animations/rapidFire';
 import {createPip,svgNode as el,type PipSprite} from './pip';
+import type {PipLook} from '../game/pipCosmetics';
 import {renderCannonArt} from './cannonArt';
 import {renderTerrain} from './terrain';
 import {flightPath} from './flightPath';
@@ -47,7 +48,7 @@ interface PaintedHome {
  demo:HomeDemo;project:(p:Point)=>Point;scale:number;barrels:Map<string,Element>;
  visual:ReturnType<typeof createRapidVisual>;queue:readonly PipSprite[];
 }
-function drawScene(svg:SVGSVGElement,demo:HomeDemo,width:number,height:number):PaintedHome{
+function drawScene(svg:SVGSVGElement,demo:HomeDemo,width:number,height:number,look?:PipLook):PaintedHome{
  svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+width+' '+height);
  scenery(svg,width,height);
  const {level,result}=demo,{bounds:b}=level;
@@ -81,8 +82,8 @@ function drawScene(svg:SVGSVGElement,demo:HomeDemo,width:number,height:number):P
  el('path',{d:'M-.45 .44 V-.06 A.45 .45 0 0 1 .45 -.06 V.44Z',fill:'#b5a38b',stroke:'#6b665c','stroke-width':.04},gate);
  el('path',{d:'M-.3 .44 V-.05 A.3 .3 0 0 1 .3 -.05 V.44Z',fill:'url(#home-portal)',stroke:'#b27b29','stroke-width':.025},gate);
  el('path',{d:'M-.16 .20 Q-.25 -.09 0 -.15 Q.25 -.13 .14 .10 Q.03 .22 -.05 .08',stroke:'#fff7b8','stroke-width':.04,fill:'none','stroke-linecap':'round'},gate);
- const queue=Array.from({length:demo.schedule.count},(_,i)=>createPip(plot,i));
- const visual=createRapidVisual(plot,demo.schedule.count,0,result);
+ const queue=Array.from({length:demo.schedule.count},(_,i)=>createPip(plot,i,look));
+ const visual=createRapidVisual(plot,demo.schedule.count,0,result,look);
  return {demo,project,scale,barrels,visual,queue};
 }
 function paintScene(p:PaintedHome,frame:RapidFrame,ms:number,still:boolean){
@@ -101,7 +102,7 @@ function paintScene(p:PaintedHome,frame:RapidFrame,ms:number,still:boolean){
  }
  visual.paint(frame,demo.result,project,scale,still);
 }
-export function mountHomeScene(host:HTMLElement,pauseButton:HTMLButtonElement){
+export function mountHomeScene(host:HTMLElement,pauseButton:HTMLButtonElement,look?:PipLook){
  const svg=el('svg',{'aria-hidden':'true',focusable:'false'},host) as SVGSVGElement;
  const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
  let paused=motion.matches,forceStill=paused,painted:PaintedHome|undefined,disposed=false;
@@ -119,7 +120,7 @@ export function mountHomeScene(host:HTMLElement,pauseButton:HTMLButtonElement){
   const w=Math.max(100,host.clientWidth),h=Math.max(100,host.clientHeight),layout=homeLayout(w,h);
   let demo=painted?.demo;
   if(!demo||demo.layout!==layout){demo=createHomeDemo(layout);clock.reset();}
-  painted=drawScene(svg,demo,w,h);
+  painted=drawScene(svg,demo,w,h,look);
   render(clock.elapsed());
  }
  function toggle(){

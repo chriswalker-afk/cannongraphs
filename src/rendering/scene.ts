@@ -8,6 +8,7 @@ import {routeDuration,sampleRouteAttempt} from '../animations/routeAttempt';
 import {routeLegs} from '../engine/simulation/linearRoute';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {createLaunchVisual} from './launchVisual';
+import type {PipLook} from '../game/pipCosmetics';
 import {makeRapidSchedule,sampleRapidFire,type RapidSchedule,type RapidCounts} from '../animations/rapidFire';
 import {createRapidVisual} from './rapidVisual';
 import {renderTerrain,terrainInspection} from './terrain';
@@ -32,7 +33,7 @@ function el(tag:string,attrs:Record<string,string|number>={},parent?:Element,con
 const fmt=(n:number)=>String(Number(n.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
-export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode}){
+export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook}){
  const policy=modePolicy(controls.mode??'pilot');
  const svg=el('svg',{role:'group','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
@@ -127,7 +128,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function playRapidFire(result:AttemptResult,count:number,variantOffset:number,progress:(counts:RapidCounts)=>void,done:()=>void):boolean{
   if(active||rapid||!rapidParent||result!==lastResult)return false;
   const schedule=makeRapidSchedule(result,count,motion.matches);
-  rapidParent.replaceChildren();rapidVisual=createRapidVisual(rapidParent,count,variantOffset,result);
+  rapidParent.replaceChildren();rapidVisual=createRapidVisual(rapidParent,count,variantOffset,result,controls.look);
   rapid={result,schedule,started:performance.now(),elapsed:0,variantOffset,progress,done};
   paintRapid();animationId=requestAnimationFrame(rapidStep);return true;
  }
@@ -244,9 +245,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   }
   previewLayer=el('g',{'pointer-events':'none','aria-hidden':'true','data-layer':'cadet-graph-preview'},content);paintGraphPreview();
   trace=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;
-  visual=createLaunchVisual(content);
+  visual=createLaunchVisual(content,controls.look);
   rapidParent=el('g',{'pointer-events':'none','aria-hidden':'true'},content);
-  if(rapid)rapidVisual=createRapidVisual(rapidParent,rapid.schedule.count,rapid.variantOffset,rapid.result);
+  if(rapid)rapidVisual=createRapidVisual(rapidParent,rapid.schedule.count,rapid.variantOffset,rapid.result,controls.look);
   marker=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;paintAttempt();paintRapid();
   // Edge tick labels remain visible when the origin is offscreen.
   const bottom=Math.min(q.y+q.h,br.y),left=Math.max(q.x,tl.x);

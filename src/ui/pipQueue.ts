@@ -1,12 +1,13 @@
 import {createPip,svgNode} from '../rendering/pip';
+import type {PipLook} from '../game/pipCosmetics';
 import {activeCount,type LevelState} from '../game/levelState';
-export function mountPipQueue(root:HTMLElement,total:number){
+export function mountPipQueue(root:HTMLElement,total:number,look?:PipLook){
  const row=document.createElement('div');row.className='pip-lineup';row.setAttribute('aria-hidden','true');
  const count=document.createElement('span');count.className='pip-count';root.replaceChildren(row,count);
  const visible=Math.min(8,total),icons:SVGSVGElement[]=[],sprites:ReturnType<typeof createPip>[]=[];
  for(let i=0;i<visible;i++){
   const svg=svgNode('svg',{viewBox:'-.30 -.34 .60 .66',class:'queue-pip'},row) as SVGSVGElement;
-  const pip=createPip(svg,i);pip.setPose(i%3===0?'excited':'idle');
+  const pip=createPip(svg,i,look);pip.setPose(i%3===0?'excited':'idle');
   pip.root.classList.add('pip-bob');pip.root.style.setProperty('--pip-delay',(-i*.19)+'s');
   icons.push(svg);sprites.push(pip);
  }

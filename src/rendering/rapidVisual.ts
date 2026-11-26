@@ -2,15 +2,16 @@ import type {Point} from '../engine/coordinates';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import type {RapidFrame} from '../animations/rapidFire';
 import {createPip,svgNode} from './pip';
+import type {PipLook} from '../game/pipCosmetics';
 import {routeLegs} from '../engine/simulation/linearRoute';
 import {flightPath} from './flightPath';
-export function createRapidVisual(parent:Element,count:number,variantOffset:number,result:AttemptResult){
+export function createRapidVisual(parent:Element,count:number,variantOffset:number,result:AttemptResult,look?:PipLook){
  const layer=svgNode('g',{'pointer-events':'none','aria-hidden':'true','data-rapid-visual':''},parent);
  const trailLayer=svgNode('g',{},layer),spritesLayer=svgNode('g',{},layer);
  // Pool only the visible celebration's sprites; redraw restores the same sample.
  const slots=Array.from({length:count},(_,i)=>{
   const trail=svgNode('path',{fill:'none','stroke-width':2.5,'stroke-linecap':'round',stroke:'#f1b346',opacity:.8},trailLayer);
-  const pip=createPip(spritesLayer,variantOffset+i);return {trail,pip};
+  const pip=createPip(spritesLayer,variantOffset+i,look);return {trail,pip};
  });
  const smokeGroups=routeLegs(result).map(leg=>{const smoke=svgNode('g',{},layer);const clouds=Array.from({length:5},()=>svgNode('circle',{fill:'#fff8e5',stroke:'#b9b4a9','stroke-width':.01},smoke));return {leg,smoke,clouds};});
  const flare=svgNode('g',{},layer);
