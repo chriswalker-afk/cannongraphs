@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phase 1 complete. PR8–10 add multi-cannon routes, planning and reusable terrain with authored clearance checks. Next: PR11 diagnostic mathematical feedback based on actual failed legs, source mismatch, missed captures and collision constraints, without revealing solutions. PR12 twelve World 1 levels; PR13 World 2.
+Phase 1 complete. PR8–11 add multi-cannon routes, planning, reusable terrain and diagnostic post-flight mathematical feedback. Next: PR12 twelve sequenced World 1 levels (integer gradients/intercepts, horizontal and negative lines, two-point equations and increasingly long chains). PR13 fractional gradients, negative coordinates and complex routes in World 2.
