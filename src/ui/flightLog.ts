@@ -3,6 +3,7 @@ import {summarizeProgress,type Progress} from '../game/progress';
 import {achievements} from '../game/achievements';
 import {learningModes} from '../game/learningModes';
 import {identityForWorld} from '../game/worldIdentity';
+import {cosmeticsForAchievement} from '../game/pipCosmetics';
 function node<K extends keyof HTMLElementTagNameMap>(tag:K,cls:string,parent:Element,text?:string):HTMLElementTagNameMap[K]{
  const e=document.createElement(tag);e.className=cls;if(text!==undefined)e.textContent=text;parent.append(e);return e;
 }
@@ -45,6 +46,7 @@ export function mountFlightLog(root:HTMLElement,p:Progress,persisted:boolean,onH
   const glyph=node('span','log-achievement-icon',card,a.symbol);glyph.setAttribute('aria-hidden','true');
   const copy=node('div','',card);node('strong','',copy,a.title);node('p','',copy,a.description);
   node('small','',copy,a.earned?'✓ Earned':a.current+' / '+a.target);
+  const rewards=cosmeticsForAchievement(a.id);if(rewards.length)node('p','log-cosmetic-rewards',copy,'Workshop: '+rewards.map(c=>c.name).join(', '));
  }
  node('p','log-local-note',content,'Saved on this browser only. No account or cloud sync. All levels remain unlocked.');
  heading.focus();return ()=>back.removeEventListener('click',onHome);

@@ -225,3 +225,43 @@ main.flight-log{grid-template-rows:auto auto;align-content:start;background:line
 @media(max-width:800px){.log-columns{grid-template-columns:1fr}.log-achievements{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.home-log{padding:6px 9px;font-size:11px}.log-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.log-stat{padding:7px}.log-panel{padding:9px}.log-achievements{grid-template-columns:1fr}.log-content{gap:8px}.level-progress-mark{font-size:8px}.level-number[data-completed=true]{padding-bottom:10px}}
 @media(max-height:480px){.level-resolution{max-height:calc(100% - 10px)}.level-progress-mark{font-size:8px}.level-number[data-completed=true]{padding-bottom:10px}}
+
+/* Creature Workshop uses the real Pip vector sprites, not separate artwork. */
+.home-details{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.home-workshop{background:#edf3e5;color:#365c43;border-color:#b7c9ac}
+.home-workshop:hover{background:#dcebd6}
+main.workshop-screen{grid-template-rows:auto auto;align-content:center;background:linear-gradient(145deg,#e8f1e7,#f9edd9)}
+.workshop-shell{display:grid;grid-template-columns:minmax(240px,.82fr) minmax(0,1.55fr);gap:clamp(9px,2vw,22px);min-width:0;align-items:start}
+.workshop-preview-panel,.workshop-options-panel{display:grid;gap:10px;padding:clamp(10px,1.7vw,20px);border:1px solid #bdccc2;border-radius:15px;background:#fffdf8;min-width:0;box-shadow:0 4px 16px #263b5010}
+.workshop-preview-heading,.workshop-options-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.workshop-preview-heading h2,.workshop-options-heading h2{margin:0;color:#234d78;font-size:18px;line-height:1.15}
+.workshop-options-heading span,.workshop-preview-status{font-size:11px;color:#426859;font-weight:800;text-align:right}
+.workshop-preview-status[data-locked=true]{color:#946229}
+.workshop-preview{display:grid;place-items:center;height:clamp(125px,33vh,260px);border:1px solid #bfd3c6;background:radial-gradient(ellipse at 50% 42%,#fefcf1,#d4e6d8);border-radius:12px;overflow:hidden}
+.workshop-preview>svg{display:block;width:100%;height:100%;max-width:280px;pointer-events:none}
+.workshop-poses,.workshop-tabs{display:flex;gap:5px;flex-wrap:wrap}
+.workshop-pose,.workshop-tab{border:1px solid #b9cec5;background:#f2f5ee;color:#315c53;border-radius:8px;min-height:34px;padding:6px 9px;font-size:11px;font-weight:750;cursor:pointer}
+.workshop-tab{flex:1;min-width:0;font-size:13px;min-height:40px}
+.workshop-tab[aria-pressed=true],.workshop-pose[aria-pressed=true]{background:#356c58;color:white;border-color:#356c58}
+.workshop-status{font-size:12px;color:#506c63;line-height:1.35;min-height:2.7em}
+.workshop-actions{display:grid;gap:7px}
+.workshop-reset{background:#e7eee8;color:#395f54;border:1px solid #b3c8bf;border-radius:8px;font-size:12px;padding:8px;cursor:pointer;min-height:35px}
+.workshop-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:stretch}
+.workshop-option{display:flex;flex-direction:column;min-width:0;padding:0;overflow:hidden;background:#fdfaf1;color:#344e62;border:1px solid #bdccc6;border-radius:10px;text-align:left;cursor:pointer}
+.workshop-option[aria-pressed=true]{outline:2px solid #37795e;outline-offset:-2px;border-color:#37795e;background:#e9f3e6}
+.workshop-option[data-locked=true]{background:#f5f0e9;border-color:#d5c3ab}
+.workshop-option[data-locked=true][aria-pressed=true]{outline-color:#a47b40;border-color:#a47b40}
+.workshop-option-art{display:block;width:100%;height:clamp(57px,12vh,105px);background:#e4ede5;overflow:hidden}
+.workshop-option[data-locked=true] .workshop-option-art{background:#ebe5da}
+.workshop-option-art svg{width:100%;height:100%;display:block;pointer-events:none}
+.workshop-option-copy{display:grid;gap:3px;padding:7px;min-width:0;width:100%;text-align:center}
+.workshop-option-copy strong{font-size:12px;line-height:1.15;font-weight:800;overflow-wrap:anywhere}
+.workshop-option-state{font-size:10px;line-height:1.2;color:#536c61;overflow-wrap:anywhere}
+.workshop-option[data-locked=true] .workshop-option-state{color:#876436}
+.workshop-item-detail{display:grid;gap:4px;border-left:3px solid #73a18a;background:#edf3e9;border-radius:6px;padding:8px 10px;min-height:55px;color:#385f51}
+.workshop-item-detail strong{font-size:13px}
+.workshop-item-detail p{font-size:11px;line-height:1.35}
+.log-achievement .log-cosmetic-rewards{color:#556d5f;font-weight:700}
+@media(max-width:800px){main.workshop-screen{align-content:start}.workshop-shell{grid-template-columns:minmax(0,1fr)}.workshop-preview-panel{grid-template-columns:minmax(100px,.7fr) minmax(0,1fr);gap:7px}.workshop-preview-heading{grid-column:1/-1}.workshop-preview{grid-column:1;grid-row:2/5;height:clamp(110px,21vh,180px)}.workshop-poses,.workshop-status,.workshop-actions{grid-column:2}.workshop-status{min-height:0;font-size:11px}.workshop-actions{gap:5px}.workshop-actions .selection-play{min-height:36px;padding:6px;font-size:14px}.workshop-reset{min-height:31px;padding:5px;font-size:11px}.workshop-options{grid-template-columns:repeat(4,minmax(0,1fr))}.workshop-option-art{height:clamp(56px,10vh,82px)}}
+@media(max-width:600px){.home-details{justify-content:center}.home-details .home-log{font-size:10px}.workshop-preview-panel,.workshop-options-panel{padding:8px;gap:7px}.workshop-preview-heading h2,.workshop-options-heading h2{font-size:16px}.workshop-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.workshop-option-copy{padding:5px}.workshop-option-copy strong{font-size:11px}.workshop-option-state{font-size:9px}.workshop-tab{min-height:34px;font-size:11px;padding:5px}.workshop-pose{min-height:28px;padding:4px 7px;font-size:10px}}
+@media(max-height:480px) and (min-width:801px){main.workshop-screen{align-content:start}.workshop-preview-panel,.workshop-options-panel{padding:8px;gap:6px}.workshop-preview{height:125px}.workshop-option-art{height:48px}.workshop-option-copy{padding:4px;gap:2px}.workshop-tab{min-height:32px}.workshop-actions .selection-play{min-height:32px}.workshop-status{min-height:0}.workshop-options{grid-template-columns:repeat(4,minmax(0,1fr))}.workshop-item-detail{min-height:0;padding:5px 8px}}
