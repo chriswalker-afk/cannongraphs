@@ -2,10 +2,12 @@ import {worlds,levels,type World} from '../levels/catalog';
 import type {Level} from '../levels/schema';
 import {cannonTypes,type CannonType} from '../game/cannons';
 import {identityForWorld} from '../game/worldIdentity';
-import {beginSelection,selectWorld,selectLevel,backToWorlds,selectedWorld,selectedLevel,summarizeLevel} from '../game/levelSelection';
+import {beginSelection,selectWorld,selectMode,backToModes,selectLevel,backToWorlds,selectedWorld,selectedLevel,summarizeLevel} from '../game/levelSelection';
 import {renderWorldMenuArt} from '../rendering/worldMenuArt';
+import {learningModes,modePolicy,modeBudgetLabel,modeObjective,type LearningMode} from '../game/learningModes';
+import {createPip,svgNode} from '../rendering/pip';
 
-interface Options {preferredId?:string;openCurrentWorld?:boolean;onHome:()=>void;onPlay:(level:Level)=>void}
+interface Options {preferredId?:string;preferredMode?:LearningMode;openCurrentWorld?:boolean;onHome:()=>void;onPlay:(level:Level,mode:LearningMode)=>void}
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,className:string,parent:Element,text?:string):HTMLElementTagNameMap[K]{
  const e=document.createElement(tag);e.className=className;if(text!==undefined)e.textContent=text;parent.append(e);return e;
 }
@@ -21,7 +23,7 @@ function familyChip(parent:Element,type:CannonType,count?:number){
  element('span','',chip,cannonTypes[type].label+(count!==undefined&&count>1?' ×'+count:''));
 }
 export function mountLevelSelection(root:HTMLElement,options:Options){
- let state=beginSelection(options.preferredId,options.openCurrentWorld),disposed=false;
+ let state=beginSelection(options.preferredId,options.openCurrentWorld,options.preferredMode),disposed=false;
  let refreshLevel:()=>void=()=>{};
  function screen(title:string,subtitle:string,backText:string,back:()=>void){
   root.replaceChildren();
@@ -43,7 +45,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
    const identity=identityForWorld(w.number);
    const card=action(grid,'world-card','',()=>{
     if(disposed)return;
-    state=selectWorld(state,w.number);if(state.step==='levels')renderLevels();
+    state=selectWorld(state,w.number);if(state.step==='modes')renderModes();
    });
    theme(card,w);cards.set(w.number,card);
    card.setAttribute('aria-label','World '+w.number+': '+w.name+'. '+identity.focus+'. '+w.levels.length+' levels.');
@@ -60,11 +62,34 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   if(focusNumber!==undefined&&cards.has(focusNumber))cards.get(focusNumber)!.focus();
   else h1.focus();
  }
+ function renderModes(){
+  const w=selectedWorld(state);if(!w||state.step!=='modes'){renderWorlds();return;}
+  const previous=state.previousMode;
+  const {main,h1}=screen('Choose how to learn',w.name+' · '+identityForWorld(w.number).focus,'← Worlds',()=>{state=backToWorlds(state);renderWorlds(w.number);});
+  main.dataset.selection='modes';theme(main,w);
+  const cards=element('div','mode-grid',main);cards.setAttribute('role','group');cards.setAttribute('aria-label','Learning modes');
+  let focusCard:HTMLButtonElement|undefined;
+  for(const [i,p] of learningModes.entries()){
+   const card=action(cards,'mode-card','',()=>{if(disposed)return;state=selectMode(state,p.id);if(state.step==='levels')renderLevels();});
+   card.style.setProperty('--mode-accent',p.accent);card.style.setProperty('--mode-tint',p.tint);
+   card.setAttribute('aria-label',p.name+'. '+p.description);if(previous===p.id)focusCard=card;
+   const art=element('span','mode-art',card);art.setAttribute('aria-hidden','true');
+   const svg=svgNode('svg',{viewBox:'-1.55 -.72 3.1 1.3',focusable:'false'},art);
+   for(let j=0;j<(p.id==='pilot'?5:3);j++){const pip=createPip(svg,i+j);const n=p.id==='pilot'?5:3;pip.root.setAttribute('transform','translate('+((j-(n-1)/2)*.49)+' .02) scale('+ (j===Math.floor(n/2)?1.13:.94)+')');pip.setPose(j===Math.floor(n/2)?'excited':'idle');}
+   const copy=element('span','mode-card-copy',card);
+   element('strong','mode-card-name',copy,p.name);element('span','mode-card-tagline',copy,p.tagline);
+   element('span','mode-card-budget',copy,modeBudgetLabel(p.id));element('span','mode-card-description',copy,p.description);
+   element('span','mode-card-rating',copy,p.unlimited?'Practice completion · no ranked stars':'Up to 3 stars');
+   element('span','mode-card-action',copy,'Choose '+p.name+' →');
+  }
+  if(focusCard)focusCard.focus();else h1.focus();
+ }
  function renderLevels(){
-  const w=selectedWorld(state);if(!w){renderWorlds();return;}
+  const w=selectedWorld(state);if(!w||state.step!=='levels'){renderWorlds();return;}
+  const mode=state.mode,policy=modePolicy(mode);
   const identity=identityForWorld(w.number);
-  const {main,h1}=screen(w.name,'World '+w.number+' · '+identity.focus,'← Worlds',()=>{
-   state=backToWorlds(state);renderWorlds(w.number);
+  const {main,h1}=screen(w.name,'World '+w.number+' · '+policy.name+' · '+identity.focus,'← Modes',()=>{
+   state=backToModes(state);renderModes();
   });
   main.dataset.selection='levels';theme(main,w);
   const shell=element('div','level-selection-shell',main);
@@ -74,6 +99,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   const copy=element('div','level-world-copy',banner);
   element('strong','',copy,identity.focus);
   element('p','',copy,identity.description);
+  element('span','selected-mode-label',copy,policy.name+' · '+modeBudgetLabel(mode));
   const families=element('div','selection-families',copy);
   for(const family of identity.families)familyChip(families,family);
   element('h2','level-board-heading',board,'Choose a level');
@@ -89,7 +115,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   const panel=element('section','level-details',shell);panel.setAttribute('aria-label','Selected level');
   const info=element('div','level-details-info',panel);info.setAttribute('aria-live','polite');info.setAttribute('aria-atomic','true');
   const play=action(panel,'selection-play','Play level ▶',()=>{
-   const level=selectedLevel(state);if(!disposed&&level)options.onPlay(level);
+   const level=selectedLevel(state);if(!disposed&&level&&state.step==='levels')options.onPlay(level,state.mode);
   });
   refreshLevel=()=>{
    const level=selectedLevel(state);
@@ -106,16 +132,16 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
    const s=summarizeLevel(level);
    element('div','level-details-kicker',info,'LEVEL '+String(s.index).padStart(2,'0')+' / '+w.levels.length);
    element('h2','level-details-title',info,s.title);
-   element('p','level-details-objective',info,s.objective);
+   element('p','level-details-objective',info,modeObjective(mode,level));
    const types=element('div','selection-families',info);for(const f of s.families)familyChip(types,f.type,f.count);
    const facts=element('div','level-facts',info);
    element('span','level-fact',facts,s.cannonCount+' '+(s.cannonCount===1?'cannon':'cannons'));
-   element('span','level-fact',facts,s.pipCount+' Pips');
+   element('span','level-fact',facts,modeBudgetLabel(mode,level));
    if(s.gemCount)element('span','level-fact',facts,s.gemCount+' optional '+(s.gemCount===1?'gem':'gems'));
    play.textContent='Play level '+s.index+' ▶';
   };
   refreshLevel();h1.focus();
  }
- if(state.step==='levels')renderLevels();else renderWorlds();
+ if(state.step==='levels')renderLevels();else if(state.step==='modes')renderModes();else renderWorlds();
  return ()=>{disposed=true;refreshLevel=()=>{};};
 }
