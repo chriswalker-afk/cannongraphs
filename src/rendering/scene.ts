@@ -21,12 +21,24 @@ function el(tag:string,attrs:Record<string,string|number>={},parent?:Element,con
 const fmt=(n:number)=>String(Number(n.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
-export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement}){
+export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void}){
  const svg=el('svg',{role:'group','aria-label':'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
  let inspections=new Map<string,Inspection>(),tooltip:SVGGElement;
  let drag:{id:number;x:number;y:number}|undefined;
+ let selectedCannon:string|undefined,planningEditable=false;
+ let cannonTargets=new Map<string,Element>();
+ function paintSelection(){
+  for(const [id,g] of cannonTargets){
+   const selected=planningEditable&&id===selectedCannon;g.setAttribute('data-selected',String(selected));
+   if(planningEditable)g.setAttribute('aria-pressed',String(selected));else g.removeAttribute('aria-pressed');
+  }
+ }
+ function setPlanningSelection(id:string,editable:boolean){
+  if(id!==selectedCannon&&pinned&&cannonTargets.has(pinned))pinned=undefined;
+  selectedCannon=id;planningEditable=editable;paintSelection();inspect();
+ }
  const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
  let barrels=new Map<string,Element>(),visual:ReturnType<typeof createLaunchVisual>|undefined;
  let active:{result:AttemptResult;started:number;elapsed:number;reduced:boolean;done:()=>void}|undefined,animationId=0;
@@ -116,14 +128,17 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   el('text',{x:x+w/2,y:y+15,'text-anchor':'middle','font-size':11,fill:'#536579','font-weight':700},tooltip,item.label);
   el('text',{x:x+w/2,y:y+33,'text-anchor':'middle','font-size':13,fill:'#203e55','font-weight':700},tooltip,item.detail);
  }
- function target(g:Element,item:Inspection){
+ function target(g:Element,item:Inspection,isCannon=false){
   inspections.set(item.id,item);
   g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('data-inspect',item.id);g.setAttribute('aria-label',item.label+' '+item.detail);g.classList.add('inspectable');
   g.addEventListener('pointerenter',(event)=>{if((event as PointerEvent).pointerType!=='touch'){hovered=item.id;inspect();}});
   g.addEventListener('pointerleave',()=>{if(hovered===item.id)hovered=undefined;inspect();});
   g.addEventListener('focus',()=>{focused=item.id;inspect();});
   g.addEventListener('blur',()=>{if(focused===item.id)focused=undefined;inspect();});
-  const toggle=()=>{pinned=pinned===item.id?undefined:item.id;inspect();};
+  const toggle=()=>{
+   if(isCannon&&planningEditable){controls.onCannonSelect?.(item.id);pinned=item.id;inspect();return;}
+   pinned=pinned===item.id?undefined:item.id;inspect();
+  };
   g.addEventListener('click',event=>{event.stopPropagation();toggle();});
   g.addEventListener('keydown',event=>{const e=event as KeyboardEvent;if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  }
@@ -131,7 +146,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const {width:W,height:H}=viewport,q=plot();
   t=cameraTransform(level.bounds,viewport,camera);camera={zoom:t.zoom,center:t.center};
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;
+  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();cannonTargets=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
   el('stop',{offset:'0%', 'stop-color':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':'#e6f5e6'},sky);
   const portal=el('radialGradient',{id:'portal'},defs);el('stop',{offset:'0%','stop-color':'#fffbea'},portal);el('stop',{offset:'100%','stop-color':'#f8ba48'},portal);
@@ -173,7 +188,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   }
   for(const c of level.cannons){
    const a=p(c.position),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content),style=cannonTypes[c.type];
+   g.classList.add('cannon-target');cannonTargets.set(c.id,g);
    const body=el('g',{transform:'scale('+c.direction+' 1)'},g);
+   el('rect',{x:-.84,y:-.30,width:1.16,height:.93,rx:.18,fill:'#fff1bd','fill-opacity':.65,stroke:'#a86e24','stroke-width':.037,'stroke-dasharray':'.085 .045',class:'planning-halo','pointer-events':'none'},body);
    // Mouth is at (0,0); artwork extends away from the exact launch point.
    el('ellipse',{cx:-.37,cy:.47,rx:.37,ry:.09,fill:'#584d42','fill-opacity':.35},body);
    el('rect',{x:-.74,y:.35,width:.73,height:.12,rx:.05,fill:'#a77347',stroke:'#694c38','stroke-width':.025},body);
@@ -188,7 +205,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    el('circle',{r:.12,fill:'white','fill-opacity':.2,stroke:'#fff','stroke-width':.028},g);
    el('circle',{r:.044,fill:'#fff',stroke:'#203d54','stroke-width':.022},g);
    el('text',{x:0,y:-.35,'text-anchor':'middle','font-size':.25,'font-weight':800,fill:'#203d54',stroke:'#eaf8f8','stroke-width':.05,'paint-order':'stroke'},g,c.id);
-   target(g,{id:c.id,label:'Cannon '+c.id+' · '+style.label,detail:coord(c.position),point:c.position});
+   target(g,{id:c.id,label:'Cannon '+c.id+' · '+style.label,detail:coord(c.position),point:c.position},true);
   }
   const a=p(level.exit),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content);
   el('path',{d:'M-.43 .44 V-.06 A.43 .43 0 0 1 .43 -.06 V.44Z',fill:'#b5a38b',stroke:'#6b665c','stroke-width':.04},g);
@@ -211,7 +228,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   tooltip=el('g',{'pointer-events':'none','aria-hidden':'true'},svg) as SVGGElement;
   controls.readout.textContent=Math.round(camera.zoom*100)+'%';controls.out.disabled=camera.zoom<=MIN_ZOOM;controls.in.disabled=camera.zoom>=MAX_ZOOM;
   controls.reset.disabled=camera.zoom===MIN_ZOOM;for(const button of [controls.left,controls.right,controls.up,controls.down])button.disabled=camera.zoom===MIN_ZOOM;
-  svg.classList.toggle('zoomed',camera.zoom>MIN_ZOOM);inspect();
+  svg.classList.toggle('zoomed',camera.zoom>MIN_ZOOM);paintSelection();inspect();
  }
  const zoom=(factor:number)=>{camera=zoomCamera(level.bounds,viewport,camera,Number((camera.zoom*factor).toFixed(3)),pinned?inspections.get(pinned)?.point:undefined);draw();};
  controls.in.addEventListener('click',()=>zoom(1.25));controls.out.addEventListener('click',()=>zoom(.8));controls.reset.addEventListener('click',()=>{camera=initialCamera(level.bounds);draw();});
@@ -225,5 +242,5 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
  observer.observe(stage);draw();
- return {playFlight,playRapidFire,clearFlight,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
+ return {playFlight,playRapidFire,clearFlight,setPlanningSelection,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
 }

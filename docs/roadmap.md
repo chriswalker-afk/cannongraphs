@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phase 1 complete. PR8 introduces linear relay routes, captures, cycle protection and route replays. Next: PR9 all-cannon planning interface: visible equation slots, selected-cannon highlighting, readiness and tested-state feedback, responsive layout. PR10 terrain constraints; PR11 diagnostic mathematical feedback; PR12 twelve World 1 levels; PR13 World 2.
+Phase 1 complete. PR8 introduced linear relay routes and route replays; PR9 adds visible per-cannon planning cards, scene selection, readiness and local tested/revise evidence. Next: PR10 reusable terrain and obstacle constraints, with clearance checks and authored examples. PR11 diagnostic mathematical feedback; PR12 twelve World 1 levels; PR13 World 2.
