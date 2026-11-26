@@ -2,6 +2,8 @@ import {cameraTransform,initialCamera,panCamera,zoomCamera,MIN_ZOOM,MAX_ZOOM,typ
 import type {Point,Viewport} from '../engine/coordinates';
 import {cannonTypes} from '../game/cannons';
 import type {Level} from '../levels/schema';
+import {BARREL_ANGLE,DEMO_END_MS,sampleDemoFrame} from '../animations/launch';
+import {createLaunchVisual} from './launchVisual';
 
 type Inspection={id:string;label:string;detail:string;point:Point};
 const ns='http://www.w3.org/2000/svg';
@@ -20,6 +22,27 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
  let inspections=new Map<string,Inspection>(),tooltip:SVGGElement;
  let drag:{id:number;x:number;y:number}|undefined;
+ const source=level.cannons.find(c=>c.id===level.startId)!;
+ const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
+ let startBarrel:Element|undefined,visual:ReturnType<typeof createLaunchVisual>|undefined;
+ let rehearsal:{started:number;elapsed:number;reduced:boolean;done:()=>void}|undefined,animationId=0;
+ function paintRehearsal(){
+  if(!visual||!startBarrel)return;
+  if(!rehearsal){visual.hide();startBarrel.setAttribute('transform','rotate(-'+BARREL_ANGLE+')');return;}
+  const f=sampleDemoFrame(rehearsal.elapsed,source.position,source.direction,rehearsal.reduced);
+  startBarrel.setAttribute('transform','rotate(-'+BARREL_ANGLE+') translate('+(-f.recoil)+' 0)');
+  visual.paint(f,source.position,source.direction,BARREL_ANGLE,t.toScreen,t.scale);
+ }
+ function step(now:number){
+  if(!rehearsal)return;
+  rehearsal.elapsed=Math.max(0,now-rehearsal.started)*(rehearsal.reduced?2:1);
+  if(rehearsal.elapsed>=DEMO_END_MS){const done=rehearsal.done;rehearsal=undefined;animationId=0;paintRehearsal();done();return;}
+  paintRehearsal();animationId=requestAnimationFrame(step);
+ }
+ function previewLaunch(done:()=>void):boolean{
+  if(rehearsal)return false;
+  rehearsal={started:performance.now(),elapsed:0,reduced:motion.matches,done};paintRehearsal();animationId=requestAnimationFrame(step);return true;
+ }
  const plot=()=>({x:viewport.padding,y:viewport.padding,w:viewport.width-2*viewport.padding,h:viewport.height-2*viewport.padding});
  function inspect(){
   if(!tooltip)return;
@@ -50,7 +73,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const {width:W,height:H}=viewport,q=plot();
   t=cameraTransform(level.bounds,viewport,camera);camera={zoom:t.zoom,center:t.center};
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;
+  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;startBarrel=undefined;visual=undefined;
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
   el('stop',{offset:'0%', 'stop-color':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':'#e6f5e6'},sky);
   const portal=el('radialGradient',{id:'portal'},defs);el('stop',{offset:'0%','stop-color':'#fffbea'},portal);el('stop',{offset:'100%','stop-color':'#f8ba48'},portal);
@@ -97,7 +120,8 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    el('ellipse',{cx:-.37,cy:.47,rx:.37,ry:.09,fill:'#584d42','fill-opacity':.35},body);
    el('rect',{x:-.74,y:.35,width:.73,height:.12,rx:.05,fill:'#a77347',stroke:'#694c38','stroke-width':.025},body);
    el('circle',{cx:-.38,cy:.29,r:.18,fill:'#b38856',stroke:'#715039','stroke-width':.035},body);
-   const barrel=el('g',{transform:'rotate(-35)'},body);
+   const barrel=el('g',{transform:'rotate(-'+BARREL_ANGLE+')'},body);
+   if(c.id===level.startId)startBarrel=barrel;
    el('rect',{x:-.70,y:-.17,width:.65,height:.34,rx:.1,fill:style.color,stroke:'#254763','stroke-width':.035},barrel);
    el('path',{d:'M-.60 -.105 H-.23',stroke:'#d9f4ff','stroke-width':.045,'stroke-linecap':'round',opacity:.75},barrel);
    el('rect',{x:-.15,y:-.21,width:.15,height:.42,rx:.035,fill:style.color,stroke:'#254763','stroke-width':.035},barrel);
@@ -115,6 +139,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   el('circle',{r:.047,fill:'#fff',stroke:'#7a5a25','stroke-width':.025},g);
   el('text',{x:0,y:-.56,'text-anchor':'middle','font-size':.21,'font-weight':800,fill:'#725024',stroke:'#fff5cf','stroke-width':.05,'paint-order':'stroke'},g,'EXIT');
   target(g,{id:'exit',label:'Exit',detail:coord(level.exit),point:level.exit});
+  visual=createLaunchVisual(content);paintRehearsal();
   // Edge tick labels remain visible when the origin is offscreen.
   const bottom=Math.min(q.y+q.h,br.y),left=Math.max(q.x,tl.x);
   for(const x of xs){const s=p({x,y:0});el('text',{x:s.x,y:bottom+15,'text-anchor':'middle','font-size':11,fill:'#23475e','font-weight':650},svg,fmt(x));}
@@ -138,5 +163,5 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
  observer.observe(stage);draw();
- return ()=>{observer.disconnect();svg.remove();};
+ return {previewLaunch,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);const done=rehearsal?.done;rehearsal=undefined;done?.();svg.remove();}};
 }
