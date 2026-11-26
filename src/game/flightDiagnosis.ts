@@ -1,5 +1,5 @@
 import type {Point} from '../engine/coordinates';
-import {evaluateLinear,type LinearEquation} from '../engine/equations/linear';
+import {evaluateEquation,isQuadratic,type FlightEquation} from '../engine/equations/linear';
 import {CAPTURE_EPSILON,type AttemptResult} from '../engine/simulation/linearAttempt';
 import {PIP_RADIUS} from '../engine/collisions/clearance';
 import {routeLegs} from '../engine/simulation/linearRoute';
@@ -20,7 +20,7 @@ export interface FeedbackHistory {
  readonly lastAttemptId:number;readonly counts:ReadonlyMap<string,number>;readonly latest:AttemptHint|null;
 }
 export function createFeedbackHistory():FeedbackHistory{return {lastAttemptId:0,counts:new Map(),latest:null};}
-const method='Choose two points, find m = change in y ÷ change in x, then substitute one point into y = mx + c to find c.';
+const linearMethod='Choose two points, find m = change in y ÷ change in x, then substitute one point into y = mx + c to find c.';
 const directionName=(direction:1|-1)=>direction===1?'right':'left';
 type Destination={id:string;label:string;position:Point};
 function forwardDestinations(level:Level,leg:AttemptResult):Destination[]{
@@ -29,10 +29,12 @@ function forwardDestinations(level:Level,leg:AttemptResult):Destination[]{
 }
 // Only examine a completed failed journey and its actual submitted equation.
 // No reference answers, intended route or speculative "correct" equation are used.
-export function diagnoseFlight(level:Level,result:AttemptResult,equations:ReadonlyMap<string,LinearEquation>):FlightDiagnosis|null{
+export function diagnoseFlight(level:Level,result:AttemptResult,equations:ReadonlyMap<string,FlightEquation>):FlightDiagnosis|null{
  if(result.event.kind==='exit'||result.event.kind==='cannon')return null;
  const legs=routeLegs(result),leg=legs[legs.length-1],cannonId=leg.cannonId,event=result.event;
  const e=equations.get(cannonId);if(!e)return null;
+ const quadratic=isQuadratic(e),graph=quadratic?'curve':'line';
+ const method=quadratic?'Use the cannon and destination coordinates in y = ax² + bx + c. Choose a third point, or use a suitable turning point to control the shape.':linearMethod;
  const make=(kind:FailureKind,category:string,title:string,evidence:string,prompts:FlightDiagnosis['prompts']):FlightDiagnosis=>({
   cannonId,kind,key:JSON.stringify([cannonId,category]),title,evidence,prompts
  });
@@ -45,11 +47,11 @@ export function diagnoseFlight(level:Level,result:AttemptResult,equations:Readon
   ]);
  }
  if(leg.event.kind==='misfire'){
-  const x=leg.source.x,y=leg.source.y,value=evaluateLinear(e,x),error=leg.event.startError;
+  const x=leg.source.x,y=leg.source.y,value=evaluateEquation(e,x),error=leg.event.startError;
   return make('source','source','Check the launch point','Your previous equation gives y ≈ '+n(value)+' at x = '+n(x)+'. Cannon '+cannonId+' is at '+point(leg.source)+'; the vertical difference has magnitude '+n(Math.abs(error))+'.',[
-   'Does the line pass through the cannon’s marked coordinates?',
+   'Does the '+graph+' pass through the cannon’s marked coordinates?',
    'Substitute x = '+n(x)+' into your equation. Does the result equal '+n(y)+'?',
-   'In y = mx + c, substitute the cannon’s x and y. Once you have chosen m, rearrange using c = y − mx, then check the launch point again.'
+   quadratic?'In y = ax² + bx + c, substitute the cannon’s x and y. Once a and b are chosen, use c = y − ax² − bx and check the launch point.':'In y = mx + c, substitute the cannon’s x and y. Once you have chosen m, rearrange using c = y − mx, then check the launch point again.'
   ]);
  }
  if(leg.event.kind==='obstacle'){
@@ -62,8 +64,8 @@ export function diagnoseFlight(level:Level,result:AttemptResult,equations:Readon
   const name=terrainLabel(o);
   return make('collision','collision:'+o.id,'Clear the '+name.toLowerCase(),'The Pip hit the '+face+' with its centre near '+point(leg.end)+'. '+name+' spans x = '+n(b.minX)+' to '+n(b.maxX)+' and y = '+n(b.minY)+' to '+n(b.maxY)+'.',[
    check,
-   'Use the obstacle’s bounds to compare the line’s y-values with its top and bottom. '+comparison,
-   'Calculate y = mx + c at both ends of the obstacle’s x-interval for a route across its full width. '+comparison+' Allow '+n(PIP_RADIUS)+' units for the Pip’s body; touching is a collision.'
+   'Use the obstacle’s bounds to compare the '+graph+'’s y-values with its top and bottom. '+comparison,
+   (quadratic?'Check y = ax² + bx + c at the ends of the obstacle’s x-interval and at the turning point if it lies inside. ':'Calculate y = mx + c at both ends of the obstacle’s x-interval for a route across its full width. ')+comparison+' Allow '+n(PIP_RADIUS)+' units for the Pip’s body; touching is a collision.'
   ]);
  }
  if(leg.event.kind==='boundary'){
@@ -78,7 +80,7 @@ export function diagnoseFlight(level:Level,result:AttemptResult,equations:Readon
   // A concrete example only if its x-coordinate was actually reached.
   // When several candidates were passed, pick the smallest vertical miss, not an assumed intended target.
   const passed=forward.filter(t=>(t.position.x-leg.end.x)*leg.direction<=1e-9)
-   .map(t=>({...t,value:evaluateLinear(e,t.position.x)}))
+   .map(t=>({...t,value:evaluateEquation(e,t.position.x)}))
    .map(t=>({...t,error:t.value-t.position.y}))
    .filter(t=>Math.abs(t.error)>CAPTURE_EPSILON)
    .sort((a,b)=>Math.abs(a.error)-Math.abs(b.error)||Math.abs(a.position.x-leg.source.x)-Math.abs(b.position.x-leg.source.x)||a.id.localeCompare(b.id));
@@ -86,22 +88,22 @@ export function diagnoseFlight(level:Level,result:AttemptResult,equations:Readon
   if(target){
    const relation=target.error>0?'above':'below';
    const which=forward.length>1?'For example, at ':'At ';
-   return make('missed-target','missed-target','Check the gradient',which+target.label+' ('+n(target.position.x)+', '+n(target.position.y)+'), the attempted line gives y ≈ '+n(target.value)+', about '+n(Math.abs(target.error))+' units '+relation+' the marked point.',[
-    'The line left the level without reaching a destination. Check the gradient between your chosen points.',
+   return make('missed-target','missed-target',quadratic?'Check the curve':'Check the gradient',which+target.label+' ('+n(target.position.x)+', '+n(target.position.y)+'), the attempted '+graph+' gives y ≈ '+n(target.value)+', about '+n(Math.abs(target.error))+' units '+relation+' the marked point.',[
+    quadratic?'The curve missed the destination. Check the shape and turning point.':'The line left the level without reaching a destination. Check the gradient between your chosen points.',
     'Substitute the x-coordinate of your chosen destination into the equation and compare the y-values.',
     method+' Check both marked points in your equation before trying again.'
    ]);
   }
   const vertical=edge==='top'||edge==='bottom';
-  return make('boundary','boundary:'+edge,'Keep the graph in the level','The attempted line reached the '+edge+' edge near '+point(leg.end)+'.'+(vertical?' It did not reach a marked destination before leaving the level.':''),[
-   vertical?'Is the line rising or falling too quickly for the route you chose?':'Check that your line meets the next marked point before leaving the level.',
-   'Compare the changes in x and y between the firing cannon and your chosen destination.',
+  return make('boundary','boundary:'+edge,'Keep the graph in the level','The attempted '+graph+' reached the '+edge+' edge near '+point(leg.end)+'.'+(vertical?' It did not reach a marked destination before leaving the level.':''),[
+   quadratic?'Check the curve’s turning point and opening direction before it leaves the level.':vertical?'Is the line rising or falling too quickly for the route you chose?':'Check that your line meets the next marked point before leaving the level.',
+   quadratic?'Check the y-values at the cannon, destination and turning point.':'Compare the changes in x and y between the firing cannon and your chosen destination.',
    method+' Check that the graph remains inside the level until it reaches that destination.'
   ]);
  }
  return null;
 }
-export function recordAttemptFeedback(history:FeedbackHistory,attemptId:number,level:Level,result:AttemptResult,equations:ReadonlyMap<string,LinearEquation>):FeedbackHistory{
+export function recordAttemptFeedback(history:FeedbackHistory,attemptId:number,level:Level,result:AttemptResult,equations:ReadonlyMap<string,FlightEquation>):FeedbackHistory{
  if(!Number.isSafeInteger(attemptId)||attemptId<=history.lastAttemptId)return history;
  const diagnosis=diagnoseFlight(level,result,equations);
  if(!diagnosis)return {...history,lastAttemptId:attemptId,latest:null};

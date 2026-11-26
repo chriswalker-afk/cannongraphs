@@ -1,7 +1,7 @@
-import type {LinearEquation} from '../engine/equations/linear';
+import {equationCoefficients,type FlightEquation} from '../engine/equations/linear';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {routeLegs} from '../engine/simulation/linearRoute';
-export interface PlanDraft {readonly text:string;readonly equation:LinearEquation|null}
+export interface PlanDraft {readonly text:string;readonly equation:FlightEquation|null}
 export type LegEvidence='tested'|'revise';
 export type PlanStatus='empty'|'invalid'|'ready'|LegEvidence;
 export interface PlanEntry extends PlanDraft {readonly id:string;readonly evidence:LegEvidence|null}
@@ -11,9 +11,7 @@ export function createFlightPlan(ids:readonly string[]):FlightPlan{
  return ids.map(id=>({id,text:'',equation:null,evidence:null}));
 }
 export function getPlanEntry(plan:FlightPlan,id:string):PlanEntry|undefined{return plan.find(e=>e.id===id);}
-const equationKey=(e:LinearEquation|null)=>e?[
- e.exactGradient.numerator,e.exactGradient.denominator,e.exactIntercept.numerator,e.exactIntercept.denominator
-].join('/'):'';
+const equationKey=(e:FlightEquation|null)=>e?equationCoefficients(e).map(r=>r.numerator+'/'+r.denominator).join('|'):'';
 function sameDraft(a:PlanDraft,b:PlanDraft):boolean{return a.text===b.text&&equationKey(a.equation)===equationKey(b.equation);}
 export function editPlan(plan:FlightPlan,id:string,draft:PlanDraft):FlightPlan{
  const previous=getPlanEntry(plan,id);
@@ -25,8 +23,8 @@ export function planStatus(entry:PlanEntry):PlanStatus{
  return entry.evidence??'ready';
 }
 export function countReady(plan:FlightPlan):number{return plan.filter(e=>e.equation!==null).length;}
-export function snapshotPlan(plan:FlightPlan):ReadonlyMap<string,LinearEquation>|null{
- const result=new Map<string,LinearEquation>();
+export function snapshotPlan(plan:FlightPlan):ReadonlyMap<string,FlightEquation>|null{
+ const result=new Map<string,FlightEquation>();
  for(const entry of plan){if(!entry.equation)return null;result.set(entry.id,entry.equation);}
  return result;
 }

@@ -25,17 +25,17 @@ const refs:readonly Readonly<Record<string,string>>[]=[
 ];
 const plan=(i:number)=>new Map(Object.entries(refs[i]).map(([id,e])=>[id,parseLinearEquation(e)]));
 const near=(a:number,b:number)=>assert.ok(Math.abs(a-b)<1e-7,a+' != '+b);
-test('two complete unlocked worlds contain 24 unique levels and transition in order',()=>{
- assert.equal(worlds.length,2);assert.equal(levels.length,24);
+test('the first two complete unlocked worlds contain 24 unique levels and transition in order',()=>{
+ assert.equal(worlds.slice(0,2).flatMap(w=>w.levels).length,24);assert.equal(new Set(levels.map(l=>l.id)).size,levels.length);
  assert.equal(worlds[1].name,'The Floating Isles');
  assert.equal(nextLevel(meadowLaunchers[11].id),floatingIsles[0]);
- assert.equal(nextLevel(floatingIsles[11].id),undefined);
+ assert.equal(nextLevel(floatingIsles[11].id),worlds[2].levels[0]);
  assert.deepEqual(floatingIsles.map(l=>l.id),Array.from({length:12},(_,i)=>'2-'+String(i+1).padStart(2,'0')));
  for(const [i,l] of floatingIsles.entries()){
   assert.deepEqual(levelPosition(l.id),{index:i+1,total:12});
   assert.equal(worldForLevel(l.id),worlds[1]);assert.equal(l.creatures,5);
   assert.ok(l.cannons.every(c=>c.type==='linear'));
-  assert.equal(nextLevel(l.id),floatingIsles[i+1]);
+  assert.equal(nextLevel(l.id),floatingIsles[i+1]??worlds[2].levels[0]);
  }
 });
 test('curriculum introduces fractions, negative intercepts, all four quadrants and reverse firing',()=>{

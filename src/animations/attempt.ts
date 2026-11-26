@@ -18,8 +18,8 @@ export function sampleAttempt(ms:number,r:AttemptResult,reduced=false,staging?:M
  if(ms<FIRE_MS)return {...base,pip:cue.loadingPoint,pose:'excited'};
  if(misfire)return {...base,...sampleMisfire(since,r.source,r.direction,reduced,staging),burst:null,recoil:0,charge:0};
  if(since<duration){
-  const p=r.pointAt(reduced?1:clamp(since/duration));
-  return {...base,pip:p,pose:'flying',tilt:reduced?0:-r.angle*r.direction,stretch:reduced?1:1+.20*Math.exp(-since/160),trace:p};
+  const progress=reduced?1:clamp(since/duration),p=r.pointAt(progress);
+  return {...base,pip:p,pose:'flying',tilt:reduced?0:-(r.angleAt?.(progress)??r.angle)*r.direction,stretch:reduced?1:1+.20*Math.exp(-since/160),trace:p};
  }
  const time=Math.max(0,since-duration),p=clamp(time/(r.event.kind==='cannon'?(reduced?140:300):reduced?250:720)),success=r.event.kind==='exit'||r.event.kind==='cannon';
  const normal=r.event.kind==='obstacle'||r.event.kind==='boundary'?r.event.normal:{x:0,y:1};

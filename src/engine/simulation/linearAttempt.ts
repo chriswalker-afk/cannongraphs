@@ -1,4 +1,5 @@
 import type {Point} from '../coordinates';
+import type {QuadraticSegment} from '../trajectories/quadratic';
 import type {Cannon,Level,Obstacle} from '../../levels/schema';
 import {evaluateLinear,type LinearEquation} from '../equations/linear';
 import {buildLinearFlight} from '../trajectories/linear';
@@ -18,6 +19,9 @@ export interface AttemptResult {
  readonly cannonId:string;readonly event:FlightEvent;readonly source:Point;readonly start:Point;readonly end:Point;
  readonly direction:1|-1;readonly angle:number;readonly length:number;
  pointAt(progress:number):Point;
+ angleAt?(progress:number):number;
+ curveControl?(from:Point,to:Point):Point;
+ readonly quadraticSegment?:QuadraticSegment;
 }
 export function simulateLinearAttempt(e:LinearEquation,cannon:Cannon,level:Level):AttemptResult{
  const source={...cannon.position},direction=cannon.direction,flight=buildLinearFlight(e,source,direction,level.bounds);

@@ -31,7 +31,7 @@ function multiply(a:Poly,b:Poly):Poly{
 function power(a:Poly,b:Poly):Poly{
  if(b.length!==1||b[0].d!==1n)throw new EquationError('nonlinear','Use whole-number powers for this cannon.');
  const n=b[0].n;
- if(n<0n&&a.length!==1)throw new EquationError('domain','A variable in the denominator is not a line defined for every x.');
+ if(n<0n&&a.length!==1)throw new EquationError('domain','A variable in the denominator is not a polynomial defined for every x.');
  if(n>8n||n< -8n)throw new EquationError('complexity','Use powers between −8 and 8.');
  if(n===0n&&a.length===1&&a[0].n===0n)throw new EquationError('domain','Zero to the power zero is undefined here.');
  let out:Poly=[ONE];for(let i=0n;i<abs(n);i++)out=multiply(out,a);
@@ -114,4 +114,29 @@ export function parseLinearEquation(input:string):LinearEquation{
 }
 export function evaluateLinear(e:LinearEquation,x:number):number{
  const y=e.gradient*x+e.intercept;if(!Number.isFinite(x)||!Number.isFinite(y))throw new RangeError('Non-finite flight coordinate');return y;
+}
+
+export interface QuadraticEquation {
+ readonly quadratic:number;readonly linear:number;readonly constant:number;
+ readonly exactQuadratic:RationalCoefficient;readonly exactLinear:RationalCoefficient;readonly exactConstant:RationalCoefficient;
+}
+export type FlightEquation=LinearEquation|QuadraticEquation;
+export function isQuadratic(e:FlightEquation):e is QuadraticEquation{return 'quadratic' in e;}
+export function parseQuadraticEquation(input:string):QuadraticEquation{
+ const p=new Parser(tokenize(input)).parse();
+ if(p.length!==3)throw new EquationError('nonlinear','This cannon needs a genuine quadratic equation (a nonzero x² term after simplifying).');
+ const [c,b,a]=p;
+ return {quadratic:numeric(a),linear:numeric(b),constant:numeric(c),exactQuadratic:coefficient(a),exactLinear:coefficient(b),exactConstant:coefficient(c)};
+}
+export function evaluateQuadratic(e:QuadraticEquation,x:number):number{
+ const y=(e.quadratic*x+e.linear)*x+e.constant;
+ if(!Number.isFinite(x)||!Number.isFinite(y))throw new RangeError('Non-finite flight coordinate');
+ return y;
+}
+export function evaluateEquation(e:FlightEquation,x:number):number{return isQuadratic(e)?evaluateQuadratic(e,x):evaluateLinear(e,x);}
+export function parseFlightEquation(input:string,family:'linear'|'quadratic'):FlightEquation{
+ return family==='quadratic'?parseQuadraticEquation(input):parseLinearEquation(input);
+}
+export function equationCoefficients(e:FlightEquation):readonly RationalCoefficient[]{
+ return isQuadratic(e)?[e.exactQuadratic,e.exactLinear,e.exactConstant]:[e.exactGradient,e.exactIntercept];
 }
