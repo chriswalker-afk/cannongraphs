@@ -60,7 +60,7 @@ export function diagnoseFlight(level:Level,result:AttemptResult,equations:Readon
   const check=above?'Check the height of your graph above the obstacle.':below?'Check the height of your graph below the obstacle.':'Check the height of your graph across the obstacle’s width.';
   const comparison=above?'For a route above it, y must stay sufficiently above its top.':below?'For a route below it, y must stay sufficiently below its bottom.':'Decide whether the route should pass above or below it.';
   const name=terrainLabel(o);
-  return make('collision','collision:'+o.id,'Clear the '+name.toLowerCase(),'The Pip’s centre hit the '+face+' near '+point(leg.end)+'. '+name+' spans x = '+n(b.minX)+' to '+n(b.maxX)+' and y = '+n(b.minY)+' to '+n(b.maxY)+'.',[
+  return make('collision','collision:'+o.id,'Clear the '+name.toLowerCase(),'The Pip hit the '+face+' with its centre near '+point(leg.end)+'. '+name+' spans x = '+n(b.minX)+' to '+n(b.maxX)+' and y = '+n(b.minY)+' to '+n(b.maxY)+'.',[
    check,
    'Use the obstacle’s bounds to compare the line’s y-values with its top and bottom. '+comparison,
    'Calculate y = mx + c at both ends of the obstacle’s x-interval for a route across its full width. '+comparison+' Allow '+n(PIP_RADIUS)+' units for the Pip’s body; touching is a collision.'
