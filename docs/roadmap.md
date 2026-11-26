@@ -31,4 +31,4 @@
 | 27 | Sound |
 | 28 | Classroom QA and accessibility |
 
-Phase 1 complete. PR8–11 add multi-cannon routes, planning, reusable terrain and diagnostic post-flight mathematical feedback. Next: PR12 twelve sequenced World 1 levels (integer gradients/intercepts, horizontal and negative lines, two-point equations and increasingly long chains). PR13 fractional gradients, negative coordinates and complex routes in World 2.
+Phase 1 complete. PR8–12 add multi-cannon routes, planning, terrain, mathematical feedback and the twelve-level Meadow Launchers curriculum. Next: PR13 World 2 — The Floating Isles: fractional gradients, negative marked coordinates, longer and more varied linear chains, with verified routes and a distinct environment.

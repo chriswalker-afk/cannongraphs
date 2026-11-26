@@ -36,3 +36,8 @@
 @media(max-height:500px){.flight-hint{padding:3px 5px;gap:2px}.hint-copy p,#hint-evidence{font-size:11px}#hint-evidence{max-height:34px}}
 /* On exceptionally short screens retain a usable plot rather than clipping the editor. */
 @media(max-height:380px), (max-height:560px) and (max-width:650px){main{height:auto;min-height:100dvh;grid-template-rows:auto auto minmax(160px,1fr) auto}.stage{min-height:160px}}
+
+/* World 1 progression: compact learning objective, unlocked selector and next level. */
+.brand>div{min-width:0}.level-objective{font-size:11px;color:#536579;line-height:1.2;max-width:44ch;overflow-wrap:anywhere}.resolution-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}.resolution-actions button[hidden]{display:none}.resolution-actions #replay-level{background:#e4edf2;color:#234d78;border:1px solid #b8cdd8}.level-resolution[data-outcome=failure] #replay-level{background:#2583ca;color:white;border-color:#2583ca}.resolution-actions #next-level{background:#31894f;color:white}.level select{max-width:220px}
+@media(max-width:650px){.brand{flex:1;min-width:0}.level select{max-width:132px}.level-objective{font-size:10px;max-width:30ch}.resolution-actions button{font-size:11px;padding:5px 9px}}
+@media(max-height:500px){.level-objective{font-size:10px}.resolution-actions button{padding:4px 9px}}
