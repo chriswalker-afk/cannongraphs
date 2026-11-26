@@ -1,5 +1,7 @@
 import {validateLevel,type Level} from '../../levels/schema';
-import {isQuadratic,type FlightEquation} from '../equations/linear';
+import {isQuadratic} from '../equations/linear';
+import {isAdvanced,equationFamily,type CannonEquation} from '../equations/advanced';
+import {simulateAdvancedAttempt} from './advancedAttempt';
 import {simulateQuadraticAttempt} from './quadraticAttempt';
 import {collectRouteGems,type GemHit} from './gemContacts';
 import {simulateLinearAttempt,type AttemptResult,type FlightEvent} from './linearAttempt';
@@ -11,10 +13,10 @@ export interface RouteResult extends AttemptResult {
 export function isRouteResult(r:AttemptResult):r is RouteResult{return 'legs' in r;}
 export function routeLegs(r:AttemptResult):readonly AttemptResult[]{return isRouteResult(r)?r.legs:[r];}
 export function routeGemHits(r:AttemptResult):readonly GemHit[]{return isRouteResult(r)?r.gemHits:[];}
-export function simulateRoute(level:Level,equations:ReadonlyMap<string,FlightEquation>):RouteResult{
+export function simulateRoute(level:Level,equations:ReadonlyMap<string,CannonEquation>):RouteResult{
  validateLevel(level);
  // Validate the whole plan before an attempt is reserved, even for a cannon that is bypassed.
- for(const c of level.cannons){const e=equations.get(c.id);if(!e||c.type!==(isQuadratic(e)?'quadratic':'linear'))throw new Error('Program every '+c.type+' cannon with its own equation family before launching.');}
+ for(const c of level.cannons){const e=equations.get(c.id);if(!e||c.type!==equationFamily(e))throw new Error('Program every '+c.type+' cannon with its own equation family before launching.');}
  const byId=new Map(level.cannons.map(c=>[c.id,c]));
  let current=byId.get(level.startId);if(!current)throw new Error('Missing start cannon');
  const visited=new Set<string>(),legs:AttemptResult[]=[];
@@ -22,7 +24,7 @@ export function simulateRoute(level:Level,equations:ReadonlyMap<string,FlightEqu
  while(true){
   visited.add(current.id);
   const equation=equations.get(current.id)!;
-  const leg=isQuadratic(equation)?simulateQuadraticAttempt(equation,current,level):simulateLinearAttempt(equation,current,level);
+  const leg=isAdvanced(equation)?simulateAdvancedAttempt(equation,current,level):isQuadratic(equation)?simulateQuadraticAttempt(equation,current,level):simulateLinearAttempt(equation,current,level);
   legs.push(leg);event=leg.event;
   if(event.kind!=='cannon')break;
   if(visited.has(event.cannonId)){event={kind:'loop',cannonId:event.cannonId};break;}

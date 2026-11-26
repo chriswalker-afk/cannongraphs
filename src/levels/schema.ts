@@ -13,6 +13,7 @@ export function validateLevel(l:Level):void{
  const inside=(p:Point)=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=l.bounds.minX&&p.x<=l.bounds.maxX&&p.y>=l.bounds.minY&&p.y<=l.bounds.maxY;
  const ids=new Set<string>(),anchors=new Set<string>([l.exit.x+','+l.exit.y]);
  for(const c of l.cannons){if(!c.id||c.id==='exit'||ids.has(c.id)||anchors.has(c.position.x+','+c.position.y)||!Object.hasOwn(cannonTypes,c.type)||!inside(c.position)||![1,-1].includes(c.direction))throw new Error('Invalid cannon');ids.add(c.id);anchors.add(c.position.x+','+c.position.y);}
+ if(l.cannons.some(c=>c.type!=='linear'&&c.type!=='quadratic')&&(Math.max(Math.abs(l.bounds.minX),Math.abs(l.bounds.maxX),Math.abs(l.bounds.minY),Math.abs(l.bounds.maxY))>1000||l.bounds.maxX-l.bounds.minX>128))throw new Error('Advanced levels must use bounded coordinates and x-span at most 128');
  if(!ids.has(l.startId)||!inside(l.exit))throw new Error('Invalid start or exit');
  for(const o of l.obstacles){if(!o.id||o.id==='exit'||ids.has(o.id)||!['floor','wall','platform','ceiling'].includes(o.kind)||!validBounds(o.bounds)||!inside({x:o.bounds.minX,y:o.bounds.minY})||!inside({x:o.bounds.maxX,y:o.bounds.maxY}))throw new Error('Invalid obstacle');ids.add(o.id);}
  const gems=l.gems??[];

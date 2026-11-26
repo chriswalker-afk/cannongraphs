@@ -3,7 +3,8 @@
 import {PIP_RADIUS,pointRectangleDistance,segmentRectangleDistance} from '../engine/collisions/clearance';
 import {quadraticRectangleDistance} from '../engine/collisions/quadraticSweep';
 import {GEOMETRY_EPS} from '../engine/collisions/sweep';
-import {parseFlightEquation} from '../engine/equations/linear';
+import {parseCannonEquation} from '../engine/equations/advanced';
+import {graphRectangleClearance} from '../engine/collisions/graphSweep';
 import {simulateRoute,type RouteResult} from '../engine/simulation/linearRoute';
 import {validateLevel,type Level} from './schema';
 export function assertAuthoredTerrain(level:Level):void{
@@ -19,14 +20,13 @@ export function auditSolution(level:Level,reference:Readonly<Record<string,strin
  assertAuthoredTerrain(level);
  const equations=new Map(level.cannons.map(c=>{
   if(!Object.hasOwn(reference,c.id))throw new Error(level.id+': missing reference for '+c.id);
-  if(c.type!=='linear'&&c.type!=='quadratic')throw new Error('Unsupported cannon '+c.type);
-  return [c.id,parseFlightEquation(reference[c.id],c.type)] as const;
+  return [c.id,parseCannonEquation(reference[c.id],c.type)] as const;
  }));
  const result=simulateRoute(level,equations);
  if(result.event.kind!=='exit')throw new Error(level.id+': reference route failed at '+result.terminalCannonId+' ('+result.event.kind+')');
  if(expectedRoute&&(expectedRoute.length!==result.legs.length||expectedRoute.some((id,i)=>id!==result.legs[i].cannonId)))throw new Error(level.id+': unexpected reference cannon sequence');
  let minimumClearance=Infinity;
- for(const leg of result.legs)for(const o of level.obstacles)minimumClearance=Math.min(minimumClearance,(leg.quadraticSegment?quadraticRectangleDistance(leg.quadraticSegment,o.bounds):segmentRectangleDistance(leg.start,leg.end,o.bounds))-PIP_RADIUS);
+ for(const leg of result.legs)for(const o of level.obstacles)minimumClearance=Math.min(minimumClearance,leg.graphSegment?graphRectangleClearance(leg.graphSegment,PIP_RADIUS,o.bounds):(leg.quadraticSegment?quadraticRectangleDistance(leg.quadraticSegment,o.bounds):segmentRectangleDistance(leg.start,leg.end,o.bounds))-PIP_RADIUS);
  if(minimumClearance<=GEOMETRY_EPS)throw new Error(level.id+': reference route has insufficient clearance');
  return {result,minimumClearance};
 }
