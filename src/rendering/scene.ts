@@ -1,6 +1,7 @@
 import {cameraTransform,initialCamera,panCamera,zoomCamera,MIN_ZOOM,MAX_ZOOM,type Camera} from '../engine/camera';
 import type {Bounds,Point,Viewport} from '../engine/coordinates';
 import {cannonTypes} from '../game/cannons';
+import {modePolicy,type LearningMode} from '../game/learningModes';
 import type {Level} from '../levels/schema';
 import {BARREL_ANGLE} from '../animations/launch';
 import {routeDuration,sampleRouteAttempt} from '../animations/routeAttempt';
@@ -31,13 +32,24 @@ function el(tag:string,attrs:Record<string,string|number>={},parent?:Element,con
 const fmt=(n:number)=>String(Number(n.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
-export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void}){
- const svg=el('svg',{role:'group','aria-label':'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
+export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode}){
+ const policy=modePolicy(controls.mode??'pilot');
+ const svg=el('svg',{role:'group','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
  let inspections=new Map<string,Inspection>(),tooltip:SVGGElement;
  let drag:{id:number;x:number;y:number}|undefined;
  let selectedCannon:string|undefined,planningEditable=false;
+ let previewPaths:readonly (readonly Point[])[]=[],previewLayer:Element|undefined;
+ function paintGraphPreview(){
+  if(!previewLayer)return;previewLayer.replaceChildren();
+  if(!policy.preview||!planningEditable)return;
+  for(const path of previewPaths){if(path.length<2)continue;const d=path.map((p,i)=>{const a=t.toScreen(p);return (i?'L':'M')+a.x+' '+a.y;}).join(' ');
+   el('path',{d,fill:'none',stroke:'#fff','stroke-width':4.8,opacity:.75,'stroke-linecap':'round'},previewLayer);
+   el('path',{d,fill:'none',stroke:'#347b71','stroke-width':2.5,'stroke-dasharray':'5 4','stroke-linecap':'round'},previewLayer);
+  }
+ }
+ function setGraphPreview(paths:readonly (readonly Point[])[]){previewPaths=policy.preview&&planningEditable?paths:[];paintGraphPreview();}
  let cannonTargets=new Map<string,Element>();
  function paintSelection(){
   for(const [id,g] of cannonTargets){
@@ -47,6 +59,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  }
  function setPlanningSelection(id:string,editable:boolean){
   if(id!==selectedCannon&&pinned&&cannonTargets.has(pinned))pinned=undefined;
+  if(id!==selectedCannon||!editable){previewPaths=[];paintGraphPreview();}
   selectedCannon=id;planningEditable=editable;paintSelection();inspect();
  }
  const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -140,7 +153,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(!tooltip)return;
   tooltip.replaceChildren();
   const item=inspections.get(hovered??focused??pinned??'');
-  controls.info.textContent=item?item.label+' · '+item.detail:'Hover, tap or focus an object to inspect its coordinates.';
+  controls.info.textContent=item?(policy.coordinates?item.label+' · '+item.detail:item.label):(policy.coordinates?'Hover, tap or focus an object to inspect its coordinates.':'Read coordinates from the axes.');
   if(!item)return;
   const q=plot();let a=t.toScreen(item.point);
   if(item.bounds){
@@ -148,7 +161,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    const x1=Math.max(q.x,lo.x),x2=Math.min(q.x+q.w,hi.x),y1=Math.max(q.y,lo.y),y2=Math.min(q.y+q.h,hi.y);
    if(x2<x1||y2<y1)return;a={x:(x1+x2)/2,y:(y1+y2)/2};
   }else if(a.x<q.x||a.x>q.x+q.w||a.y<q.y||a.y>q.y+q.h)return;
-  const lines=item.lines??[item.detail];
+  const lines=policy.coordinates?(item.lines??[item.detail]):[];
   const w=Math.min(Math.max(108,...lines.map(line=>line.length*6.7+20),item.label.length*7+20),viewport.width-12),h=26+18*lines.length;
   const x=Math.max(6,Math.min(viewport.width-w-6,a.x-w/2)),y=Math.max(4,Math.min(viewport.height-h-4,a.y>h+15?a.y-h-13:a.y+16));
   el('rect',{x,y,width:w,height:h,rx:8,fill:'#fffaf0',stroke:'#315779','stroke-width':1.5},tooltip);
@@ -229,6 +242,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    const art=renderGem(content,gem,p,scale);gemTargets.set(gem.id,art);
    target(art,{id:gem.id,label:'Optional gem',detail:coord(gem.position),point:gem.position});
   }
+  previewLayer=el('g',{'pointer-events':'none','aria-hidden':'true','data-layer':'cadet-graph-preview'},content);paintGraphPreview();
   trace=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;
   visual=createLaunchVisual(content);
   rapidParent=el('g',{'pointer-events':'none','aria-hidden':'true'},content);
@@ -257,5 +271,5 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
  observer.observe(stage);draw();
- return {playFlight,playRapidFire,clearFlight,setPlanningSelection,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
+ return {playFlight,playRapidFire,clearFlight,setPlanningSelection,setGraphPreview,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
 }

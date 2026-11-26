@@ -1,8 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {levels,worlds} from '../src/levels/catalog';
-import {beginSelection,selectWorld,selectLevel,backToWorlds,selectedWorld,selectedLevel,summarizeLevel} from '../src/game/levelSelection';
+import {beginSelection,selectWorld as chooseDestination,selectMode,selectLevel,backToWorlds,selectedWorld,selectedLevel,summarizeLevel} from '../src/game/levelSelection';
 import {identityForWorld,worldIdentities} from '../src/game/worldIdentity';
+import type {SelectionState} from '../src/game/levelSelection';
+const selectWorld=(s:SelectionState,w:number)=>selectMode(chooseDestination(s,w),'pilot');
 test('fresh selection begins with six destinations and requires a world then a level',()=>{
  const start=beginSelection();assert.equal(start.step,'worlds');assert.equal(selectedLevel(start),undefined);
  assert.equal(selectLevel(start,'1-01'),start);

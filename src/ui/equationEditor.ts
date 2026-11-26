@@ -3,6 +3,7 @@ import {parseCannonEquation,isAdvanced,equationFamily,type CannonEquation} from 
 import {buildLinearFlight,type LinearFlight} from '../engine/trajectories/linear';
 import type {Cannon,Level} from '../levels/schema';
 import {cannonTypes} from '../game/cannons';
+import {modePolicy,cadetGuidance,templates,type LearningMode} from '../game/learningModes';
 import {quadraticSegment,type QuadraticSegment} from '../engine/trajectories/quadratic';
 export interface EquationDraft {text:string;equation:CannonEquation|null;flight:LinearFlight|QuadraticSegment|null}
 const mathNS='http://www.w3.org/1998/Math/MathML';
@@ -29,14 +30,15 @@ function displayEquation(container:HTMLElement,e:CannonEquation|null){
  });
  math.append(row);container.append(math);
 }
-export function mountEquationEditor(root:HTMLElement,cannon:Cannon,level:Level){
- const family=cannon.type,style=cannonTypes[family];
+export function mountEquationEditor(root:HTMLElement,cannon:Cannon,level:Level,mode:LearningMode='pilot'){
+ const family=cannon.type,style=cannonTypes[family],policy=modePolicy(mode);
  const extra:Record<string,string[]>={quadratic:['square'],cubic:['square','cube'],reciprocal:['inverse'],exponential:['power','exp'],logarithmic:['ln','log'],wave:['sin','cos','tan','pi']};
  const labels:Record<string,string>={square:'x²',cube:'x³',inverse:'1/x',power:'^',exp:'exp',ln:'ln',log:'log',sin:'sin',cos:'cos',tan:'tan',pi:'π'};
  const buttons=(extra[family]??[]).map(key=>'<button type="button" data-insert="'+key+'" aria-label="Insert '+labels[key]+'">'+labels[key]+'</button>').join('');
- root.innerHTML=`<div class="editor-top"><label for="equation-input">Cannon <span id="editor-cannon"></span> · ${style.label}</label><span class="editor-family">${style.form}</span></div><div class="editor-entry"><span aria-hidden="true" class="equation-prefix">y =</span><input id="equation-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="180" aria-label="Right-hand side of the equation, or a full equation beginning y equals" aria-describedby="equation-message" placeholder="Enter a flight equation"><span id="equation-typeset" class="equation-typeset"></span></div><div class="editor-tools" role="group" aria-label="Mathematical input tools"><button type="button" data-insert="x" aria-label="Insert x">x</button>${buttons}<button type="button" data-insert="fraction" aria-label="Insert fraction">a/b</button><button type="button" data-insert="brackets" aria-label="Insert brackets">( )</button><button type="button" data-insert="minus" aria-label="Insert minus">−</button><button type="button" data-insert="multiply" aria-label="Insert multiplication">×</button><button type="button" data-insert="clear" aria-label="Clear equation">Clear</button></div><p id="equation-message" role="status" class="equation-message"></p>`;
+ root.innerHTML=`<div class="editor-top"><label for="equation-input">Cannon <span id="editor-cannon"></span> · ${style.label}</label>${mode==='ace'?'':'<span class="editor-family">'+style.form+'</span>'}</div><div class="editor-entry"><span aria-hidden="true" class="equation-prefix">y =</span><input id="equation-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="180" aria-label="Right-hand side of the equation, or a full equation beginning y equals" aria-describedby="equation-message" placeholder="Enter a flight equation"><span id="equation-typeset" class="equation-typeset"></span></div><div class="editor-tools" role="group" aria-label="Mathematical input tools"><button type="button" data-insert="x" aria-label="Insert x">x</button>${buttons}<button type="button" data-insert="fraction" aria-label="Insert fraction">a/b</button><button type="button" data-insert="brackets" aria-label="Insert brackets">( )</button><button type="button" data-insert="minus" aria-label="Insert minus">−</button><button type="button" data-insert="multiply" aria-label="Insert multiplication">×</button>${policy.templates?'<button type="button" id="equation-template">Template</button>':''}<button type="button" data-insert="clear" aria-label="Clear equation">Clear</button></div><p id="equation-message" role="status" class="equation-message"></p>${policy.templates?'<p class="cadet-guide" id="cadet-guide"></p>':''}`;
  root.querySelector('#editor-cannon')!.textContent=cannon.id;
  const input=root.querySelector<HTMLInputElement>('input')!,message=root.querySelector<HTMLElement>('#equation-message')!,typeset=root.querySelector<HTMLElement>('#equation-typeset')!,prefix=root.querySelector<HTMLElement>('.equation-prefix')!;
+ const template=root.querySelector<HTMLButtonElement>('#equation-template'),guide=root.querySelector<HTMLElement>('#cadet-guide');
  let draft:EquationDraft={text:'',equation:null,flight:null};
  let selection={start:0,end:0};
  const remember=()=>{selection={start:input.selectionStart??input.value.length,end:input.selectionEnd??input.value.length};};
@@ -48,15 +50,18 @@ export function mountEquationEditor(root:HTMLElement,cannon:Cannon,level:Level){
     const equation=parseCannonEquation(text,family),flight=isAdvanced(equation)?null:isQuadratic(equation)?quadraticSegment(equation,cannon.position.x,cannon.direction===1?level.bounds.maxX:level.bounds.minX):buildLinearFlight(equation,cannon.position,cannon.direction,level.bounds);
     draft={text,equation,flight};state='ready';message.textContent=style.label+' equation ready.'+(family==='wave'?' Angles in radians.':family==='logarithmic'?' ln: natural log; log: base 10.':'');
    }catch(error){
-    if(error instanceof EquationError){state=error.code==='empty'?'empty':'invalid';message.textContent=error.message;}
+    if(error instanceof EquationError){state=error.code==='empty'?'empty':'invalid';message.textContent=policy.templates&&text.includes('?')?'Replace every ? with a numerical parameter, or enter your own equation.':error.message;}
     else{state='invalid';message.textContent='The equation could not be evaluated. Try a simpler expression.';}
    }
-  }else message.textContent='Enter your equation. The flight path stays hidden until launch.';
+  }else message.textContent=policy.preview?'Enter an equation or use a blank template.':'Enter your equation. The flight path stays hidden until launch.';
   input.setAttribute('aria-invalid',String(state==='invalid'));root.dataset.state=state;
-  displayEquation(typeset,draft.equation);
+  displayEquation(typeset,mode==='ace'?null:draft.equation);
+  if(template)template.hidden=!!text.trim();
+  if(guide)guide.textContent=cadetGuidance(cannon,draft.equation);
   remember();
   root.dispatchEvent(new CustomEvent('equationchange',{detail:{ready:draft.equation!==null}}));
  };
+ template?.addEventListener('click',()=>{if(template.disabled||input.value.trim())return;input.value=templates[family];input.focus();const first=input.value.indexOf('?');input.setSelectionRange(first,first+1);update();});
  input.addEventListener('input',update);
  for(const event of ['select','keyup','click','blur'])input.addEventListener(event,remember);
  root.querySelectorAll<HTMLButtonElement>('button[data-insert]').forEach(button=>{

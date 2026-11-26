@@ -13,13 +13,15 @@ export function mountPipQueue(root:HTMLElement,total:number){
  function update(s:LevelState){
   const active=activeCount(s);
   root.classList.toggle('celebrating',s.phase==='celebrating');
+  const lost=s.unlimited?0:s.failed;
   icons.forEach((icon,i)=>{
-   const status=i<s.failed?'lost':i<s.failed+s.saved?'saved':i<s.failed+s.saved+active?'active':'waiting';
+   const status=i<lost?'lost':i<lost+s.saved?'saved':i<lost+s.saved+active?'active':'waiting';
    icon.dataset.status=status;
    sprites[i].setPose(status==='lost'?'disappointed':status==='saved'||(status==='waiting'&&s.phase==='celebrating')?'excited':i%3===0?'excited':'idle');
   });
   count.textContent=s.waiting+' waiting'+(active?' · '+active+' on a mission':'')+(s.saved?' · '+s.saved+' arrived':'')+(s.failed?' · '+s.failed+' lost':'');
-  root.setAttribute('aria-label',count.textContent);
+  if(s.unlimited)count.textContent=(s.phase==='celebrating'||s.phase==='success'?s.saved+' arrived · Practice':'∞ attempts'+(active?' · '+active+' flying':'')+(s.failed?' · '+s.failed+' tried':''));
+  root.setAttribute('aria-label',count.textContent.replace('∞','Unlimited'));
  }
  return {update};
 }

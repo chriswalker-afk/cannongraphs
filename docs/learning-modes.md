@@ -1,0 +1,15 @@
+# PR23 — Learning modes
+
+World selection now opens an explicit Cadet / Pilot / Ace choice before level selection. All 72 puzzles remain unlocked in every mode. Returning from a running level opens its world, mode and level; Back allows a different mode. A mode is fixed for the run and retained on next-level / next-world progression. Changing mode starts a fresh run, so aid or attempts cannot carry over. Persistence is reserved for PR24.
+
+| Mode | Attempts | Support | Result |
+| --- | --- | --- | --- |
+| Cadet | Unlimited | Coordinate inspection, blank parameter templates, live source substitution check, earlier method hints, opt-in graph preview | Practice completion and optional gems, no ranked stars |
+| Pilot | Five | Existing coordinate inspection and escalating post-attempt hints; no preview | Existing 0–3 stars |
+| Ace | Three | Read the axes; no visual coordinate tooltips, formulas, equivalent-expression display, hint panel or preview. Syntax validation and factual flight outcomes remain. | 3/3 = 3 stars, 2/3 = 2, 1/3 = 1 |
+
+Cadet uses a finite visible five-Pip celebration batch; each failed test flight replenishes the waiting queue and increments a practice attempt count. It cannot reach game over from failures. A correct test still triggers the existing rapid-fire sequence and banks gems normally. Cadet completions deliberately have no ranked stars, so they cannot inflate a finite-budget rating. All modes use the same immutable equation plan, exact capture requirements, collision rules, animation and gem contacts. Ace keeps accessible object descriptions (including coordinates for nonvisual access) and explicitly authored irrational coordinate data in levels 6-03 and 6-05, plus non-integer anchor coordinates that cannot reliably be read from the integer grid. The visible curriculum prompt is replaced by a neutral goal in Ace; essential exact data is not removed.
+
+The Cadet preview is opt-in, only for the selected cannon and student's submitted valid-family equation. It draws a dashed graph clipped to world bounds (not a success prediction or a route solution). Analytic extrema and domain edges split the numerical visual approximation; no line bridges asymptotes. Preview is unavailable during flights, clears on edits/cannon change/reset, and is never offered or rendered in Pilot/Ace. Templates contain unfilled question marks and cannot launch until replaced by valid expressions. Live checks evaluate the submitted equation at its launch x only; they don't supply parameters. Post-attempt Cadet guidance starts at the second support tier. No timers or forced hints are added to Pilot.
+
+Automated tests cover mode transitions and every level in every mode, unlimited retry and finite celebration accounting, Pilot/Ace budget/scoring, Ace feedback, template/source-check constraints, clipped preview branches and geometry. Browser QA outstanding: verify mode navigation, short-screen editor and preview toggles, zoom and reverse flight, reduced motion, assistive descriptions, and success/restart in all modes. Next PR24: persistent mode-specific completion, stars and gems, achievements.
