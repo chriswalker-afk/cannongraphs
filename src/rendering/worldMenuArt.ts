@@ -1,6 +1,5 @@
-import {svgNode as el} from './pip';
+import {svgNode as el,createPip} from './pip';
 import {renderCannonArt} from './cannonArt';
-import {createPip} from './pip';
 import {renderFloatingScenery} from './floatingScenery';
 import {renderPeakScenery} from './peakScenery';
 import {renderRuinsScenery} from './ruinsScenery';

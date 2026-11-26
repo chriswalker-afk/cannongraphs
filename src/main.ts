@@ -1,5 +1,5 @@
 import './style.css';
-import {worlds,levels,worldForLevel,levelPosition,nextLevel} from './levels/catalog';
+import {worldForLevel,levelPosition,nextLevel} from './levels/catalog';
 import {mountScene} from './rendering/scene';
 import {mountEquationEditor} from './ui/equationEditor';
 import {mountPipQueue} from './ui/pipQueue';
@@ -14,16 +14,19 @@ import {createLevelState,canPlan,canLaunch,beginAttempt,finishAttempt,restartLev
 import {levelStars} from './game/scoring';
 import {bankedGems} from './animations/gemTimeline';
 import {mountHomeScreen} from './ui/homeScreen';
+import {mountLevelSelection} from './ui/levelSelection';
 const app=document.querySelector<HTMLDivElement>('#app')!;
 let cleanup:()=>void=()=>{};
-let lastLevel=levels[0];
+let lastLevel:Level|undefined;
 function showHome(focusPlay=false){
- cleanup();
- cleanup=mountHomeScreen(app,lastLevel,()=>{mountLevel(lastLevel);app.querySelector<HTMLSelectElement>('#level-picker')?.focus();},focusPlay);
+ cleanup();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay);
+}
+function showSelection(openCurrentWorld=false){
+ cleanup();cleanup=mountLevelSelection(app,{preferredId:lastLevel?.id,openCurrentWorld,onHome:()=>showHome(true),onPlay:level=>{mountLevel(level);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();}});
 }
 function mountLevel(level:Level){
  cleanup();lastLevel=level;
-app.innerHTML=`<main><header><div class="brand"><button class="brand-mark home-return" id="home-return" type="button" aria-label="Return to home" title="Return to home (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><div class="level"><label for="level-picker" class="picker-label">Level</label><select id="level-picker" aria-label="Choose level"></select></div></header><div class="toolbar"><div id="inspect-info" role="status">Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.</div><span id="gem-readout" class="gem-readout" role="status" hidden></span><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><p id="resolution-gems" class="resolution-gems" hidden></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><footer class="planning-footer"><div class="planning-editor"><div id="flight-plan"></div><div id="equation-editor" class="equation-editor"></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label">Planning</small></div></footer></main>`;
+app.innerHTML=`<main><header><div class="brand"><button class="brand-mark home-return" id="home-return" type="button" aria-label="Return to home" title="Return to home (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><button class="game-level-menu" id="level-menu" type="button" title="Choose levels (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.4" fill="currentColor"/></svg><span>Levels</span></button></header><div class="toolbar"><div id="inspect-info" role="status">Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.</div><span id="gem-readout" class="gem-readout" role="status" hidden></span><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><p id="resolution-gems" class="resolution-gems" hidden></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><footer class="planning-footer"><div class="planning-editor"><div id="flight-plan"></div><div id="equation-editor" class="equation-editor"></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label">Planning</small></div></footer></main>`;
 const world=worldForLevel(level.id)!,position=levelPosition(level.id)!,following=nextLevel(level.id);
 app.querySelector('main')!.dataset.world=String(world.number);
 app.querySelector<HTMLElement>('#world-label')!.textContent=world.name+' · '+position.index+' / '+position.total;
@@ -31,8 +34,7 @@ app.querySelector<HTMLElement>('#level-objective')!.textContent=level.objective;
 const button=(id:string)=>document.querySelector<HTMLButtonElement>('#'+id)!;
 const scene=mountScene(app.querySelector<HTMLElement>('.stage')!,level,{in:button('zoom-in'),out:button('zoom-out'),reset:button('zoom-reset'),left:button('pan-left'),right:button('pan-right'),up:button('pan-up'),down:button('pan-down'),readout:document.querySelector('#zoom-readout')!,info:document.querySelector('#inspect-info')!,onCannonSelect:chooseCannon});
 
-const levelPicker=app.querySelector<HTMLSelectElement>('#level-picker')!;
-for(const group of worlds){const optgroup=document.createElement('optgroup');optgroup.label=group.name;for(const item of group.levels){const option=document.createElement('option');option.value=item.id;option.textContent=item.id+' · '+item.title;optgroup.append(option);}levelPicker.append(optgroup);}levelPicker.value=level.id;
+const levelMenu=button('level-menu');levelMenu.setAttribute('aria-label','Choose levels; current level '+position.index+' of '+world.name+'. Leaves this run.');
 const editorRoot=app.querySelector<HTMLElement>('#equation-editor')!;
 const ids=level.cannons.map(c=>c.id);
 let plan=createFlightPlan(ids),selected=level.startId,switching=false;
@@ -66,7 +68,7 @@ function sync(){
  const ready=countReady(plan);
  dock.update(plan,selected,editable);scene.setPlanningSelection(selected,editable);
  launchButton.disabled=!canLaunch(state)||ready!==level.cannons.length;
-levelPicker.disabled=state.phase==='launching'||state.phase==='celebrating';homeButton.disabled=levelPicker.disabled;
+levelMenu.disabled=state.phase==='launching'||state.phase==='celebrating';homeButton.disabled=levelMenu.disabled;
  launchButton.textContent=state.phase==='retry'?'▶ Try again':'▶ Launch';
  editorRoot.querySelectorAll<HTMLInputElement|HTMLButtonElement>('input,button').forEach(e=>{e.disabled=!editable;});
  restartButton.disabled=state.phase==='launching'||state.phase==='celebrating';
@@ -118,11 +120,11 @@ editorRoot.addEventListener('equationchange',()=>{
  if(switching||!canPlan(state))return;
  const next=editPlan(plan,selected,editor.getDraft());if(next!==plan){plan=next;scene.clearFlight();if(state.phase!=='retry'||!feedbackHistory.latest)hideStatus();}sync();
 });
-levelPicker.addEventListener('change',()=>{const next=levels.find(l=>l.id===levelPicker.value);if(next&&next!==level&&state.phase!=='launching'&&state.phase!=='celebrating')mountLevel(next);});
+levelMenu.addEventListener('click',()=>{if(!levelMenu.disabled)showSelection(true);});
 homeButton.addEventListener('click',()=>{if(!homeButton.disabled)showHome(true);});
 restartButton.addEventListener('click',()=>reset(false));
 replay.addEventListener('click',()=>reset(true));
-advance.addEventListener('click',()=>{if(state.phase==='success'&&following){mountLevel(following);app.querySelector<HTMLSelectElement>('#level-picker')?.focus();}});
+advance.addEventListener('click',()=>{if(state.phase==='success'&&following){mountLevel(following);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();}});
 launchButton.addEventListener('click',()=>{
  if(!canLaunch(state))return;
  const equations=snapshotPlan(plan);if(!equations)return;
