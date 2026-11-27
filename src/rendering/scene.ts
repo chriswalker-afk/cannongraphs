@@ -2,6 +2,7 @@ import {gridTicks} from './grid';
 import {cameraTransform,initialCamera,panCamera,zoomCamera,MIN_ZOOM,MAX_ZOOM,type Camera} from '../engine/camera';
 import type {Bounds,Point,Viewport} from '../engine/coordinates';
 import {cannonTypes} from '../game/cannons';
+import {planStatus,type FlightPlan,type PlanStatus} from '../game/flightPlan';
 import {modePolicy,type LearningMode} from '../game/learningModes';
 import type {Level} from '../levels/schema';
 import {BARREL_ANGLE} from '../animations/launch';
@@ -42,14 +43,16 @@ function el(tag:string,attrs:Record<string,string|number>={},parent?:Element,con
 const fmt=(n:number)=>String(Number(n.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
-export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void;budget?:number;reducedMotion?:()=>boolean}){
+export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void;budget?:number;reducedMotion?:()=>boolean;onViewChange?:()=>void}){
  const policy=modePolicy(controls.mode??'pilot'),supports=levelSupports(level);
  const svg=el('svg',{role:'group',tabindex:'-1','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
  let inspections=new Map<string,Inspection>(),tooltip:SVGGElement;
  let drag:{id:number;x:number;y:number}|undefined;
- let selectedCannon:string|undefined,planningEditable=false;
+ let selectedCannon:string|undefined,planningEditable=false,popupOpen=false;
+ let statuses=new Map<string,PlanStatus>();
+ const statusLabels:Record<PlanStatus,string>={empty:'Unprogrammed',invalid:'Invalid or incomplete equation',ready:'Programmed, not tested',revise:'Failed flight — revise',tested:'Successful flight'};
  let previewPaths:readonly (readonly Point[])[]=[],previewLayer:Element|undefined;
  function paintGraphPreview(){
   if(!previewLayer)return;previewLayer.replaceChildren();
@@ -63,14 +66,16 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  let cannonTargets=new Map<string,Element>();
  function paintSelection(){
   for(const [id,g] of cannonTargets){
-   const selected=planningEditable&&id===selectedCannon;g.setAttribute('data-selected',String(selected));
-   if(planningEditable)g.setAttribute('aria-pressed',String(selected));else g.removeAttribute('aria-pressed');
+   const selected=planningEditable&&popupOpen&&id===selectedCannon,state=statuses.get(id)??'empty';g.setAttribute('data-selected',String(selected));
+   g.setAttribute('data-status',state);g.setAttribute('aria-expanded',String(selected));g.setAttribute('aria-controls','cannon-popup');g.setAttribute('aria-haspopup','dialog');
+   const item=inspections.get(id);if(item)g.setAttribute('aria-label',item.label+' '+item.detail+' · '+statusLabels[state]+(planningEditable?' · Edit equation':''));
   }
  }
- function setPlanningSelection(id:string,editable:boolean){
+ function setPlanStatuses(plan:FlightPlan){statuses=new Map(plan.map(entry=>[entry.id,planStatus(entry)]));paintSelection();}
+ function setPlanningSelection(id:string,editable:boolean,open=false){
   if(id!==selectedCannon&&pinned&&cannonTargets.has(pinned))pinned=undefined;
   if(id!==selectedCannon||!editable){previewPaths=[];paintGraphPreview();}
-  selectedCannon=id;planningEditable=editable;paintSelection();inspect();
+  selectedCannon=id;planningEditable=editable;popupOpen=open;paintSelection();inspect();
  }
  const reducedMotion=()=>controls.reducedMotion?.()??false;
  const crewTotal=controls.budget??level.creatures;
@@ -183,7 +188,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(!tooltip)return;
   tooltip.replaceChildren();
   const item=inspections.get(hovered??focused??pinned??'');
-  controls.info.textContent=item?(policy.coordinates?item.label+' · '+item.detail:item.label):(policy.coordinates?'Hover, tap or focus an object to inspect its coordinates.':'Read coordinates from the axes.');
+  controls.info.textContent=item?((policy.coordinates?item.label+' · '+item.detail:item.label)+(statuses.has(item.id)?' · '+statusLabels[statuses.get(item.id)!]:'')):(policy.coordinates?'Click a cannon to program it. Hover or focus an object to inspect it.':'Click a cannon to program it. Read coordinates from the axes.');
   if(!item)return;
   const q=plot();let a=t.toScreen(item.point);
   if(item.bounds){
@@ -258,7 +263,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    const a=p(c.position),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content),style=cannonTypes[c.type];
    g.classList.add('cannon-target');cannonTargets.set(c.id,g);
    const body=el('g',{transform:'scale('+c.direction+' 1)'},g);
-   el('rect',{x:-.84,y:-.30,width:1.16,height:.93,rx:.18,fill:'#fff1bd','fill-opacity':.65,stroke:'#a86e24','stroke-width':.037,'stroke-dasharray':'.085 .045',class:'planning-halo','pointer-events':'none'},body);
+   el('rect',{x:-.89,y:-.37,width:1.26,height:1.06,rx:.18,fill:'transparent','pointer-events':'all','data-cannon-hit':''},body);
+   el('rect',{x:-.84,y:-.30,width:1.16,height:.93,rx:.18,class:'planning-halo','pointer-events':'none'},body);
+   el('rect',{x:-.89,y:-.35,width:1.26,height:1.03,rx:.21,fill:'none',stroke:'#fff','stroke-width':.035,'stroke-dasharray':'.09 .045',class:'selected-halo','pointer-events':'none'},body);
    const barrel=renderCannonArt(body,c.type,BARREL_ANGLE,controls.cannonLook,c.direction);barrels.set(c.id,barrel);
    el('circle',{r:.12,fill:'white','fill-opacity':.2,stroke:'#fff','stroke-width':.028},g);
    el('circle',{r:.044,fill:'#fff',stroke:'#203d54','stroke-width':.022},g);
@@ -295,6 +302,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   controls.reset.disabled=camera.zoom===MIN_ZOOM;for(const button of [controls.left,controls.right,controls.up,controls.down])button.disabled=camera.zoom===MIN_ZOOM;
   svg.classList.toggle('zoomed',camera.zoom>MIN_ZOOM);paintSelection();inspect();
   if(focusedId){const target=Array.from(svg.querySelectorAll<SVGElement>('[data-inspect]')).find(g=>g.getAttribute('data-inspect')===focusedId&&g.getAttribute('tabindex')==='0');(target??svg).focus({preventScroll:true});}
+  controls.onViewChange?.();
  }
  const zoom=(factor:number)=>{camera=zoomCamera(level.bounds,viewport,camera,Number((camera.zoom*factor).toFixed(3)),pinned?inspections.get(pinned)?.point:undefined);draw();};
  controls.in.addEventListener('click',()=>zoom(1.25));controls.out.addEventListener('click',()=>zoom(.8));controls.reset.addEventListener('click',()=>{camera=initialCamera(level.bounds);draw();});
@@ -308,5 +316,8 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100||width===viewport.width&&height===viewport.height)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
  observer.observe(stage);draw();
- return {playFlight,playRapidFire,clearFlight,setPlanningSelection,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
+ function revealCannon(id:string){const target=cannonTargets.get(id);if(target?.getAttribute('tabindex')==='-1'){camera=initialCamera(level.bounds);draw();}}
+ function focusCannon(id:string){revealCannon(id);(cannonTargets.get(id) as SVGElement|undefined)?.focus({preventScroll:true});}
+ function cannonRect(id:string){return cannonTargets.get(id)?.getBoundingClientRect();}
+ return {playFlight,playRapidFire,clearFlight,setPlanningSelection,setPlanStatuses,revealCannon,focusCannon,cannonRect,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
 }

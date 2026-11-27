@@ -1,6 +1,7 @@
 import {test,expect,type Page,type TestInfo} from '@playwright/test';
 import {worlds} from '../src/levels/catalog';
 import {levelSupports} from '../src/levels/supports';
+import {enterFree} from './helpers/programming';
 const scenarios=[
  {w:1,l:3,width:1366,height:768,name:'skyward'},
  {w:1,l:1,width:390,height:844,name:'grounded'},
@@ -45,7 +46,7 @@ for(const s of scenarios)test('connected scene mounts: '+s.name,async({page},inf
 });
 test('support remains fixed to the original coordinates during loading, flight and celebration',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await enter(page,1,3);
- await page.locator('#equation-input').fill('3x');await expect(page.locator('#launch')).toBeEnabled();await page.locator('#launch').click();
+ await enterFree(page,'3x','A');await expect(page.locator('#launch')).toBeEnabled();await page.locator('#launch').click();
  await expect(page.locator('[data-launch-visual][display="inline"][data-launch-phase="flying"] [data-flight-pip]')).toBeVisible();
  await verify(page,1,3);await expect(page.locator('#resolution-heading')).toHaveText('Level complete!',{timeout:15000});
  await verify(page,1,3);expect(errors).toEqual([]);
