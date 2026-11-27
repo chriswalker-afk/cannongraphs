@@ -24,10 +24,10 @@ test('six-level practice sequence provides first two incoming lines, advances an
  await place(page,'B','Q');
  await page.getByRole('button',{name:'Use reduced motion'}).click();
  await page.locator('#launch').click();await expect(page.locator('#resolution-heading')).toHaveText('Level complete!',{timeout:30000});
- await page.locator('#next-level').click();await expect(page.locator('#world-label')).toContainText('2 / 6');
+ await page.locator('#next-level').click();await expect(page.locator('#world-label')).toContainText('2 / 12');
  await expect(page.locator('#plan-ready')).toHaveText('1 / 2 programmed');
  await place(page,'B','R');await page.locator('#launch').click();await expect(page.locator('#resolution-heading')).toHaveText('Level complete!',{timeout:30000});
- await page.locator('#next-level').click();await expect(page.locator('#world-label')).toContainText('3 / 6');
+ await page.locator('#next-level').click();await expect(page.locator('#world-label')).toContainText('3 / 12');
  await expect(page.locator('#plan-ready')).toHaveText('0 / 2 programmed');
  await place(page,'B','T');await expect(page.locator('#launch')).toBeDisabled();
  await program(page,'A','3x/4+2');await expect(page.locator('#launch')).toBeEnabled();
@@ -51,6 +51,6 @@ test('mixed puzzle: two inventory parts, occupied mount rejection, ordinary equa
  await info.attach('mixed-placement',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
  await page.getByRole('button',{name:'Use reduced motion'}).click();await page.locator('#launch').click();
  await expect(page.locator('#resolution-heading')).toHaveText('Level complete!',{timeout:30000});
- await page.locator('#next-level').click();await expect(page.locator('#world-label')).toContainText('6 / 6');
+ await page.locator('#next-level').click();await expect(page.locator('#world-label')).toContainText('6 / 12');
  await expect(page.locator('[data-mount-id]')).toHaveCount(7);
 });

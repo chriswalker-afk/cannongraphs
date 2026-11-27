@@ -5,7 +5,7 @@ import {CANNON_FOOTPRINT} from '../game/anchorArtGeometry';
 
 // Quiet reclaimed-machine yard. Decorative steel and cranes are not terrain.
 export function renderSalvageScenery(parent:Element,w:number,h:number,variant=0){
- const layer=el('g',{'aria-hidden':'true','pointer-events':'none','data-scenery':'salvage-yard','data-salvage-area':variant===0?'salvage-depot':'dismantling-yard'},parent);
+ const layer=el('g',{'aria-hidden':'true','pointer-events':'none','data-scenery':'salvage-yard','data-salvage-area':['salvage-depot','dismantling-yard','sorting-station','reconstruction-plant'][variant]??'salvage-depot'},parent);
  const k=Math.min(w/800,h/380),floor=h*.91;
  el('rect',{y:floor,width:w,height:h-floor,fill:'#829082',opacity:.30},layer);
  const distant=el('g',{opacity:.28},layer);
@@ -16,6 +16,28 @@ export function renderSalvageScenery(parent:Element,w:number,h:number,variant=0)
   const hook=x+w*.18;el('path',{d:'M'+hook+' '+h*.13+' V'+h*.34+' q-12 0 -12 10 q0 12 12 8',fill:'none',stroke:'#77847c','stroke-width':Math.max(2,4*k),'stroke-linecap':'round'},distant);
  }
  if(variant===1){const g=el('g',{opacity:.24},layer);for(const f of [.32,.67]){const x=w*f;el('path',{d:'M'+x+' '+floor+' V'+h*.25+' H'+(x+w*.11)+' V'+floor,fill:'none',stroke:'#657b72','stroke-width':Math.max(5,12*k),'stroke-linejoin':'round'},g);el('rect',{x:x+w*.025,y:h*.27,width:w*.06,height:h*.10,rx:4,fill:'#ae936d',stroke:'#667b70','stroke-width':Math.max(1,3*k)},g);el('path',{d:'M'+(x+w*.055)+' '+h*.37+' V'+h*.61,stroke:'#63786f','stroke-width':Math.max(3,7*k)},g);}}
+ if(variant===2){
+  const g=el('g',{opacity:.28},layer);
+  for(const f of [.15,.62]){
+   const x=w*f,y=floor-50*k,ww=w*.25;
+   el('rect',{x,y,width:ww,height:24*k,rx:10*k,fill:'#9b9a7f',stroke:'#6c8075','stroke-width':Math.max(2,4*k)},g);
+   for(let i=0;i<7;i++)el('circle',{cx:x+(i+.5)*ww/7,cy:y+12*k,r:7*k,fill:'#d0c9ad',stroke:'#728278','stroke-width':2*k},g);
+   for(const q of [.12,.88])el('path',{d:'M'+(x+q*ww)+' '+(y+24*k)+' V'+floor,stroke:'#71847a','stroke-width':8*k},g);
+   el('path',{d:'M'+(x+ww*.32)+' '+(y-85*k)+' H'+(x+ww*.68)+' L'+(x+ww*.56)+' '+(y-25*k)+' H'+(x+ww*.44)+'Z',fill:'#b8a17b',stroke:'#748579','stroke-width':3*k},g);
+   el('path',{d:'M'+(x+ww*.5)+' '+(y-25*k)+' V'+(y-8*k),stroke:'#728379','stroke-width':9*k},g);
+  }
+ }
+ if(variant===3){
+  const g=el('g',{opacity:.27},layer);
+  for(const f of [.25,.66]){
+   const x=w*f,ww=w*.18,top=h*.22;
+   el('path',{d:'M'+x+' '+floor+' V'+top+' H'+(x+ww)+' V'+floor,fill:'none',stroke:'#647b70','stroke-width':Math.max(3,12*k),'stroke-linejoin':'round'},g);
+   el('rect',{x:x+ww*.12,y:top+12*k,width:ww*.76,height:28*k,rx:4*k,fill:'#ac966a',stroke:'#687e72','stroke-width':3*k},g);
+   el('path',{d:'M'+(x+ww*.5)+' '+(top+40*k)+' V'+(floor-85*k)+' q-14 0 -14 11 q0 14 14 8',fill:'none',stroke:'#687c72','stroke-width':5*k},g);
+   el('rect',{x:x+ww*.12,y:floor-26*k,width:ww*.76,height:26*k,rx:3*k,fill:'#849484',stroke:'#677f70','stroke-width':3*k},g);
+   for(let i=0;i<5;i++)el('path',{d:'M'+(x+ww*(.18+i*.14))+' '+(floor-21*k)+' l'+ww*.06+' 0 -'+ww*.05+' '+(16*k)+' h-'+ww*.06+'Z',fill:'#b5a06b'},g);
+  }
+ }
  for(const [i,f] of [.09,.27,.59,.87].entries()){
   const g=el('g',{transform:'translate('+(w*f)+' '+floor+') scale('+k+')',opacity:.33},layer);
   for(const [x,y,angle] of [[-46,-22,12],[9,-19,-17],[-15,-53,6]]){
