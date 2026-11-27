@@ -302,3 +302,54 @@ main.workshop-screen{grid-template-rows:auto auto;align-content:center;backgroun
 @media(max-height:480px){.audio-dialog[open]{gap:8px;padding:12px}.audio-heading h2{font-size:19px}.audio-volume input{min-height:25px}.audio-mute{min-height:34px}.sound-settings{min-height:27px;font-size:11px;padding:4px 7px}}
 
 @media(max-width:480px){.selection-top.has-audio{grid-template-columns:auto minmax(0,1fr) auto;gap:5px}.selection-top.has-audio .workshop-sound-settings{padding:5px 7px;font-size:10px}.selection-top.has-audio .selection-heading h1{font-size:clamp(18px,5vw,24px)}}
+
+/* Classroom pass: never trade the mathematical plot for hidden controls.
+   Normal screens fill the viewport; cramped/zoomed layouts may scroll. */
+main.game-screen{height:auto;min-height:100dvh;grid-template-rows:auto auto minmax(230px,1fr) auto;min-width:0}
+.game-screen header{flex-wrap:wrap;gap:6px 10px;min-width:0}
+.game-screen .brand{flex:1 1 220px;min-width:0}
+.game-screen .brand>div{min-width:0}
+.game-screen .stage{min-height:230px}
+.game-screen .stage>svg{position:absolute;inset:0}
+.game-screen .toolbar{flex-wrap:wrap;min-width:0}
+.game-screen #inspect-info{flex:1 1 150px;min-width:0}
+.game-screen .camera-tools{margin-left:auto;max-width:100%;flex-wrap:wrap;justify-content:flex-end}
+.game-screen .planning-editor{min-width:0;grid-template-columns:minmax(0,1fr)}
+.game-screen .level-resolution{top:6px;max-height:calc(100% - 12px);overflow:auto}
+.game-screen .editor-entry input{font-size:16px}
+.game-screen .stage>svg:focus-visible{outline:3px solid #b97526;outline-offset:-4px}
+.game-screen .cannon-target:focus-visible,.game-screen .inspectable:focus-visible{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 4px #234d78)}
+.game-screen .launch-panel .launch{background:#287a4c}
+.game-screen .plan-card{flex-shrink:0}
+.game-screen .equation-prefix[hidden]{display:none}
+.game-screen .pip-count{white-space:normal;text-align:center}
+.home-screen .home-art{min-height:150px}
+main.home-screen{height:auto;min-height:100dvh;grid-template-rows:auto minmax(150px,1fr) auto;overflow:visible}
+.home-utilities{justify-content:flex-end}
+@media(max-width:650px){
+ .game-screen .brand{flex:1 1 155px}
+ .game-screen .brand h1{font-size:19px}
+ .game-screen .pip-queue{flex:1 1 100%}
+ .game-screen .toolbar #inspect-info{flex:1 1 100%}
+ .game-screen .planning-footer{align-items:start}
+ .game-screen .editor-top{flex-wrap:wrap;gap:2px 6px}
+ .game-screen .editor-tools button{height:auto;min-height:30px}
+ .game-screen .camera-tools button{height:30px;width:30px}
+ .game-screen .launch-panel{max-width:92px}
+ .game-screen .launch-panel button{max-width:100%;white-space:normal}
+ .game-screen .stage{min-height:250px}
+ main.home-screen{grid-template-rows:auto minmax(150px,1fr) auto}
+}
+@media(max-width:370px){
+ .game-screen .planning-footer{display:grid;grid-template-columns:minmax(0,1fr)}
+ .game-screen .launch-panel{max-width:none;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap}
+ .game-screen .launch-panel small{max-width:90px}
+ .game-screen .camera-tools{gap:2px}
+ .game-screen .camera-tools button{width:28px}
+}
+@media(max-height:500px){
+ .game-screen .stage{min-height:210px}
+ main.game-screen{grid-template-rows:auto auto minmax(210px,1fr) auto}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}.home-screen .pip-bob,.game-screen .pip-bob{animation:none!important}}
+@media(forced-colors:active){button:focus-visible,.inspectable:focus-visible{outline:2px solid Highlight;outline-offset:2px}.level-number[aria-pressed=true],.plan-card[aria-pressed=true],.workshop-option[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-2px}}

@@ -39,7 +39,8 @@ export function mountFlightPlanDock(root:HTMLElement,cannons:readonly Cannon[],o
    els.button.dataset.status=state;els.button.setAttribute('aria-pressed',String(active));els.button.disabled=!editable;
    els.button.setAttribute('aria-label','Cannon '+c.id+', fires '+(c.direction===1?'right':'left')+', '+cannonTypes[c.type].label+', '+display+'. '+d.label+'. '+d.detail);
    els.button.title=display+' — '+d.detail;
-   els.equation.textContent=display;els.status.textContent=d.icon+' '+d.label;
+   if(els.equation.textContent!==display)els.equation.textContent=display;
+   if(els.status.textContent!==d.icon+' '+d.label)els.status.textContent=d.icon+' '+d.label;
   }
   if(selected!==lastSelected){
    const card=elements.get(selected)?.button;

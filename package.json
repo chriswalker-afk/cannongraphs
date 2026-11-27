@@ -7,12 +7,14 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "tsx --test tests/*.test.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:browser": "playwright test"
   },
   "devDependencies": {
     "vite": "6.3.5",
     "typescript": "5.8.3",
     "tsx": "4.19.4",
-    "@types/node": "22.15.3"
+    "@types/node": "22.15.3",
+    "@playwright/test": "1.56.1"
   }
 }

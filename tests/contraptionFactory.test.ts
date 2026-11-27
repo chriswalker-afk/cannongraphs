@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {referenceSolutions} from './fixtures/referenceSolutions';
 import assert from 'node:assert/strict';
 import {contraptionFactory} from '../src/levels/worlds/contraptionFactory';
 import {worlds,levels,nextLevel,levelPosition,worldForLevel} from '../src/levels/catalog';
@@ -11,13 +12,7 @@ import {bankedGems} from '../src/animations/gemTimeline';
 import {makeRapidSchedule,sampleRapidFire,rapidCounts} from '../src/animations/rapidFire';
 import {createLevelState,beginAttempt,finishAttempt,advanceCelebration,finishCelebration} from '../src/game/levelState';
 import {levelStars} from '../src/game/scoring';
-const refs:readonly Readonly<Record<string,string>>[]=[
- {A:'x³'}, {A:'x³/4'}, {A:'-x³/2'}, {A:'(x-2)³/4+1'},
- {A:'x(x-3)(x+3)/3'}, {A:'(x-1)³/4-3(x-1)+1'},
- {A:'12/x'}, {A:'6/x'}, {A:'8/(x-2)-1'}, {A:'-12/(x+1)+2'},
- {A:'x³/4-3x',B:'16/(x-2)-4'},
- {A:'x³/4-3x',B:'16/(x-2)-4',C:'(x-14)³/4-3(x-14)+2',D:'24-x'}
-];
+const refs=referenceSolutions[4];
 const plan=(i:number)=>new Map<string,CannonEquation>(contraptionFactory[i].cannons.map(c=>[c.id,parseCannonEquation(refs[i][c.id],c.type)]));
 const near=(a:number,b:number,tol=1e-6)=>assert.ok(Math.abs(a-b)<=tol,a+' != '+b);
 const advanced=(i:number,id='A')=>{const e=plan(i).get(id)!;assert.ok(isAdvanced(e));return e;};

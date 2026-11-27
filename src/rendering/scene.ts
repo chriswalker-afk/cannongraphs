@@ -1,3 +1,4 @@
+import {gridTicks} from './grid';
 import {cameraTransform,initialCamera,panCamera,zoomCamera,MIN_ZOOM,MAX_ZOOM,type Camera} from '../engine/camera';
 import type {Bounds,Point,Viewport} from '../engine/coordinates';
 import {cannonTypes} from '../game/cannons';
@@ -38,7 +39,7 @@ const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
 export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void}){
  const policy=modePolicy(controls.mode??'pilot');
- const svg=el('svg',{role:'group','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
+ const svg=el('svg',{role:'group',tabindex:'-1','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
  let inspections=new Map<string,Inspection>(),tooltip:SVGGElement;
@@ -181,7 +182,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  }
  function target(g:Element,item:Inspection,isCannon=false){
   inspections.set(item.id,item);
-  g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('data-inspect',item.id);g.setAttribute('aria-label',item.label+' '+item.detail);g.classList.add('inspectable');
+  const visible=t.visible,b=item.bounds,p=item.point;
+  const inView=b?b.maxX>=visible.minX&&b.minX<=visible.maxX&&b.maxY>=visible.minY&&b.minY<=visible.maxY:p.x>=visible.minX&&p.x<=visible.maxX&&p.y>=visible.minY&&p.y<=visible.maxY;
+  g.setAttribute('tabindex',inView?'0':'-1');g.setAttribute('role','button');g.setAttribute('data-inspect',item.id);g.setAttribute('aria-label',item.label+' '+item.detail);g.classList.add('inspectable');
   g.addEventListener('pointerenter',(event)=>{if((event as PointerEvent).pointerType!=='touch'){hovered=item.id;inspect();}});
   g.addEventListener('pointerleave',()=>{if(hovered===item.id)hovered=undefined;inspect();});
   g.addEventListener('focus',()=>{focused=item.id;inspect();});
@@ -194,6 +197,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   g.addEventListener('keydown',event=>{const e=event as KeyboardEvent;if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  }
  function draw(){
+  const focusedId=svg.contains(document.activeElement)?document.activeElement?.getAttribute('data-inspect'):null;
   const {width:W,height:H}=viewport,q=plot();
   t=cameraTransform(level.bounds,viewport,camera);camera={zoom:t.zoom,center:t.center};
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
@@ -219,11 +223,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const loX=Math.max(b.minX,v.minX),hiX=Math.min(b.maxX,v.maxX),loY=Math.max(b.minY,v.minY),hiY=Math.min(b.maxY,v.maxY);
   const tl=p({x:b.minX,y:b.maxY}),br=p({x:b.maxX,y:b.minY});
   el('rect',{x:tl.x,y:tl.y,width:br.x-tl.x,height:br.y-tl.y,fill:'#fff','fill-opacity':.13,stroke:'#527d92','stroke-opacity':.4},content);
-  const step=scale>=24?1:Math.ceil(24/scale);
-  const ticks=(lo:number,hi:number)=>{const a:number[]=[];for(let k=Math.ceil(lo/step)*step;k<=hi+1e-9;k+=step)a.push(k===0?0:k);return a;};
-  const xs=ticks(loX,hiX),ys=ticks(loY,hiY);
-  for(const x of xs){const a=p({x,y:b.minY}),z=p({x,y:b.maxY});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':.26},content);}
-  for(const y of ys){const a=p({x:b.minX,y}),z=p({x:b.maxX,y});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':.26},content);}
+  const xGrid=gridTicks(loX,hiX,scale),yGrid=gridTicks(loY,hiY,scale),xs=xGrid.labels,ys=yGrid.labels;
+  for(const x of xGrid.units){const a=p({x,y:b.minY}),z=p({x,y:b.maxY});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':x%xGrid.step===0?.40:.23,'data-grid-x':x},content);}
+  for(const y of yGrid.units){const a=p({x:b.minX,y}),z=p({x:b.maxX,y});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':y%yGrid.step===0?.40:.23,'data-grid-y':y},content);}
   if(b.minX<=0&&b.maxX>=0){const a=p({x:0,y:b.minY}),z=p({x:0,y:b.maxY});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315779','stroke-width':2},content);}
   if(b.minY<=0&&b.maxY>=0){const a=p({x:b.minX,y:0}),z=p({x:b.maxX,y:0});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315779','stroke-width':2},content);}
   // Artwork and collision both read the same world bounds.
@@ -269,6 +271,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   controls.readout.textContent=Math.round(camera.zoom*100)+'%';controls.out.disabled=camera.zoom<=MIN_ZOOM;controls.in.disabled=camera.zoom>=MAX_ZOOM;
   controls.reset.disabled=camera.zoom===MIN_ZOOM;for(const button of [controls.left,controls.right,controls.up,controls.down])button.disabled=camera.zoom===MIN_ZOOM;
   svg.classList.toggle('zoomed',camera.zoom>MIN_ZOOM);paintSelection();inspect();
+  if(focusedId){const target=Array.from(svg.querySelectorAll<SVGElement>('[data-inspect]')).find(g=>g.getAttribute('data-inspect')===focusedId&&g.getAttribute('tabindex')==='0');(target??svg).focus({preventScroll:true});}
  }
  const zoom=(factor:number)=>{camera=zoomCamera(level.bounds,viewport,camera,Number((camera.zoom*factor).toFixed(3)),pinned?inspections.get(pinned)?.point:undefined);draw();};
  controls.in.addEventListener('click',()=>zoom(1.25));controls.out.addEventListener('click',()=>zoom(.8));controls.reset.addEventListener('click',()=>{camera=initialCamera(level.bounds);draw();});
@@ -280,7 +283,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  const stop=(e:PointerEvent)=>{if(drag?.id===e.pointerId){drag=undefined;svg.classList.remove('dragging');}};
  svg.addEventListener('pointerup',stop);svg.addEventListener('pointercancel',stop);svg.addEventListener('lostpointercapture',stop);
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
- const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
+ const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100||width===viewport.width&&height===viewport.height)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
  observer.observe(stage);draw();
  return {playFlight,playRapidFire,clearFlight,setPlanningSelection,setGraphPreview,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
 }
