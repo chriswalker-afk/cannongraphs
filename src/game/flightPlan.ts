@@ -1,21 +1,33 @@
 import {cannonEquationKey,type CannonEquation} from '../engine/equations/advanced';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {routeLegs} from '../engine/simulation/linearRoute';
+import type {Level} from '../levels/schema';
+import {lockedLiftEquation,lockedLiftText} from '../levels/liftSpec';
 export interface PlanDraft {readonly text:string;readonly equation:CannonEquation|null}
 export type LegEvidence='tested'|'revise';
 export type PlanStatus='empty'|'invalid'|'ready'|LegEvidence;
-export interface PlanEntry extends PlanDraft {readonly id:string;readonly evidence:LegEvidence|null}
+export interface PlanEntry extends PlanDraft {readonly id:string;readonly evidence:LegEvidence|null;readonly locked?:true}
 export type FlightPlan=readonly PlanEntry[];
 export function createFlightPlan(ids:readonly string[]):FlightPlan{
  if(!ids.length||new Set(ids).size!==ids.length)throw new Error('Invalid cannon IDs');
  return ids.map(id=>({id,text:'',equation:null,evidence:null}));
+}
+// Seed locked entries as ready without requiring user input. Existing ID-only
+// callers retain their original behaviour; PR44 will use the level-aware plan.
+export function createLevelFlightPlan(level:Level):FlightPlan{
+ return createFlightPlan(level.cannons.map(c=>c.id)).map(entry=>{
+  const c=level.cannons.find(c=>c.id===entry.id)!;
+  if(!c.lift)return entry;
+  const equation=lockedLiftEquation(c);
+  return {...entry,text:lockedLiftText(equation),equation,locked:true};
+ });
 }
 export function getPlanEntry(plan:FlightPlan,id:string):PlanEntry|undefined{return plan.find(e=>e.id===id);}
 const equationKey=(e:CannonEquation|null)=>e?cannonEquationKey(e):'';
 function sameDraft(a:PlanDraft,b:PlanDraft):boolean{return a.text===b.text&&equationKey(a.equation)===equationKey(b.equation);}
 export function editPlan(plan:FlightPlan,id:string,draft:PlanDraft):FlightPlan{
  const previous=getPlanEntry(plan,id);
- if(!previous||sameDraft(previous,draft))return plan;
+ if(!previous||previous.locked||sameDraft(previous,draft))return plan;
  return plan.map(entry=>entry.id===id?{id,text:draft.text,equation:draft.equation,evidence:null}:entry);
 }
 export function planStatus(entry:PlanEntry):PlanStatus{

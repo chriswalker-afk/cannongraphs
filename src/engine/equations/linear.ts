@@ -147,3 +147,28 @@ export function parseCubicCoefficients(input:string):readonly RationalCoefficien
  if(p.length!==4)throw new EquationError('nonlinear','This cannon needs a genuine cubic equation with a nonzero x³ term.');
  return p.slice().reverse().map(coefficient);
 }
+
+// Convert authored finite decimal coordinates to exact rationals (including
+// scientific notation from Number.toString). No floating-point subtraction is
+// used when changing the constant of a locked polynomial.
+function coordinateRational(value:number):R{
+ if(!Number.isFinite(value))throw new RangeError('Invalid lift coordinate');
+ const [mantissa,exponent='0']=String(value).split('e');
+ const [whole,fraction='']=mantissa.split('.');
+ const digits=BigInt(whole+fraction),scale=fraction.length-Number(exponent);
+ if(Math.abs(scale)>60)throw new RangeError('Lift coordinate is too precise');
+ return scale>=0?rational(digits,10n**BigInt(scale)):rational(digits*10n**BigInt(-scale));
+}
+const fromCoefficient=(c:RationalCoefficient):R=>rational(BigInt(c.numerator),BigInt(c.denominator));
+// Retain the global x coefficients, and choose the constant so the graph
+// passes exactly through (x,y). A vertical shift changes only the constant.
+export function anchorFlightEquation(shape:FlightEquation,x:number,y:number):FlightEquation{
+ const rx=coordinateRational(x),ry=coordinateRational(y);
+ if(isQuadratic(shape)){
+  const a=fromCoefficient(shape.exactQuadratic),b=fromCoefficient(shape.exactLinear);
+  const c=plus(ry,neg(times(plus(times(a,rx),b),rx)));
+  return {...shape,constant:numeric(c),exactConstant:coefficient(c)};
+ }
+ const m=fromCoefficient(shape.exactGradient),c=plus(ry,neg(times(m,rx)));
+ return {...shape,intercept:numeric(c),exactIntercept:coefficient(c)};
+}
