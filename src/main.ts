@@ -27,6 +27,7 @@ import {levelStars} from './game/scoring';
 import {bankedGems} from './animations/gemTimeline';
 import {mountHomeScreen} from './ui/homeScreen';
 import {mountLevelSelection} from './ui/levelSelection';
+import type {WorldCategory} from './game/levelSelection';
 import {browserProgressStore,type ProgressUpdate} from './game/progressStore';
 import {mountFlightLog} from './ui/flightLog';
 import {getRecord,recordStars} from './game/progress';
@@ -50,12 +51,13 @@ let lastLevel:Level|undefined,lastMode:LearningMode='pilot';
 // Full animation is the default on every device. A deliberate reduced-motion
 // choice is retained during this page session, independently of OS settings.
 let reducedOverride=false;
+let worldCategory:WorldCategory='normal';
 function showHome(focusPlay=false){
- cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay,{progress,persisted:progressStore.persisted(),onOpen:showFlightLog,look:lookStore.read(earnedAchievementIds(progress)),onWorkshop:showWorkshop,cannonLook:cannonStore.read(earnedAchievementIds(progress)),onCannonWorkshop:showCannonWorkshop,onLevelWorkshop:showCustomWorkshop,onCustomLibrary:()=>showCustomLibrary(),onLiftDemos:showLiftDemos,reducedMotion:reducedOverride});addAudioCleanup();
+ cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay,{progress,persisted:progressStore.persisted(),onOpen:showFlightLog,look:lookStore.read(earnedAchievementIds(progress)),onWorkshop:showWorkshop,cannonLook:cannonStore.read(earnedAchievementIds(progress)),onCannonWorkshop:showCannonWorkshop,onLevelWorkshop:showCustomWorkshop,onCustomLibrary:()=>showCustomLibrary(),reducedMotion:reducedOverride});addAudioCleanup();
 }
 function showLiftDemos(){
  cleanup();audio.setTheme('menu');
- app.innerHTML='<main class="lift-demo-menu"><header><button type="button" id="lift-demo-back">← Home</button><h1>Broken Foundry</h1></header><p>Vertical translations · separate practice, no curriculum records.</p><h2>Flight tests</h2><div class="lift-demo-choices"></div></main>';
+ app.innerHTML='<main class="lift-demo-menu"><header><button type="button" id="lift-demo-back">← Worlds</button><h1>Broken Foundry</h1></header><p>Vertical translations · separate practice, no curriculum records.</p><h2>Flight tests</h2><div class="lift-demo-choices"></div></main>';
  const choices=app.querySelector<HTMLElement>('.lift-demo-choices')!;
  for(const demo of liftDemos){
   const card=document.createElement('section');const title=document.createElement('h2');title.textContent=demo.title;card.dataset.foundryLevel=demo.id;card.append(title);
@@ -63,7 +65,7 @@ function showLiftDemos(){
   for(const mode of ['cadet','pilot','ace'] as const){const button=document.createElement('button');button.type='button';button.textContent=modePolicy(mode).name;button.addEventListener('click',()=>mountLevel(demo,mode,undefined,undefined,true));card.append(button);}
   choices.append(card);
  }
- app.querySelector<HTMLButtonElement>('#lift-demo-back')!.onclick=()=>showHome(true);
+ app.querySelector<HTMLButtonElement>('#lift-demo-back')!.onclick=()=>showSelection(false,'broken');
  cleanup=()=>{};
 }
 function showWorkshop(){cleanup();audio.setTheme('menu');cleanup=mountCreatureWorkshop(app,earnedAchievementIds(progressStore.read()),lookStore,()=>{showHome();app.querySelector<HTMLButtonElement>('#home-workshop')?.focus();});addMenuAudio();}
@@ -73,8 +75,8 @@ function showCustomLibrary(preferredId?:string,preferredMode?:LearningMode){
  cleanup();audio.setTheme('menu');cleanup=mountCustomLibrary(app,customStore,{preferredId,preferredMode,onHome:()=>showHome(true),onEdit:id=>{customStore.select(id);showCustomWorkshop();},onPlay:run=>{mountLevel(run.level,run.mode,undefined,run);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();}});
 }
 function showFlightLog(){cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountFlightLog(app,progress,progressStore.persisted(),()=>showHome(true));addMenuAudio();}
-function showSelection(openCurrentWorld=false){
- cleanup();audio.setTheme('menu');cleanup=mountLevelSelection(app,{bindAudio:audioDialog.bind,progress:progressStore.read(),preferredId:lastLevel?.id,preferredMode:lastMode,openCurrentWorld,onHome:()=>showHome(true),onPlay:(level,mode)=>startLevel(level,mode)});
+function showSelection(openCurrentWorld=false,category:WorldCategory=worldCategory){
+ cleanup();audio.setTheme('menu');cleanup=mountLevelSelection(app,{bindAudio:audioDialog.bind,progress:progressStore.read(),preferredId:lastLevel?.id,preferredMode:lastMode,openCurrentWorld,preferredCategory:category,onCategoryChange:value=>{worldCategory=value;},onLiftDemos:showLiftDemos,onHome:()=>showHome(true),onPlay:(level,mode)=>startLevel(level,mode)});
 }
 type TutorialReturn={level:Level;mode:LearningMode};
 function startLevel(level:Level,mode:LearningMode,forceTutorial=false){
@@ -86,7 +88,7 @@ function startLevel(level:Level,mode:LearningMode,forceTutorial=false){
 }
 function mountLevel(level:Level,mode:LearningMode,tutorialReturn?:TutorialReturn,customRun?:CustomRun,liftDemo=false){
  const authoredLevel=level;
- cleanup();audio.setTheme(level.world as MusicTheme);if(!customRun&&!liftDemo){lastLevel=tutorialReturn?.level??level;lastMode=tutorialReturn?.mode??mode;}
+ cleanup();audio.setTheme(level.world as MusicTheme);if(!customRun&&!liftDemo){lastLevel=tutorialReturn?.level??level;lastMode=tutorialReturn?.mode??mode;worldCategory=lastLevel.world===7?'broken':'normal';}
  const policy=modePolicy(mode),budget=modeBudget(mode,level),look=lookStore.read(earnedAchievementIds(progressStore.read())),cannonLook=cannonStore.read(earnedAchievementIds(progressStore.read()));
 app.innerHTML=`<main class="game-screen"><header><div class="brand"><button class="brand-mark home-return" id="home-return" type="button" aria-label="Return to home" title="Return to home (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><button class="game-level-menu" id="level-menu" type="button" title="Choose levels (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.4" fill="currentColor"/></svg><span>Levels</span></button><button class="sound-settings game-sound-settings" id="sound-settings" type="button" aria-label="Sound settings">♪ Off</button></header><div class="toolbar"><div id="inspect-info" role="status">Click a cannon to program it. Hover or focus an object to inspect it.</div><button type="button" id="graph-preview" class="graph-preview-toggle" aria-pressed="false" hidden>Show graph</button><span id="gem-readout" class="gem-readout" role="status" hidden></span><button id="tutorial-help" class="motion-mode" type="button" hidden>Flight school</button><button id="motion-mode" class="motion-mode" type="button">Motion</button><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" role="region" aria-labelledby="resolution-heading" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><p id="resolution-gems" class="resolution-gems" hidden></p><p id="resolution-record" class="resolution-record" hidden></p><p id="resolution-achievements" class="resolution-achievements" hidden></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><section id="cannon-popup" class="cannon-popup" role="dialog" aria-modal="false" aria-labelledby="popup-title" hidden><div class="popup-heading"><h2 id="popup-title"></h2><button type="button" id="popup-close" aria-label="Close cannon editor">×</button></div><div id="popup-editor"></div><div class="popup-nav"><button type="button" id="previous-cannon">← Previous cannon</button><button type="button" id="next-cannon">Next cannon →</button><button type="button" id="popup-done">Done ✓</button></div></section><footer class="planning-footer"><div class="planning-editor"><div class="program-summary"><button type="button" id="edit-cannons">Edit cannons</button><span id="plan-ready" role="status"></span><div class="halo-legend" aria-label="Cannon programming status"><span data-status="empty">Unprogrammed</span><span data-status="ready">Programmed</span><span data-status="revise">Failed</span><span data-status="tested">Successful</span></div></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label" aria-live="off">Planning</small></div></footer></main>`;
 const world=customRun||liftDemo?worlds[level.world-1]:worldForLevel(lastLevel!.id)!,position=customRun||liftDemo?{index:0,total:0}:levelPosition(lastLevel!.id)!,following=liftDemo||customRun?undefined:tutorialReturn?.level??nextLevel(level.id);

@@ -3,19 +3,27 @@ import type {Level} from '../levels/schema';
 import {levelTiers,type DifficultyTier} from '../levels/progression';
 import type {CannonType} from './cannons';
 import {isLearningMode,type LearningMode} from './learningModes';
+export type WorldCategory='normal'|'broken';
+// Classify by authored mechanics so future lift worlds use the same selector.
+export function categoryForWorld(world:World):WorldCategory{return world.levels.some(l=>l.cannons.some(c=>c.lift))?'broken':'normal';}
+export function worldsInCategory(category:WorldCategory):readonly World[]{return worlds.filter(w=>categoryForWorld(w)===category);}
 export type SelectionState=
- |{readonly step:'worlds';readonly preferredId:string|null}
+ |{readonly step:'worlds';readonly preferredId:string|null;readonly category:WorldCategory}
  |{readonly step:'modes';readonly worldNumber:number;readonly levelId:string|null;readonly preferredId:string|null;readonly previousMode:LearningMode|null}
  |{readonly step:'levels';readonly worldNumber:number;readonly levelId:string|null;readonly preferredId:string|null;readonly mode:LearningMode};
 // preferredId is the most recently played level, not a completion record.
-export function beginSelection(preferredId?:string,openCurrentWorld=false,preferredMode:LearningMode='pilot'):SelectionState{
+export function beginSelection(preferredId?:string,openCurrentWorld=false,preferredMode:LearningMode='pilot',preferredCategory?:WorldCategory):SelectionState{
  const level=levels.find(l=>l.id===preferredId),id=level?.id??null;
  if(openCurrentWorld&&level)return {step:'levels',worldNumber:level.world,levelId:level.id,preferredId:id,mode:preferredMode};
- return {step:'worlds',preferredId:id};
+ return {step:'worlds',preferredId:id,category:preferredCategory??(level?categoryForWorld(worldForLevel(level.id)!):'normal')};
+}
+export function selectCategory(state:SelectionState,category:WorldCategory):SelectionState{
+ if(state.step!=='worlds'||state.category===category||category!=='normal'&&category!=='broken')return state;
+ return {...state,category};
 }
 export function selectWorld(state:SelectionState,number:number):SelectionState{
  if(state.step!=='worlds')return state;
- const world=worlds.find(w=>w.number===number);if(!world)return state;
+ const world=worldsInCategory(state.category).find(w=>w.number===number);if(!world)return state;
  return {step:'modes',worldNumber:number,levelId:world.levels.some(l=>l.id===state.preferredId)?state.preferredId:null,preferredId:state.preferredId,previousMode:null};
 }
 export function selectMode(state:SelectionState,mode:LearningMode):SelectionState{
@@ -30,7 +38,7 @@ export function selectLevel(state:SelectionState,id:string):SelectionState{
  return {...state,levelId:id};
 }
 export function backToWorlds(state:SelectionState):SelectionState{
- return state.step==='worlds'?state:{step:'worlds',preferredId:state.preferredId};
+ return state.step==='worlds'?state:{step:'worlds',preferredId:state.preferredId,category:categoryForWorld(selectedWorld(state)!)};
 }
 export function selectedWorld(state:SelectionState):World|undefined{
  return state.step!=='worlds'?worlds.find(w=>w.number===state.worldNumber):undefined;
