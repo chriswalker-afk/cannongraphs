@@ -49,11 +49,12 @@ export function selectedLevel(state:SelectionState):Level|undefined{
 export interface LevelSummary{
  readonly index:number;readonly title:string;readonly objective:string;
  readonly families:readonly {type:CannonType;count:number}[];
- readonly cannonCount:number;readonly liftCount:number;readonly pipCount:number;readonly gemCount:number;readonly tier:DifficultyTier;
+ readonly cannonCount:number;readonly liftCount:number;readonly mountCount:number;readonly movableCount:number;readonly lockedCount:number;readonly pipCount:number;readonly gemCount:number;readonly tier:DifficultyTier;
 }
 export function summarizeLevel(level:Level):LevelSummary{
  const index=levelPosition(level.id)?.index;if(index===undefined||worldForLevel(level.id)?.number!==level.world)throw new Error('Not a catalog level');
  const counts=new Map<CannonType,number>();
- for(const c of level.cannons)counts.set(c.type,(counts.get(c.type)??0)+1);
- return {index,title:level.title,objective:level.objective,families:[...counts].map(([type,count])=>({type,count})),cannonCount:level.cannons.length,liftCount:level.cannons.filter(c=>c.lift).length,tier:levelTiers(worldForLevel(level.id)!.levels).find(g=>g.entries.some(e=>e.level.id===level.id))!.tier,pipCount:level.creatures,gemCount:level.gems?.length??0};
+ const all=[...level.cannons,...(level.anchorPuzzle?.inventory??[])];
+ for(const c of all)counts.set(c.type,(counts.get(c.type)??0)+1);
+ return {index,title:level.title,objective:level.objective,families:[...counts].map(([type,count])=>({type,count})),cannonCount:all.length,mountCount:level.anchorPuzzle?.anchors.length??0,movableCount:level.anchorPuzzle?.inventory.length??0,lockedCount:level.anchorPuzzle?.inventory.filter(c=>c.lockedShape!==undefined).length??0,liftCount:level.cannons.filter(c=>c.lift).length,tier:levelTiers(worldForLevel(level.id)!.levels).find(g=>g.entries.some(e=>e.level.id===level.id))!.tier,pipCount:level.creatures,gemCount:level.gems?.length??0};
 }

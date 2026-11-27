@@ -12,7 +12,8 @@ export const worldIdentities:Readonly<Record<number,WorldIdentity>>={
  4:{focus:'Advanced quadratics',description:'Explore all four quadrants, fractional coefficients and more demanding reverse routes.',families:['quadratic','linear'],accent:'#92713c',ink:'#694d29',tint:'#f4ebd5',sky:'#dce2c7',ground:'#9da26d'},
  5:{focus:'Cubics & reciprocals',description:'Navigate turning points, roots and continuous reciprocal branches through the machinery.',families:['cubic','reciprocal','linear'],accent:'#9d642e',ink:'#75451f',tint:'#f8ead7',sky:'#d3dede',ground:'#87999b'},
  6:{focus:'Exponentials, logs & waves',description:'Explore growth, decay, logarithmic domains and trigonometric graphs, then combine all seven families across the final relays.',families:['exponential','logarithmic','wave'],accent:'#5b63b0',ink:'#3b4288',tint:'#eaeafa',sky:'#d0d4ee',ground:'#9ca6c7'},
- 7:{focus:'Vertical translations',description:'Raise and lower the platforms to connect locked gradients and arcs. Then work backwards through the machinery to reach the exit.',families:['linear','quadratic'],accent:'#b08229',ink:'#6c4b1e',tint:'#faefd6',sky:'#d2d5c5',ground:'#cc9e43'}
+ 7:{focus:'Vertical translations',description:'Raise and lower the platforms to connect locked gradients and arcs. Then work backwards through the machinery to reach the exit.',families:['linear','quadratic'],accent:'#b08229',ink:'#6c4b1e',tint:'#faefd6',sky:'#d2d5c5',ground:'#cc9e43'},
+ 8:{focus:'Anchor placement & locked graphs',description:'Choose useful mounts, reject decoys and connect locked gradients and arcs. Build a complete relay through the salvage machinery.',families:['linear','quadratic'],accent:'#688778',ink:'#38594f',tint:'#e6eee1',sky:'#c6d4c3',ground:'#b69a69'}
 };
 export function identityForWorld(number:number):WorldIdentity{
  const identity=worldIdentities[number];if(!identity)throw new Error('Missing world identity '+number);return identity;

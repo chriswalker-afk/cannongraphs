@@ -24,16 +24,18 @@ export function tierForCount(count:number):DifficultyTier{
 // Do not sort a broken catalogue silently: displayed numbers and Next Level
 // must agree with the authored progression and the stable puzzle identities.
 const foundryLabels=['Single lifts','Connected lines','Locked arcs','Mixed relays'] as const;
+const salvageLabels=['Single placements','Connected lines','Locked arcs','Three-part relays'] as const;
 export function levelTiers(levels:readonly Level[]):readonly LevelTier[]{
  if(levels.length!==LEVELS_PER_WORLD)throw Error('Expected '+LEVELS_PER_WORLD+' regular levels per world');
- const foundry=levels.every(l=>l.world===7);
+ const foundry=levels.every(l=>l.world===7),salvage=levels.every(l=>l.world===8);
  return difficultyTiers.map((tier,i)=>{
   const entries=levels.slice(i*LEVELS_PER_TIER,(i+1)*LEVELS_PER_TIER).map((level,j)=>{
    const number=i*LEVELS_PER_TIER+j+1;
    if(foundry){if(!level.cannons.some(c=>c.lift))throw Error(level.id+': Foundry level requires a lift');}
+   else if(salvage){const p=level.anchorPuzzle,counts=[1,2,number===7?1:2,3];if(!p||p.inventory.length!==counts[i]||p.anchors.length<p.inventory.length+2||!p.inventory.some(c=>c.lockedShape!==undefined))throw Error(level.id+': invalid Salvage placement tier');}
    else if(level.cannons.length!==tier.count)throw Error(level.id+': level '+number+' must have '+tier.count+' cannon(s)');
    return {level,number};
   });
-  return {tier,entries,label:foundry?foundryLabels[i]:tier.count+' '+(tier.count===1?'cannon':'cannons')};
+  return {tier,entries,label:salvage?salvageLabels[i]:foundry?foundryLabels[i]:tier.count+' '+(tier.count===1?'cannon':'cannons')};
  });
 }
