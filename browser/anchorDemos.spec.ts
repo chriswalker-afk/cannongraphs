@@ -91,7 +91,8 @@ test('phone: real touch drag and tap placement, zoom, return and reset',async({b
   for(let i=1;i<=16;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:a.x+(b.x-a.x)*i/16,y:a.y+(b.y-a.y)*i/16}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await expect(page.locator(mount('Q'))).toHaveAttribute('data-mount-occupied','B');
-  await page.locator('#zoom-in').tap();await page.locator('#zoom-reset').tap();
+  const trayWidth=await page.locator('#anchor-tray').evaluate(el=>el.getBoundingClientRect().width);expect(trayWidth).toBeGreaterThan(300);
+  await page.locator('#zoom-in').tap({timeout:8000});await expect(page.locator('#zoom-readout')).toHaveText('125%');await page.locator('#zoom-reset').tap({timeout:8000});await expect(page.locator('#zoom-readout')).toHaveText('100%');
   await expect(page.locator(mount('Q'))).toHaveAttribute('data-mount-occupied','B');
   await page.locator(part).tap();
   await page.getByRole('button',{name:'Return to tray',exact:true}).tap();

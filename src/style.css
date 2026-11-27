@@ -775,3 +775,15 @@ main.game-screen[data-has-anchors=true] #world-label,main.game-screen[data-has-a
 @media(max-width:650px){.anchor-tray{gap:4px;padding:4px}.anchor-tray-heading{font-size:11px}.anchor-part{max-width:100%;padding:3px 5px;flex-basis:110px}.anchor-part svg{width:32px;height:31px}.anchor-tray-actions button{padding:4px 6px;min-height:28px}.anchor-instructions{font-size:10px}}
 @media(max-height:550px) and (min-width:651px){.anchor-part svg{width:30px;height:29px}.anchor-tray{padding:3px 5px}.anchor-instructions{font-size:10px}.anchor-part{padding:3px 5px}}
 @media(prefers-reduced-motion:reduce){.salvage-mount .mount-ring{transition:none}}
+
+/* Keep the entire inventory readable on narrow touch screens. The standard
+   game footer is flex-based, so a long locked equation must not squeeze it
+   into a single word-wide column beside Launch. */
+main[data-has-anchors=true] .camera-tools button,main[data-has-anchors=true] .anchor-tray-actions button{touch-action:manipulation}
+@media(max-width:650px){
+ main.game-screen[data-has-anchors=true]>.planning-footer{display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:5px}
+ main.game-screen[data-has-anchors=true] .planning-editor{width:100%;min-width:0}
+ main.game-screen[data-has-anchors=true] .launch-panel{display:flex;justify-content:center;align-items:center;gap:6px}
+ .anchor-tray-heading{flex-basis:auto}.anchor-parts{flex:1 1 135px}.anchor-part{flex:1 1 132px;min-width:120px;max-width:100%}
+ .anchor-tray-actions{flex:0 1 auto}.anchor-part-equation{overflow-wrap:normal;white-space:normal}.anchor-instructions{flex:1 0 100%;min-height:12px}
+}

@@ -120,7 +120,7 @@ export function mountAnchorTray(root:HTMLElement,stage:HTMLElement,options:TrayO
   const d=drag;drag=undefined;ghost?.remove();ghost=undefined;delete root.dataset.dragging;hover=undefined;
   if(d.capture.hasPointerCapture(e.pointerId))d.capture.releasePointerCapture(e.pointerId);
   if(d.moving){
-   e.preventDefault();e.stopPropagation();suppressClick=true;
+   if(e.pointerType!=='touch')e.preventDefault();e.stopPropagation();suppressClick=true;
    if(commit&&options.editable()){
     const mount=mountNear(e.clientX,e.clientY),target=document.elementFromPoint(e.clientX,e.clientY);
     if(mount)place(d.id,mount);
