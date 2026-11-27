@@ -44,8 +44,8 @@ export const meadowLaunchers:readonly Level[]=[
    perch('launch-ledge',1,2),wall('first-barrier',3,3.5,.4,5),
    perch('high-ledge',4,8,.12,.40,1.0),ceiling('low-roof',7,7.5,6.4,10),
    perch('middle-ledge',8,4,.25,.5,.65),perch('exit-ledge',13,4,.25,.5,.65)]),
- relay(8,'Below the origin','Use negative intercepts and cross the x-axis in a three-leg route.',r8,[[1,3],[4,0],[7,3],[10,0]],[
-  ...relayGate('valley-entry',2.5,.8,2.2,r8),...relayGate('valley-climb',5.5,.8,2.2,r8),...relayGate('valley-exit',8.5,.8,2.2,r8)]),
+ relay(8,'Below the origin','Use negative intercepts and cross the x-axis in a three-leg route.',r8,[[1,2],[4,-1],[7,2],[10,-1]],[
+  ...relayGate('valley-entry',2.5,-.2,1.2,r8),...relayGate('valley-climb',5.5,-.2,1.2,r8),...relayGate('valley-exit',8.5,-.2,1.2,r8)]),
  relay(9,'Three ridge run','Mix steep climbs with a descending line; choose each intercept independently.',r9,[[1,1],[4,7],[8,3],[11,9]],[
   ...relayGate('first-ridge',2.5,3.1,4.9,r9,.12),...relayGate('middle-ridge',6,4.25,5.75,r9),...relayGate('last-ridge',9.5,5.1,6.9,r9,.12)]),
  relay(10,'Meadow circuit','Plan four different lines: climb, descend, travel horizontally, then climb steeply.',r10,[[1,3],[5,7],[9,3],[13,3],[16,9]],[

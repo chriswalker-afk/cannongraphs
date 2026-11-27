@@ -6,7 +6,7 @@ export const referenceSolutions:readonly (readonly Readonly<Record<string,string
  {A:'3',B:'x-2'},
  {A:'2x',B:'16-2x'},
  {A:'2x',B:'12-x',C:'4'},
- {A:'4-x',B:'x-4',C:'10-x'},
+ {A:'3-x',B:'x-5',C:'9-x'},
  {A:'2x-1',B:'11-x',C:'2x-13'},
  {A:'x+2',B:'12-x',C:'3',D:'2x-23'},
  {A:'10-2x',B:'2x-6',C:'15-x',D:'x-5'},
