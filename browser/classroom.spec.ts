@@ -14,7 +14,7 @@ async function start(page:Page){
 }
 async function pick(page:Page,world:number,mode:Mode,level:number,launch=true){
  await page.locator('#home-play').click();
- await expect(page.locator('.world-card')).toHaveCount(6);
+ await expect(page.locator('.world-card')).toHaveCount(7);
  await page.locator('.world-card').nth(world-1).click();
  await expect(page.locator('.mode-card')).toHaveCount(3);
  await page.locator('.mode-card').nth(modeIndex[mode]).click();
@@ -55,7 +55,7 @@ for(const viewport of [{width:1366,height:768},{width:768,height:1024},{width:39
  test('classroom viewport '+viewport.width+' × '+viewport.height,async({page},info)=>{
   await page.setViewportSize(viewport);const errors=await start(page);
   await fits(page);await capture(page,info,'home');
-  await page.locator('#home-play').click();await expect(page.locator('.world-card')).toHaveCount(6);await fits(page);await capture(page,info,'worlds');
+  await page.locator('#home-play').click();await expect(page.locator('.world-card')).toHaveCount(7);await fits(page);await capture(page,info,'worlds');
   await page.locator('.world-card').nth(5).click();await expect(page.locator('.mode-card')).toHaveCount(3);await fits(page);await capture(page,info,'modes');
   await page.locator('.mode-card').nth(2).click();await expect(page.locator('.level-tier')).toHaveCount(4);for(const count of [1,2,3,4])await expect(page.locator('.level-tier[data-cannons="'+count+'"] .level-number')).toHaveCount(3);await expect(page.locator('.selection-play')).toBeDisabled();await page.locator('.level-number').nth(11).click();await fits(page);await capture(page,info,'levels');
   await page.locator('.selection-play').click();await expect(page.locator('main.game-screen')).toBeVisible();
@@ -88,8 +88,8 @@ test('keyboard navigation, invalid equation, misfire, retry and successful reloa
  await expect(page.locator('#resolution-stars')).toHaveAttribute('aria-label','2 out of 3 stars');
  await expect(page.locator('#resolution-achievements')).toContainText('First flight');
  await capture(page,info,'completion');
- await page.reload();await expect(page.getByRole('button',{name:/Flight log: 1 of 72/})).toBeVisible();
- await page.getByRole('button',{name:/Flight log: 1 of 72/}).click();
+ await page.reload();await expect(page.getByRole('button',{name:/Flight log: 1 of 84/})).toBeVisible();
+ await page.getByRole('button',{name:/Flight log: 1 of 84/}).click();
  await expect(page.locator('.log-stat').nth(1)).toContainText('2');await expect(page.locator('.log-achievement[data-earned=true]')).not.toHaveCount(0);
  await capture(page,info,'flight-log');
  expect(errors).toEqual([]);
@@ -122,7 +122,7 @@ test('all seven cannon families can be programmed and flown across the final rel
  await program(page,6,12);await complete(page);
  await expect(page.locator('#resolution-stars')).toHaveAttribute('aria-label','3 out of 3 stars');
  await expect(page.locator('#resolution-gems')).toContainText('7 / 7');
- await expect(page.locator('#next-level')).toBeHidden();await capture(page,info,'graphiverse-completion');expect(errors).toEqual([]);
+ await expect(page.locator('#next-level')).toHaveText(/Next world/);await capture(page,info,'graphiverse-completion');expect(errors).toEqual([]);
 });
 test('focus on an inspected cannon survives scene resize and controls remain keyboard accessible',async({page})=>{
  const errors=await start(page);await pick(page,1,'pilot',1);

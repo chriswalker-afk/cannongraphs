@@ -1,6 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
 import {worlds} from '../src/levels/catalog';
-import {difficultyTiers} from '../src/levels/progression';
+import {difficultyTiers,levelTiers} from '../src/levels/progression';
 import {PROGRESS_KEY} from '../src/game/progressStore';
 
 async function choose(page:Page,world:number,mode=1){
@@ -15,7 +15,7 @@ for(const w of worlds)test('all twelve '+w.name+' levels appear in the correct l
  await expect(buttons).toHaveCount(12);await expect(page.locator('.selection-play')).toBeDisabled();
  for(const [i,tier] of difficultyTiers.entries()){
   const row=rows.nth(i);await expect(row).toHaveAttribute('data-cannons',String(tier.count));await expect(row.getByRole('heading')).toHaveText(tier.name);
-  const count=tier.count+' '+(tier.count===1?'cannon':'cannons');await expect(row.locator('.level-tier-count')).toHaveText(count);
+  const count=levelTiers(w.levels)[i].label;await expect(row.locator('.level-tier-count')).toHaveText(count);
   const tiles=row.locator('.level-number');await expect(tiles).toHaveCount(3);
   for(let j=0;j<3;j++){
    const n=i*3+j,l=w.levels[n],tile=tiles.nth(j);
@@ -25,7 +25,7 @@ for(const w of worlds)test('all twelve '+w.name+' levels appear in the correct l
    await expect(page.locator('.level-number[aria-pressed=true]')).toHaveCount(1);
    await expect(page.locator('.level-tier[data-selected=true]')).toHaveAttribute('data-cannons',String(tier.count));
    await expect(page.locator('.level-details-title')).toHaveText(l.title);await expect(page.locator('.level-details-tier')).toHaveText(tier.name.toUpperCase());
-   await expect(page.locator('.level-facts')).toContainText(count);await expect(page.locator('.selection-play')).toBeEnabled();
+   await expect(page.locator('.level-facts')).toContainText(l.cannons.length+' '+(l.cannons.length===1?'cannon':'cannons'));await expect(page.locator('.selection-play')).toBeEnabled();
   }
  }
  const metrics=await page.evaluate(()=>({viewport:innerWidth,scroll:document.documentElement.scrollWidth}));
