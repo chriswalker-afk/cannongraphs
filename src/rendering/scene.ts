@@ -30,7 +30,9 @@ import {renderCosmicScenery} from './cosmicScenery';
 import {flightPath} from './flightPath';
 import {renderGem} from './gem';
 import {renderCannonArt} from './cannonArt';
-import {levelSupports} from '../levels/supports';
+import {levelSupports,emptyAnchorSupport} from '../levels/supports';
+import {anchorAssignments,inventoryCannon,lockedAnchorEquation} from '../levels/anchorSpec';
+import {renderSalvageScenery,renderAnchorMount,renderAnchorGrip} from './salvageArt';
 import {renderSupportArt} from './supportArt';
 import {lockedLiftEquation,lockedLiftText} from '../levels/liftSpec';
 import {isQuadratic} from '../engine/equations/linear';
@@ -48,16 +50,21 @@ function el(tag:string,attrs:Record<string,string|number>={},parent?:Element,con
 const fmt=(n:number)=>String(Number(n.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
-export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;onLiftMove?:(id:string,y:number)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void;budget?:number;reducedMotion?:()=>boolean;onViewChange?:()=>void}){
+export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;onLiftMove?:(id:string,y:number)=>void;onAnchorSelect?:(id:string)=>void;onAnchorPartSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void;budget?:number;reducedMotion?:()=>boolean;onViewChange?:()=>void}){
  const policy=modePolicy(controls.mode??'pilot');let supports=levelSupports(level);
- const hasLifts=level.cannons.some(c=>c.lift);
- const guidance=()=>hasLifts?'Drag a striped platform to move it. Click a cannon to inspect its equation.':policy.coordinates?'Click a cannon to program it. Hover or focus an object to inspect it.':'Click a cannon to program it. Read coordinates from the axes.';
- const svg=el('svg',{role:'group',tabindex:'-1','aria-label':(policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access.')+(hasLifts?' Drag striped decks or use their arrow keys to move broken cannons.':'')+' Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
- let viewport:Viewport={width:960,height:620,padding:level.world===7?foundryPadding(level.bounds,960,620):34},camera:Camera=initialCamera(level.bounds);
+ const hasLifts=level.cannons.some(c=>c.lift),hasAnchors=!!level.anchorPuzzle;
+ const guidance=()=>hasAnchors?'Select or drag a cannon from the tray onto a free mount. Click a mounted cannon to inspect its equation.':hasLifts?'Drag a striped platform to move it. Click a cannon to inspect its equation.':policy.coordinates?'Click a cannon to program it. Hover or focus an object to inspect it.':'Click a cannon to program it. Read coordinates from the axes.';
+ const svg=el('svg',{role:'group',tabindex:'-1','aria-label':(policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access.')+(hasAnchors?' Select a cannon in the tray, then choose an empty mount.':hasLifts?' Drag striped decks or use their arrow keys to move broken cannons.':'')+' Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
+ let viewport:Viewport={width:960,height:620,padding:level.world===7||hasAnchors?foundryPadding(level.bounds,960,620):34},camera:Camera=initialCamera(level.bounds);
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
  let inspections=new Map<string,Inspection>(),tooltip:SVGGElement;
  let drag:{id:number;x:number;y:number}|undefined,liftDrag:{pointer:number;id:string;offset:number}|undefined;
- let selectedCannon:string|undefined,planningEditable=false,popupOpen=false;
+ let selectedCannon:string|undefined,planningEditable=false,popupOpen=false,selectedPart:string|undefined,hoverMount:string|undefined;
+ function paintAnchorSelection(){
+  for(const mount of Array.from(svg.querySelectorAll('[data-mount-id]'))){const free=!mount.getAttribute('data-mount-occupied');mount.setAttribute('data-drop-ready',String(planningEditable&&!!selectedPart&&free));mount.setAttribute('data-drop-hover',String(planningEditable&&!!selectedPart&&free&&mount.getAttribute('data-mount-id')===hoverMount));}
+  for(const grip of Array.from(svg.querySelectorAll('[data-anchor-move]'))){grip.setAttribute('aria-disabled',String(!planningEditable));grip.setAttribute('tabindex',planningEditable?'0':'-1');grip.querySelector('[data-anchor-grip-hit]')?.setAttribute('pointer-events',planningEditable?'all':'none');grip.setAttribute('data-active',String(grip.getAttribute('data-anchor-move')===selectedPart));}
+ }
+ function setAnchorSelection(id?:string,hover?:string){selectedPart=id;hoverMount=hover;paintAnchorSelection();}
  let statuses=new Map<string,PlanStatus>();
  const statusLabels:Record<PlanStatus,string>={empty:'Unprogrammed',invalid:'Invalid or incomplete equation',ready:'Programmed, not tested',revise:'Failed flight — revise',tested:'Successful flight'};
  let tutorialGuides:readonly CoordinateGuide[]=[],tutorialLayer:Element|undefined;
@@ -96,7 +103,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function setPlanningSelection(id:string,editable:boolean,open=false){
   if(id!==selectedCannon&&pinned&&cannonTargets.has(pinned))pinned=undefined;
   if(id!==selectedCannon||!editable){previewPaths=[];paintGraphPreview();}
-  selectedCannon=id;planningEditable=editable;popupOpen=open;paintSelection();for(const handle of Array.from(svg.querySelectorAll('[data-lift-handle]'))){handle.setAttribute('aria-disabled',String(!editable));handle.setAttribute('tabindex',editable?'0':'-1');handle.querySelector('[data-lift-hit]')?.setAttribute('pointer-events',editable?'all':'none');}inspect();
+  selectedCannon=id;planningEditable=editable;popupOpen=open;paintSelection();for(const handle of Array.from(svg.querySelectorAll('[data-lift-handle]'))){handle.setAttribute('aria-disabled',String(!editable));handle.setAttribute('tabindex',editable?'0':'-1');handle.querySelector('[data-lift-hit]')?.setAttribute('pointer-events',editable?'all':'none');}paintAnchorSelection();inspect();
  }
  const reducedMotion=()=>controls.reducedMotion?.()??false;
  const crewTotal=controls.budget??level.creatures;
@@ -124,7 +131,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function paintAttempt(){
   paintGems();
   if(!visual||!trace||!marker)return;
-  for(const id of barrels.keys()){const c=level.cannons.find(c=>c.id===id)!;const equation=c.lift?lockedLiftEquation(c):undefined;const slope=equation?(isQuadratic(equation)?2*equation.quadratic*c.position.x+equation.linear:equation.gradient):undefined;setBarrel(id,slope===undefined?BARREL_ANGLE:Math.atan(slope*c.direction)*180/Math.PI);}
+  for(const id of barrels.keys()){const c=level.cannons.find(c=>c.id===id)!;const equation=c.lift?lockedLiftEquation(c):lockedAnchorEquation(level,c);const slope=equation?(isQuadratic(equation)?2*equation.quadratic*c.position.x+equation.linear:equation.gradient):undefined;setBarrel(id,slope===undefined?BARREL_ANGLE:Math.atan(slope*c.direction)*180/Math.PI);}
   const result=active?.result??lastResult,cue=active?sampleRouteAttempt(active.elapsed,active.result,level,active.reduced,active.boardingFrom):undefined;
   marker.replaceChildren();marker.setAttribute('display','none');flightTrail?.setAttribute('display','none');
   const used=new Set<string>();
@@ -225,7 +232,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   el('text',{x:x+w/2,y:y+15,'text-anchor':'middle','font-size':11,fill:'#536579','font-weight':700},tooltip,item.label);
   lines.forEach((line,i)=>el('text',{x:x+w/2,y:y+33+i*18,'text-anchor':'middle','font-size':Math.min(13,(w-12)/Math.max(1,line.length*.60)),fill:'#203e55','font-weight':700},tooltip,line));
  }
- function target(g:Element,item:Inspection,isCannon=false){
+ function target(g:Element,item:Inspection,isCannon=false,isMount=false){
   inspections.set(item.id,item);
   const visible=t.visible,b=item.bounds,p=item.point;
   const inView=b?b.maxX>=visible.minX&&b.minX<=visible.maxX&&b.maxY>=visible.minY&&b.minY<=visible.maxY:p.x>=visible.minX&&p.x<=visible.maxX&&p.y>=visible.minY&&p.y<=visible.maxY;
@@ -235,6 +242,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   g.addEventListener('focus',()=>{focused=item.id;inspect();});
   g.addEventListener('blur',()=>{if(focused===item.id)focused=undefined;inspect();});
   const toggle=()=>{
+   if(isMount&&planningEditable){controls.onAnchorSelect?.(item.id);return;}
    if(isCannon&&planningEditable){controls.onCannonSelect?.(item.id);pinned=item.id;inspect();return;}
    pinned=pinned===item.id?undefined:item.id;inspect();
   };
@@ -242,6 +250,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   g.addEventListener('keydown',event=>{const e=event as KeyboardEvent;if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  }
  function draw(){
+  const focusedGrip=svg.contains(document.activeElement)?document.activeElement?.getAttribute('data-anchor-move'):null;
   const focusedLift=svg.contains(document.activeElement)?document.activeElement?.getAttribute('data-lift-handle'):null;
   const focusedId=svg.contains(document.activeElement)?document.activeElement?.getAttribute('data-inspect'):null;
   const {width:W,height:H}=viewport,q=plot();
@@ -249,13 +258,13 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
   svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();cannonTargets=new Map();gemTargets=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;crew=undefined;launchParent=undefined;flightTrail=undefined;tracePaths.clear();
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
-  const floating=level.world===2,peaks=level.world===3,ruins=level.world===4,factory=level.world===5,cosmic=level.world===6,foundry=level.world===7;
-  el('stop',{offset:'0%', 'stop-color':cosmic?'#a8b6df':level.world===7?'#aabbb9':factory?'#b9c7cb':ruins?'#b7c4ae':peaks?'#aebce8':floating?'#89c5ed':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':cosmic?'#efe0f4':level.world===7?'#f4e6be':factory?'#f4e2c4':ruins?'#f3e2bd':peaks?'#f2e6f6':floating?'#e7e7fa':'#e6f5e6'},sky);
+  const floating=level.world===2,peaks=level.world===3,ruins=level.world===4,factory=level.world===5,cosmic=level.world===6,foundry=level.world===7,salvage=hasAnchors;
+  el('stop',{offset:'0%', 'stop-color':salvage?'#b6c7b9':cosmic?'#a8b6df':level.world===7?'#aabbb9':factory?'#b9c7cb':ruins?'#b7c4ae':peaks?'#aebce8':floating?'#89c5ed':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':salvage?'#eadcc0':cosmic?'#efe0f4':level.world===7?'#f4e6be':factory?'#f4e2c4':ruins?'#f3e2bd':peaks?'#f2e6f6':floating?'#e7e7fa':'#e6f5e6'},sky);
   const portal=el('radialGradient',{id:'portal'},defs);el('stop',{offset:'0%','stop-color':'#fffbea'},portal);el('stop',{offset:'100%','stop-color':'#f8ba48'},portal);
   const clip=el('clipPath',{id:'plotClip'},defs);el('rect',{x:q.x,y:q.y,width:q.w,height:q.h,rx:5},clip);
   el('rect',{width:W,height:H,fill:'url(#sky)'},svg);
   // Decorative scenery stays behind the grid and has no collision geometry.
-  if(foundry){const index=Number(level.id.split('-').at(-1));renderFoundryScenery(svg,W,H,Number.isFinite(index)?Math.min(3,Math.max(0,Math.floor((index-1)/3))):0);}else if(cosmic)renderCosmicScenery(svg,W,H);else if(factory)renderFactoryScenery(svg,W,H);else if(ruins)renderRuinsScenery(svg,W,H);else if(peaks)renderPeakScenery(svg,W,H);else if(floating)renderFloatingScenery(svg,W,H);else{
+  if(salvage)renderSalvageScenery(svg,W,H);else if(foundry){const index=Number(level.id.split('-').at(-1));renderFoundryScenery(svg,W,H,Number.isFinite(index)?Math.min(3,Math.max(0,Math.floor((index-1)/3))):0);}else if(cosmic)renderCosmicScenery(svg,W,H);else if(factory)renderFactoryScenery(svg,W,H);else if(ruins)renderRuinsScenery(svg,W,H);else if(peaks)renderPeakScenery(svg,W,H);else if(floating)renderFloatingScenery(svg,W,H);else{
   el('circle',{cx:W*.81,cy:H*.16,r:Math.min(W,H)*.08,fill:'#fff7c4',opacity:.65},svg);
   for(const [x,y,s] of [[.12,.18,1],[.47,.10,.7],[.74,.24,.85]]){
    const g=el('g',{transform:'translate('+W*x+' '+H*y+') scale('+Math.min(W,H)*.0015*s+')',fill:'#fff',opacity:.55},svg);
@@ -268,10 +277,12 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const b=level.bounds,p=t.toScreen,v=t.visible,scale=t.scale;
   const loX=Math.max(b.minX,v.minX),hiX=Math.min(b.maxX,v.maxX),loY=Math.max(b.minY,v.minY),hiY=Math.min(b.maxY,v.maxY);
   const tl=p({x:b.minX,y:b.maxY}),br=p({x:b.maxX,y:b.minY});
-  el('rect',{x:tl.x,y:tl.y,width:br.x-tl.x,height:br.y-tl.y,fill:foundry?'#fffdf4':'#fff','fill-opacity':foundry?.66:.13,stroke:foundry?'#78918a':'#527d92','stroke-opacity':foundry?.8:.4,'data-graph-plane':''},content);
+  el('rect',{x:tl.x,y:tl.y,width:br.x-tl.x,height:br.y-tl.y,fill:foundry||salvage?'#fffdf4':'#fff','fill-opacity':foundry||salvage?.66:.13,stroke:foundry||salvage?'#78918a':'#527d92','stroke-opacity':foundry||salvage?.8:.4,'data-graph-plane':''},content);
   const supportLayer=el('g',{'data-layer':'anchor-supports','pointer-events':'none','aria-hidden':'true'},content);
   for(const support of supports)renderSupportArt(supportLayer,support,level.world,p,scale,controls.cannonLook);
   for(const c of level.cannons)if(c.lift)renderLiftRail(supportLayer,c,level,p,scale);
+  const assignments=anchorAssignments(level),occupants=new Map([...assignments].map(([id,anchor])=>[anchor,level.cannons.find(c=>c.id===id)!]));
+  for(const anchor of level.anchorPuzzle?.anchors??[])if(!occupants.has(anchor.id))renderSupportArt(supportLayer,emptyAnchorSupport(level,anchor),level.world,p,scale);
   const xGrid=gridTicks(loX,hiX,scale),yGrid=gridTicks(loY,hiY,scale),xs=xGrid.labels,ys=yGrid.labels;
   for(const x of xGrid.units){const a=p({x,y:b.minY}),z=p({x,y:b.maxY});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':x%xGrid.step===0?.40:.23,'data-grid-x':x},content);}
   for(const y of yGrid.units){const a=p({x:b.minX,y}),z=p({x:b.maxX,y});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':y%yGrid.step===0?.40:.23,'data-grid-y':y},content);}
@@ -279,9 +290,10 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(b.minY<=0&&b.maxY>=0){const a=p({x:b.minX,y:0}),z=p({x:b.maxX,y:0});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315779','stroke-width':2},content);}
   // Artwork and collision both read the same world bounds.
   for(const o of level.obstacles){
-   const g=renderTerrain(content,o,p,scale,floating,peaks,ruins,factory,cosmic,foundry),info=terrainInspection(o,level.world);
+   const g=renderTerrain(content,o,p,scale,floating,peaks,ruins,factory,cosmic,foundry||salvage),info=terrainInspection(o,level.world);
    target(g,{id:o.id,...info,point:{x:(o.bounds.minX+o.bounds.maxX)/2,y:(o.bounds.minY+o.bounds.maxY)/2},bounds:o.bounds});
   }
+  for(const anchor of level.anchorPuzzle?.anchors??[]){const occupant=occupants.get(anchor.id),mount=renderAnchorMount(content,anchor,p,scale,occupant);if(!occupant)target(mount,{id:anchor.id,label:'Mount '+anchor.id,detail:coord(anchor.position)+' · empty',point:anchor.position},false,true);}
   tutorialLayer=el('g',{'data-layer':'tutorial-coordinates','pointer-events':'none','aria-hidden':'true'},content);paintTutorialGuides();
   crew=createWaitingCrew(content,level,crewTotal,p,scale,controls.look);crew.update(crewWaiting);
   for(const c of level.cannons){
@@ -293,11 +305,11 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    el('rect',{x:-.89,y:-.35,width:1.26,height:1.03,rx:.21,fill:'none',stroke:'#fff','stroke-width':.035,'stroke-dasharray':'.09 .045',class:'selected-halo','pointer-events':'none'},body);
    if(c.lift)renderLiftDeck(body);
    const barrel=renderCannonArt(body,c.type,BARREL_ANGLE,controls.cannonLook,c.direction);barrels.set(c.id,barrel);
-   if(c.lift)renderBrokenDetails(body,barrel);
+   if(c.lift||inventoryCannon(level,c.id)?.lockedShape!==undefined)renderBrokenDetails(body,barrel);
    el('circle',{r:.12,fill:'white','fill-opacity':.2,stroke:'#fff','stroke-width':.028},g);
    el('circle',{r:.044,fill:'#fff',stroke:'#203d54','stroke-width':.022},g);
    el('text',{x:0,y:-.35,'text-anchor':'middle','font-size':.25,'font-weight':800,fill:'#203d54',stroke:'#eaf8f8','stroke-width':.05,'paint-order':'stroke'},g,c.id+(c.direction===-1?' ←':' →'));
-   target(g,{id:c.id,label:'Cannon '+c.id+' · '+style.label+(c.lift?' · Locked lift':''),detail:coord(c.position)+' · fires '+(c.direction===1?'right':'left'),point:c.position},true);
+   target(g,{id:c.id,label:'Cannon '+c.id+' · '+style.label+(c.lift?' · Locked lift':inventoryCannon(level,c.id)?' · Mounted part':''),detail:coord(c.position)+' · fires '+(c.direction===1?'right':'left'),point:c.position},true);
    if(c.lift){
     const grip=liftGrip(scale,c.direction),gw=grip.glyphWidth,gh=grip.glyphHeight;
     const handle=el('g',{transform:'translate('+(a.x+grip.dx)+' '+(a.y+grip.dy)+')','data-lift-handle':c.id,role:'slider',tabindex:planningEditable?'0':'-1','aria-label':'Move cannon '+c.id+' vertically','aria-orientation':'vertical','aria-valuemin':c.lift.minY,'aria-valuemax':c.lift.maxY,'aria-valuenow':c.position.y,class:'lift-handle','aria-disabled':String(!planningEditable)},content);
@@ -308,6 +320,11 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
     el('path',{d:'M'+(-gw*.23)+' '+(gy-gh*.12)+' L0 '+(gy-gh*.35)+' '+(gw*.23)+' '+(gy-gh*.12)+' M'+(-gw*.23)+' '+(gy+gh*.12)+' L0 '+(gy+gh*.35)+' '+(gw*.23)+' '+(gy+gh*.12),stroke:'#fff4ce','stroke-width':Math.max(.8,Math.min(1.6,gh*.14)),fill:'none','stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'},handle);
     handle.addEventListener('keydown',event=>{const key=(event as KeyboardEvent).key;if(!planningEditable||!['ArrowUp','ArrowDown','Home','End'].includes(key))return;event.preventDefault();event.stopPropagation();controls.onLiftMove?.(c.id,key==='Home'?c.lift!.minY:key==='End'?c.lift!.maxY:c.position.y+(key==='ArrowUp'?1:-1));});
     handle.addEventListener('click',event=>event.stopPropagation());
+   }
+   if(inventoryCannon(level,c.id)){
+    const grip=renderAnchorGrip(content,a,scale,c.id,c.direction,planningEditable);
+    grip.addEventListener('click',event=>{event.stopPropagation();if(planningEditable)controls.onAnchorPartSelect?.(c.id);});
+    grip.addEventListener('keydown',event=>{const key=(event as KeyboardEvent).key;if(planningEditable&&(key==='Enter'||key===' ')){event.preventDefault();event.stopPropagation();controls.onAnchorPartSelect?.(c.id);}});
    }
   }
   const a=p(level.exit),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content);
@@ -338,9 +355,10 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   tooltip=el('g',{'pointer-events':'none','aria-hidden':'true'},svg) as SVGGElement;
   controls.readout.textContent=Math.round(camera.zoom*100)+'%';controls.out.disabled=camera.zoom<=MIN_ZOOM;controls.in.disabled=camera.zoom>=MAX_ZOOM;
   controls.reset.disabled=camera.zoom===MIN_ZOOM;for(const button of [controls.left,controls.right,controls.up,controls.down])button.disabled=camera.zoom===MIN_ZOOM;
-  svg.classList.toggle('zoomed',camera.zoom>MIN_ZOOM);paintSelection();inspect();
+  svg.classList.toggle('zoomed',camera.zoom>MIN_ZOOM);paintSelection();paintAnchorSelection();inspect();
   if(focusedId){const target=Array.from(svg.querySelectorAll<SVGElement>('[data-inspect]')).find(g=>g.getAttribute('data-inspect')===focusedId&&g.getAttribute('tabindex')==='0');(target??svg).focus({preventScroll:true});}
   if(focusedLift){const handle=Array.from(svg.querySelectorAll<SVGElement>('[data-lift-handle]')).find(g=>g.getAttribute('data-lift-handle')===focusedLift);handle?.focus({preventScroll:true});}
+  if(focusedGrip){const grip=Array.from(svg.querySelectorAll<SVGElement>('[data-anchor-move]')).find(g=>g.getAttribute('data-anchor-move')===focusedGrip);grip?.focus({preventScroll:true});}
   controls.onViewChange?.();
  }
  function setLevelGeometry(next:Level){if(active||rapid)return;level=next;supports=levelSupports(level);draw();}
@@ -356,12 +374,12 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    // when it lies on the deck's interaction area, not the adjusted node.
    const handle=(e.pointerType==='touch'?document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-lift-handle]'):null)??(e.target as Element).closest('[data-lift-handle]');
   if(handle){if(!planningEditable||e.button!==0||liftDrag||drag)return;const id=handle.getAttribute('data-lift-handle')!,c=level.cannons.find(c=>c.id===id),p=pointerWorld(e);if(!c||!p)return;e.preventDefault();liftDrag={pointer:e.pointerId,id,offset:c.position.y-p.y};svg.setPointerCapture(e.pointerId);return;}
-  if((e.target as Element).closest('[data-inspect]'))return;pinned=undefined;inspect();if(camera.zoom<=1||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};svg.setPointerCapture(e.pointerId);svg.classList.add('dragging');});
+  if((e.target as Element).closest('[data-inspect],[data-anchor-move],[data-mount-id]'))return;pinned=undefined;inspect();if(camera.zoom<=1||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};svg.setPointerCapture(e.pointerId);svg.classList.add('dragging');});
  svg.addEventListener('pointermove',e=>{if(liftDrag?.pointer===e.pointerId){const p=pointerWorld(e);if(p&&planningEditable)controls.onLiftMove?.(liftDrag.id,p.y+liftDrag.offset);return;}if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;pan(dx,dy);});
  const stop=(e:PointerEvent)=>{if(liftDrag?.pointer===e.pointerId)liftDrag=undefined;if(drag?.id===e.pointerId){drag=undefined;svg.classList.remove('dragging');}};
  svg.addEventListener('pointerup',stop);svg.addEventListener('pointercancel',stop);svg.addEventListener('lostpointercapture',stop);
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
- const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100||width===viewport.width&&height===viewport.height)return;viewport={width,height,padding:level.world===7?foundryPadding(level.bounds,width,height):Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
+ const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100||width===viewport.width&&height===viewport.height)return;viewport={width,height,padding:level.world===7||hasAnchors?foundryPadding(level.bounds,width,height):Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
  observer.observe(stage);draw();
  function revealCannon(id:string){const target=cannonTargets.get(id);if(target?.getAttribute('tabindex')==='-1'){camera=initialCamera(level.bounds);draw();}}
  function focusCannon(id:string){revealCannon(id);(cannonTargets.get(id) as SVGElement|undefined)?.focus({preventScroll:true});}
@@ -372,6 +390,6 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const left=new DOMPoint(Math.max(q.x,a.x),Math.max(q.y,a.y)).matrixTransform(matrix),right=new DOMPoint(Math.min(q.x+q.w,b.x),Math.min(q.y+q.h,b.y)).matrixTransform(matrix);
   return {left:left.x,top:left.y,right:right.x,bottom:right.y};
  }
- function occupiedRects(){return Array.from(svg.querySelectorAll('[data-inspect].cannon-target,[data-inspect="exit"],[data-lift-grip]')).map(g=>g.getBoundingClientRect());}
- return {playFlight,playRapidFire,clearFlight,setLevelGeometry,setPlanningSelection,setPlanStatuses,revealCannon,focusCannon,cannonRect,graphRect,occupiedRects,setTutorialGuides,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
+ function occupiedRects(){return Array.from(svg.querySelectorAll('[data-inspect].cannon-target,[data-inspect="exit"],[data-lift-grip],[data-mount-id]')).map(g=>g.getBoundingClientRect());}
+ return {playFlight,playRapidFire,clearFlight,setLevelGeometry,setPlanningSelection,setPlanStatuses,setAnchorSelection,revealCannon,focusCannon,cannonRect,graphRect,occupiedRects,setTutorialGuides,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
 }

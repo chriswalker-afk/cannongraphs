@@ -3,6 +3,7 @@ import {formsFor,formFormula,parameterEquation,stepParameter,validParameter,poly
 import {cannonTypes} from '../game/cannons';
 import type {Cannon,Level} from '../levels/schema';
 import {lockedLiftEquation,lockedLiftText} from '../levels/liftSpec';
+import {inventoryCannon,lockedAnchorEquation,anchorAt} from '../levels/anchorSpec';
 import {modePolicy,type LearningMode} from '../game/learningModes';
 export interface EditorMemory {readonly form:string;readonly values:ParameterValues;readonly raw:boolean;readonly drafts?:FormDrafts}
 function node<K extends keyof HTMLElementTagNameMap>(tag:K,cls:string,parent:Element,text?:string):HTMLElementTagNameMap[K]{
@@ -25,6 +26,15 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
   up.onclick=()=>onLiftMove?.(current.id,current.position.y+1);
   updateLift(cannon);
   return {getDraft:()=>({text:lockedLiftText(lockedLiftEquation(current)),equation:lockedLiftEquation(current)}),getMemory:():EditorMemory=>({form:'locked',values:{},raw:false}),focus:()=>{(up.disabled?down:up).focus();},updateLift};
+ }
+ const part=inventoryCannon(level,cannon.id);
+ if(part?.lockedShape!==undefined){
+  const locked=lockedAnchorEquation(level,cannon)!;
+  node('p','lift-lock-label',root,'Locked firing mechanism · Mount '+anchorAt(level,cannon.position)!.id);
+  const output=node('output','lift-equation anchor-equation',root,lockedLiftText(locked));output.tabIndex=0;
+  if(modePolicy(mode).coordinates)node('p','parameter-help',root,'Muzzle: ('+cannon.position.x+', '+cannon.position.y+')');
+  node('p','parameter-help',root,'Move this cannon to another mount to change the constant. Select its tray card or drag its deck grip.');
+  return {getDraft:()=>({text:lockedLiftText(locked),equation:locked}),getMemory:():EditorMemory=>({form:'locked',values:{},raw:false}),focus:()=>output.focus(),updateLift:undefined};
  }
  const forms=formsFor(cannon.type);
  let form=forms.find(f=>f.id===memory?.form)??forms[0],values={...memory?.values},rawMode=memory?.raw??!!text;

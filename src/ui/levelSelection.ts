@@ -9,7 +9,7 @@ import {learningModes,modePolicy,modeBudgetLabel,modeObjective,type LearningMode
 import {createPip,svgNode} from '../rendering/pip';
 import {emptyProgress,getRecord,recordStars,summarizeProgress,type Progress} from '../game/progress';
 
-interface Options {bindAudio?:(button:HTMLButtonElement)=>()=>void;progress?:Progress;preferredId?:string;preferredMode?:LearningMode;openCurrentWorld?:boolean;preferredCategory?:WorldCategory;onLiftDemos?:()=>void;onCategoryChange?:(category:WorldCategory)=>void;onHome:()=>void;onPlay:(level:Level,mode:LearningMode)=>void}
+interface Options {bindAudio?:(button:HTMLButtonElement)=>()=>void;progress?:Progress;preferredId?:string;preferredMode?:LearningMode;openCurrentWorld?:boolean;preferredCategory?:WorldCategory;onLiftDemos?:()=>void;onAnchorDemos?:()=>void;onCategoryChange?:(category:WorldCategory)=>void;onHome:()=>void;onPlay:(level:Level,mode:LearningMode)=>void}
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,className:string,parent:Element,text?:string):HTMLElementTagNameMap[K]{
  const e=document.createElement(tag);e.className=className;if(text!==undefined)e.textContent=text;parent.append(e);return e;
 }
@@ -76,7 +76,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
    element('span','',row,summary.completed+' / '+w.levels.length+' completed');
    element('span','world-card-arrow',row,'→').setAttribute('aria-hidden','true');
   }
-  if(category==='broken'&&options.onLiftDemos){const extras=element('div','broken-world-extras',main);action(extras,'lift-tests-link','Lift flight tests ↗',()=>{if(!disposed)options.onLiftDemos?.();});}
+  if(category==='broken'&&(options.onLiftDemos||options.onAnchorDemos)){const extras=element('div','broken-world-extras',main);if(options.onLiftDemos)action(extras,'lift-tests-link','Lift flight tests ↗',()=>{if(!disposed)options.onLiftDemos?.();});if(options.onAnchorDemos)action(extras,'lift-tests-link anchor-tests-link','Salvage Yard · flight tests ↗',()=>{if(!disposed)options.onAnchorDemos?.();});}
   if(focusCategory)activeButton?.focus({preventScroll:true});else if(focusNumber!==undefined&&cards.has(focusNumber))cards.get(focusNumber)!.focus();
   else h1.focus();
  }
