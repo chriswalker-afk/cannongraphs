@@ -28,9 +28,9 @@ const memoryStorage=()=>{
 };
 test('empty progress is genuinely empty and contains no earned achievements',()=>{
  const p=emptyProgress(),s=summarizeProgress(p);
- assert.equal(s.total,72);assert.equal(s.completed,0);assert.equal(s.gems,0);assert.ok(s.gemTotal>30);
- assert.equal(earnedAchievementIds(p).size,0);assert.equal(achievementDefinitions.length,15);
- assert.equal(new Set(achievementDefinitions.map(a=>a.id)).size,15);
+ assert.equal(s.total,84);assert.equal(s.completed,0);assert.equal(s.gems,0);assert.ok(s.gemTotal>30);
+ assert.equal(earnedAchievementIds(p).size,0);assert.equal(achievementDefinitions.length,17);
+ assert.equal(new Set(achievementDefinitions.map(a=>a.id)).size,17);
 });
 test('planning, launch, retry, game over, provisional gems and incomplete celebrations never award progress',()=>{
  const p=emptyProgress(),fresh=createLevelState(5);
@@ -95,8 +95,8 @@ test('world achievements require twelve distinct completions in a single mode, n
 test('all-catalog progress and thresholds use distinct levels and level-scoped unique gems',()=>{
  const p=fixture(Object.fromEntries(levels.map((level,i)=>[level.id,{[i%2?'pilot':'ace']:{bestAttempts:1,gems:(level.gems??[]).map(g=>g.id)}}])));
  const s=summarizeProgress(p),earned=earnedAchievementIds(p);
- assert.equal(s.completed,72);assert.equal(s.gems,s.gemTotal);assert.equal(s.modes.pilot.stars+s.modes.ace.stars,216);
- for(const id of ['first-flight','pilot-wings','ace-wings','star-collector','gem-collector','gem-explorer','relay-runner','graphiverse-explorer'])assert.ok(earned.has(id),id);
+ assert.equal(s.completed,84);assert.equal(s.gems,s.gemTotal);assert.equal(s.modes.pilot.stars+s.modes.ace.stars,252);
+ for(const id of ['first-flight','pilot-wings','ace-wings','star-collector','gem-collector','gem-explorer','relay-runner','graphiverse-explorer','foundry-explorer','all-worlds-explorer'])assert.ok(earned.has(id),id);
  assert.ok(!earned.has('cadet-wings'));assert.ok(!earned.has('world-explorer'));
 });
 test('storage decoding rejects malformed versions, unknown ids, invalid attempt counts and bogus gems',()=>{

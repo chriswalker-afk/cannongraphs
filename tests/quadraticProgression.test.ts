@@ -55,6 +55,6 @@ test('all quadratic-world relays prevent direct forward skips by actual geometry
 test('retained puzzle IDs are reserved for unchanged puzzles; all new relays have distinct IDs',()=>{
  assert.deepEqual(worlds[2].levels.filter(l=>!l.id.includes('-r')).map(l=>l.id),['3-01','3-02','3-03','3-11','3-12']);
  assert.deepEqual(worlds[3].levels.filter(l=>!l.id.includes('-r')).map(l=>l.id),['4-01','4-02','4-05','4-10','4-11']);
- assert.equal(levels.length,72);
+ assert.equal(levels.length,84);
  for(const w of worlds.slice(0,4))assert.deepEqual(w.levels.map(l=>l.cannons.length),[1,1,1,2,2,2,3,3,3,4,4,4]);
 });

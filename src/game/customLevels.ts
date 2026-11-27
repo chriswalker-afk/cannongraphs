@@ -178,6 +178,7 @@ function completedRun(run:CustomRun,state:LevelState,played:Level){
  // Every reached leg must originate at the actual, legal runtime anchor.
  // Transfers must join the following leg at its marked point.
  if(!routeMatchesLayout(l,r))return false;
+ const total=modeBudget(run.mode,l),unlimited=run.mode==='cadet';
  return state.phase==='success'&&!!r&&r.event.kind==='exit'&&!state.active&&!state.celebration&&state.waiting===0&&
   state.total===total&&state.unlimited===unlimited&&Number.isSafeInteger(state.failed)&&state.failed>=0&&
   Number.isSafeInteger(state.failed+1)&&state.saved===(unlimited?total:total-state.failed)&&state.saved>0&&r.cannonId===start.id&&

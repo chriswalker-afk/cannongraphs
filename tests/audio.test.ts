@@ -37,10 +37,10 @@ test('blocked storage keeps session preferences and does not prevent play',()=>{
  assert.deepEqual(store.save({muted:false,effects:.4}),{...DEFAULT_AUDIO,muted:false,effects:.4});assert.equal(store.persisted(),false);
  const noStorage=createAudioSettingsStore();noStorage.save({music:0});assert.equal(noStorage.read().music,0);assert.equal(noStorage.persisted(),false);
 });
-test('all seven original themes loop deterministically with distinct motifs and bounded notes',()=>{
- const themes=['menu',1,2,3,4,5,6] as const;
- assert.equal(Object.keys(musicScores).length,7);
- assert.equal(new Set(themes.map(t=>musicScores[t].melody.join(','))).size,7);
+test('all eight original themes loop deterministically with distinct motifs and bounded notes',()=>{
+ const themes=['menu',1,2,3,4,5,6,7] as const;
+ assert.equal(Object.keys(musicScores).length,8);
+ assert.equal(new Set(themes.map(t=>musicScores[t].melody.join(','))).size,8);
  for(const theme of themes){
   const score=musicScores[theme],n=score.melody.length;
   assert.equal(n,16);assert.equal(score.bass.length,8);

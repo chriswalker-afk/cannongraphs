@@ -29,7 +29,6 @@ export function routeMatchesLayout(l:Level,r:AttemptResult):boolean{
   const next=legs[i+1];
   return next?leg.event.kind!=='cannon'||leg.event.cannonId!==next.cannonId||!near(leg.end,next.source):leg.event.kind!=='exit'||!near(leg.end,l.exit);
  }))return false;
- const total=modeBudget(run.mode,l),unlimited=run.mode==='cadet';
 
  return true;
 }
