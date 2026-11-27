@@ -7,6 +7,9 @@ import {levelSupports} from '../levels/supports';
 import {waitingCrewSlots} from '../animations/waitingCrew';
 import type {LevelState} from './levelState';
 import {routeLegs} from '../engine/simulation/linearRoute';
+import {modeBudget,isLearningMode,learningModes,type LearningMode} from './learningModes';
+import {bankedGems} from '../animations/gemTimeline';
+import type {LevelRecord,ModeRecords} from './progress';
 export const CUSTOM_KEY='cannon-graphs:custom-workshop:v1';
 export const CUSTOM_FILE_LIMIT=65536,MAX_CANNONS=8,MAX_TERRAIN=40,MAX_GEMS=24;
 export interface CustomDesign{
@@ -110,25 +113,138 @@ export function deleteObject(d:CustomDesign,id:string):CustomDesign{
  return decodeDesign({...d,cannons,startId:d.startId===id?cannons[0]?.id??null:d.startId,exit:id==='exit'?null:d.exit,obstacles:d.obstacles.filter(o=>o.id!==id),gems:d.gems.filter(g=>g.id!==id)});
 }
 export interface CustomStorage{getItem(k:string):string|null;setItem(k:string,v:string):void}
+export const CUSTOM_LIBRARY_KEY='cannon-graphs:custom-library:v1';
+export const MAX_CUSTOM_LEVELS=100;
+export interface CustomEntry{
+ readonly id:string;readonly revision:number;readonly design:CustomDesign;
+ readonly source:'created'|'imported';readonly tested:boolean;readonly confirmed:boolean;
+ readonly records:ModeRecords;readonly notice:string;
+}
+export interface CustomRun {
+ readonly id:string;readonly revision:number;readonly key:string;readonly level:Level;
+ readonly kind:'test'|'play';readonly mode:LearningMode;
+}
+function playable(d:CustomDesign){try{buildCustomLevel(d);return true;}catch{return false;}}
+function decodeRecords(value:unknown,d:CustomDesign):ModeRecords{
+ if(!value||typeof value!=='object'||Array.isArray(value))return {};
+ const row=value as Record<string,unknown>,out:Partial<Record<LearningMode,LevelRecord>>={};
+ for(const {id:mode} of learningModes){
+  const r=row[mode];if(!r||typeof r!=='object'||Array.isArray(r))continue;
+  const {bestAttempts,gems}=r as Record<string,unknown>;
+  if(typeof bestAttempts!=='number'||!Number.isSafeInteger(bestAttempts)||bestAttempts<1||mode!=='cadet'&&bestAttempts>(mode==='ace'?3:5))continue;
+  const ids=new Set(Array.isArray(gems)?gems:[]);
+  out[mode]={bestAttempts,gems:d.gems.filter(g=>ids.has(g.id)).map(g=>g.id)};
+ }
+ return out;
+}
+function copyEntry(e:CustomEntry):CustomEntry{
+ return {...e,design:decodeDesign(e.design),records:decodeRecords(e.records,e.design)};
+}
+function decodeEntry(raw:unknown):CustomEntry{
+ const e=object(raw),d=decodeDesign(e.design);
+ if(typeof e.id!=='string'||!/^level-[1-9][0-9]{0,11}$/.test(e.id)||typeof e.revision!=='number'||!Number.isSafeInteger(e.revision)||e.revision<1)fail('Invalid saved level identity.');
+ const valid=playable(d),key=designKey(d),tested=valid&&e.testedKey===key,confirmed=tested&&e.confirmedKey===key;
+ return {id:e.id,revision:e.revision,design:d,source:e.source==='imported'?'imported':'created',tested,confirmed,
+  records:valid&&e.recordKey===key?decodeRecords(e.records,d):{},notice:''};
+}
+// A successful run must match the selected design, revision, mode and
+// completed arrival state. The library never changes official progress.
+function completedRun(run:CustomRun,state:LevelState){
+ const l=run.level,r=state.lastResult,start=l.cannons.find(c=>c.id===l.startId)!;
+ const total=modeBudget(run.mode,l),unlimited=run.mode==='cadet';
+ return state.phase==='success'&&!!r&&r.event.kind==='exit'&&!state.active&&!state.celebration&&state.waiting===0&&
+  state.total===total&&state.unlimited===unlimited&&Number.isSafeInteger(state.failed)&&state.failed>=0&&
+  Number.isSafeInteger(state.failed+1)&&state.saved===(unlimited?total:total-state.failed)&&state.saved>0&&r.cannonId===start.id&&
+  Math.hypot(r.start.x-start.position.x,r.start.y-start.position.y)<=1e-7&&
+  Math.hypot(r.end.x-l.exit.x,r.end.y-l.exit.y)<=1e-7;
+}
 export function createCustomWorkshopStore(storage?:CustomStorage){
- let draft=emptyDesign(),tested=false,confirmed=false,persisted=false,notice='';
- try{const raw=storage?.getItem(CUSTOM_KEY);if(raw){const saved=object(JSON.parse(raw));if(saved.version!==1)fail('Unsupported saved draft.');draft=decodeDesign(saved.design);const key=designKey(draft);if(saved.tested===key){buildCustomLevel(draft);tested=true;confirmed=saved.confirmed===key;}}persisted=!!storage;}catch{draft=emptyDesign();tested=false;confirmed=false;notice='Saved draft could not be read. A new draft is ready.';}
- function save(){try{if(!storage){persisted=false;return;}const key=designKey(draft);storage.setItem(CUSTOM_KEY,JSON.stringify({version:1,design:draft,tested:tested?key:null,confirmed:confirmed?key:null}));persisted=true;}catch{persisted=false;}}
- function replace(value:CustomDesign,force=false){const next=decodeDesign(value);if(!force&&designKey(next)===designKey(draft))return false;draft=next;tested=false;confirmed=false;notice='';save();return true;}
+ let entries:CustomEntry[]=[],activeId:string|null=null,nextId=1,persisted=false,notice='';
+ function save(){
+  try{
+   if(!storage){persisted=false;return;}
+   storage.setItem(CUSTOM_LIBRARY_KEY,JSON.stringify({version:1,activeId,nextId,entries:entries.map(e=>{
+    const key=designKey(e.design);
+    return {id:e.id,revision:e.revision,design:e.design,source:e.source,testedKey:e.tested?key:null,confirmedKey:e.confirmed?key:null,recordKey:key,records:e.records};
+   })}));persisted=true;
+  }catch{persisted=false;}
+ }
+ function add(d:CustomDesign,source:CustomEntry['source']='created',proof?:{tested:boolean;confirmed:boolean}){
+  if(entries.length>=MAX_CUSTOM_LEVELS)fail('Library is full (100 levels). Download or delete a level before adding another.');
+  if(nextId>999999999999)fail('No more level IDs available.');
+  const e:CustomEntry={id:'level-'+nextId++,revision:1,design:decodeDesign(d),source,tested:proof?.tested??false,confirmed:proof?.confirmed??false,records:{},notice:''};
+  entries=[e,...entries];activeId=e.id;save();return e.id;
+ }
+ try{
+  const raw=storage?.getItem(CUSTOM_LIBRARY_KEY);
+  if(raw){
+   const saved=object(JSON.parse(raw));if(saved.version!==1||!Array.isArray(saved.entries)||saved.entries.length>MAX_CUSTOM_LEVELS)fail('Unsupported saved library.');
+   const ids=new Set<string>();
+   for(const item of saved.entries){
+    try{const e=decodeEntry(item);if(ids.has(e.id))fail('Duplicate level ID.');ids.add(e.id);entries.push(e);}catch{notice='Some invalid saved entries could not be restored.';}
+   }
+   const minimum=Math.max(0,...entries.map(e=>Number(e.id.slice(6))))+1;
+   nextId=typeof saved.nextId==='number'&&Number.isSafeInteger(saved.nextId)&&saved.nextId>=minimum&&saved.nextId<=1000000000000?saved.nextId:minimum;
+   activeId=entries.some(e=>e.id===saved.activeId)?saved.activeId as string:entries[0]?.id??null;
+   persisted=!!storage;
+  }else{
+   persisted=!!storage;
+   const legacy=storage?.getItem(CUSTOM_KEY);
+   if(legacy){
+    const old=object(JSON.parse(legacy));if(old.version!==1)fail('Unsupported saved workshop draft.');
+    const d=decodeDesign(old.design),key=designKey(d),tested=old.tested===key&&playable(d);
+    add(d,'created',{tested,confirmed:tested&&old.confirmed===key});
+    notice='Your previous workshop draft has been added to the library.';
+   }
+  }
+ }catch{entries=[];activeId=null;nextId=1;persisted=false;notice='Saved library could not be read. You can start a new design or import a file.';}
+ const find=(id:string|null)=>entries.find(e=>e.id===id);
+ const active=()=>find(activeId);
+ function requireEntry(id:string|null=activeId){return find(id)??fail('Choose a saved level.');}
+ function ensureActive(){return active()?.id??add(emptyDesign());}
+ function update(id:string,e:CustomEntry){entries=entries.map(old=>old.id===id?e:old);save();}
+ function matching(run:CustomRun,kind:CustomRun['kind']){
+  const e=find(run.id);
+  if(!e||run.kind!==kind||run.revision!==e.revision||run.key!==designKey(e.design)||!isLearningMode(run.mode)||kind==='test'&&run.mode!=='cadet')return;
+  // Rebuild the canonical level rather than trusting a supplied snapshot.
+  return {entry:e,run:{...run,level:buildCustomLevel(e.design)}};
+ }
+ function begin(id:string,kind:CustomRun['kind'],mode:LearningMode):CustomRun{
+  const e=requireEntry(id);if(!isLearningMode(mode))fail('Choose a learning mode.');
+  return {id:e.id,revision:e.revision,key:designKey(e.design),level:buildCustomLevel(e.design),kind,mode};
+ }
  return {
-  read:()=>({design:decodeDesign(draft),tested,confirmed,persisted,notice}),
-  edit:(value:CustomDesign)=>replace(value),
-  newDraft:()=>replace(emptyDesign(),true),
-  importFile:(raw:string)=>replace(decodeCustomFile(raw),true),
-  beginTest:()=>({level:buildCustomLevel(draft),key:designKey(draft)}),
-  completeTest:(key:string,state:LevelState)=>{
-   if(key!==designKey(draft)||state.phase!=='success'||state.lastResult?.event.kind!=='exit'||state.saved!==state.total||state.waiting!==0||state.total!==5||state.celebration||state.active)return false;
-   const level=buildCustomLevel(draft),r=state.lastResult,start=level.cannons.find(c=>c.id===level.startId)!;
-   if(r.cannonId!==start.id||Math.hypot(r.start.x-start.position.x,r.start.y-start.position.y)>1e-7||Math.hypot(r.end.x-level.exit.x,r.end.y-level.exit.y)>1e-7)return false;
-   tested=true;notice=routeLegs(r).length<level.cannons.length?'Test passed, but some cannons were bypassed. Check whether that is intentional.':'Test passed! Confirm this design to enable download.';save();return true;
+  read:()=>{const e=active();return {id:e?.id??null,design:decodeDesign(e?.design??emptyDesign()),tested:e?.tested??false,confirmed:e?.confirmed??false,persisted,notice:e?.notice||notice};},
+  library:()=>({entries:entries.map(copyEntry),activeId,persisted,notice}),
+  ensureActive,
+  select:(id:string)=>{requireEntry(id);if(id!==activeId){activeId=id;save();}return id;},
+  edit:(value:CustomDesign)=>{
+   const d=decodeDesign(value),e=active();
+   if(!e){add(d);return true;}
+   if(designKey(d)===designKey(e.design))return false;
+   update(e.id,{...e,design:d,revision:e.revision+1,tested:false,confirmed:false,records:{},notice:''});return true;
   },
-  confirm:()=>{if(!tested)return false;buildCustomLevel(draft);confirmed=true;save();return true;},
-  download:()=>{if(!confirmed)fail('Complete a test flight and confirm before downloading.');buildCustomLevel(draft);return encodeCustomFile(draft);}
+  newDraft:()=>add(emptyDesign()),
+  importFile:(raw:string)=>add(decodeCustomFile(raw),'imported'),
+  duplicate:(id:string)=>{const e=requireEntry(id);return add({...e.design,title:e.design.title.slice(0,73)+' (copy)'});},
+  remove:(id:string)=>{requireEntry(id);entries=entries.filter(e=>e.id!==id);if(activeId===id)activeId=entries[0]?.id??null;save();},
+  beginTest:()=>begin(requireEntry().id,'test','cadet'),
+  beginPlay:(id:string,mode:LearningMode)=>begin(id,'play',mode),
+  completeTest:(run:CustomRun,state:LevelState)=>{
+   const match=matching(run,'test');if(!match||!completedRun(match.run,state))return false;
+   const e=match.entry;
+   update(e.id,{...e,tested:true,notice:routeLegs(state.lastResult!).length<e.design.cannons.length?'Test passed, but some cannons were bypassed. Check whether that is intentional.':'Test passed! Confirm this design to enable download.'});return true;
+  },
+  completePlay:(run:CustomRun,state:LevelState):{record:LevelRecord;improved:boolean}|undefined=>{
+   const match=matching(run,'play');if(!match||!completedRun(match.run,state))return;
+   const e=match.entry,previous=e.records[run.mode],ids=new Set([...(previous?.gems??[]),...bankedGems(state.lastResult)]);
+   const record:LevelRecord={bestAttempts:Math.min(previous?.bestAttempts??Infinity,state.failed+1),gems:e.design.gems.filter(g=>ids.has(g.id)).map(g=>g.id)};
+   const improved=!previous||record.bestAttempts!==previous.bestAttempts||record.gems.length!==previous.gems.length;
+   if(improved)update(e.id,{...e,records:{...e.records,[run.mode]:record}});
+   return {record,improved};
+  },
+  confirm:()=>{const e=active();if(!e?.tested)return false;buildCustomLevel(e.design);update(e.id,{...e,confirmed:true});return true;},
+  download:(id:string|null=activeId)=>{const e=requireEntry(id);if(!e.confirmed)fail('Complete a test flight and confirm before downloading.');buildCustomLevel(e.design);return encodeCustomFile(e.design);}
  };
 }
 export type CustomWorkshopStore=ReturnType<typeof createCustomWorkshopStore>;
