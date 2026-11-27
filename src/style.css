@@ -794,3 +794,13 @@ main[data-has-anchors=true] .camera-tools button,main[data-has-anchors=true] .an
 .salvage-linear-choices .salvage-puzzle-facts{display:block;font-size:11px;line-height:1.3;color:#58664d;margin:5px 0}
 .salvage-linear-choices button{padding:6px 8px;font-size:12px;margin:2px}.salvage-demo-menu .salvage-linear-choices p{min-height:0;font-size:12px;line-height:1.35}
 @media(max-width:800px){.salvage-linear-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:450px){.salvage-linear-choices{grid-template-columns:1fr}}
+
+/* The second half of the practice world uses the same compact card grid. */
+.salvage-quadratic-choices{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.salvage-quadratic-choices section{padding:9px 11px;border-top:4px solid #9574b1}
+.salvage-quadratic-choices section[data-band=mastery]{border-top-color:#b1894b}
+.salvage-quadratic-choices .salvage-puzzle-facts{display:block;font-size:11px;line-height:1.3;color:#58664d;margin:5px 0}
+.salvage-quadratic-choices button{padding:6px 8px;font-size:12px;margin:2px}.salvage-demo-menu .salvage-quadratic-choices p{min-height:0;font-size:12px;line-height:1.35}
+@media(max-width:800px){.salvage-quadratic-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:450px){.salvage-quadratic-choices{grid-template-columns:1fr}}
+/* Keep three parts readable without expanding the footer unnecessarily. */
+@media(max-width:650px){.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1 0 100%;gap:4px}.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part{min-width:0;padding:4px;display:grid;grid-template-columns:1fr;justify-items:center;text-align:center}.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part svg{height:24px;width:28px}.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part-copy{width:100%;font-size:10px}.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part-copy strong{font-size:10px}.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part-equation{overflow-wrap:anywhere}}

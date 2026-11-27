@@ -33,6 +33,7 @@ import {renderCannonArt} from './cannonArt';
 import {levelSupports,emptyAnchorSupport} from '../levels/supports';
 import {anchorAssignments,inventoryCannon,lockedAnchorEquation} from '../levels/anchorSpec';
 import {renderSalvageScenery,renderAnchorMount,renderAnchorGrip} from './salvageArt';
+import {salvageSceneryVariant} from '../levels/salvage';
 import {renderSupportArt} from './supportArt';
 import {lockedLiftEquation,lockedLiftText} from '../levels/liftSpec';
 import {isQuadratic} from '../engine/equations/linear';
@@ -264,7 +265,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const clip=el('clipPath',{id:'plotClip'},defs);el('rect',{x:q.x,y:q.y,width:q.w,height:q.h,rx:5},clip);
   el('rect',{width:W,height:H,fill:'url(#sky)'},svg);
   // Decorative scenery stays behind the grid and has no collision geometry.
-  if(salvage)renderSalvageScenery(svg,W,H,/^salvage-linear-[456]$/.test(level.id)?1:0);else if(foundry){const index=Number(level.id.split('-').at(-1));renderFoundryScenery(svg,W,H,Number.isFinite(index)?Math.min(3,Math.max(0,Math.floor((index-1)/3))):0);}else if(cosmic)renderCosmicScenery(svg,W,H);else if(factory)renderFactoryScenery(svg,W,H);else if(ruins)renderRuinsScenery(svg,W,H);else if(peaks)renderPeakScenery(svg,W,H);else if(floating)renderFloatingScenery(svg,W,H);else{
+  if(salvage)renderSalvageScenery(svg,W,H,salvageSceneryVariant(level.id));else if(foundry){const index=Number(level.id.split('-').at(-1));renderFoundryScenery(svg,W,H,Number.isFinite(index)?Math.min(3,Math.max(0,Math.floor((index-1)/3))):0);}else if(cosmic)renderCosmicScenery(svg,W,H);else if(factory)renderFactoryScenery(svg,W,H);else if(ruins)renderRuinsScenery(svg,W,H);else if(peaks)renderPeakScenery(svg,W,H);else if(floating)renderFloatingScenery(svg,W,H);else{
   el('circle',{cx:W*.81,cy:H*.16,r:Math.min(W,H)*.08,fill:'#fff7c4',opacity:.65},svg);
   for(const [x,y,s] of [[.12,.18,1],[.47,.10,.7],[.74,.24,.85]]){
    const g=el('g',{transform:'translate('+W*x+' '+H*y+') scale('+Math.min(W,H)*.0015*s+')',fill:'#fff',opacity:.55},svg);

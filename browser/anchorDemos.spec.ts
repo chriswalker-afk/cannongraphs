@@ -94,8 +94,13 @@ test('phone: real touch drag and tap placement, zoom, return and reset',async({b
   const trayWidth=await page.locator('#anchor-tray').evaluate(el=>el.getBoundingClientRect().width);expect(trayWidth).toBeGreaterThan(300);
   const tap=async(selector:string)=>{
    await page.locator(selector).first().scrollIntoViewIfNeeded();
+   // Chromium suppresses a synthetic click immediately after a drag.
+   // Use a realistic inter-gesture gap and touch dwell; all input still
+   // goes through native touch dispatch, never an artificial DOM click.
+   await page.waitForTimeout(250);
    const p=await centre(page,selector);
    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:p.x,y:p.y}]});
+   await page.waitForTimeout(50);
    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   };
   await tap('#zoom-in');await expect(page.locator('#zoom-readout')).toHaveText('125%');
