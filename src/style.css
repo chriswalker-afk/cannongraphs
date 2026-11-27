@@ -673,3 +673,5 @@ main.custom-workshop,main.custom-library{gap:7px;min-width:0}
 .lift-demo-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
 .lift-demo-choices section{padding:1rem;border:1px solid #c9b58e;border-radius:12px;background:#fff8e9}
 .lift-demo-choices button,.lift-demo-menu header button{padding:.65rem .85rem;margin:.2rem;border:1px solid #9c7840;border-radius:7px;background:#f9e1ab;color:#4d3821;font-weight:700;cursor:pointer}
+
+.foundry-linear-choices section{padding:.8rem 1rem}.lift-demo-menu>h2{font-size:1.05rem;margin:1.1rem 0 .5rem}.lift-demo-menu .lift-demo-choices h2{font-size:1.1rem;margin:.2rem 0}.lift-demo-menu .lift-demo-choices p{font-size:.88rem;line-height:1.4;min-height:2.5em}
