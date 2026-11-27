@@ -2,6 +2,7 @@
 import {worlds,levelPosition,nextLevel,levels} from '../../src/levels/catalog';
 import {levelTiers} from '../../src/levels/progression';
 import {referenceSolutions} from '../fixtures/referenceSolutions';
+import {referenceLayout} from '../fixtures/referenceLayout';
 import {auditSolution} from '../../src/levels/qa';
 import {levelSupports} from '../../src/levels/supports';
 import {waitingCrewSlots} from '../../src/animations/waitingCrew';
@@ -13,7 +14,7 @@ import type {CannonType} from '../../src/game/cannons';
 
 export interface DifficultyAuditRow{
  readonly world:number;readonly number:number;readonly id:string;readonly title:string;
- readonly tier:string;readonly cannons:number;readonly families:readonly CannonType[];
+ readonly tier:string;readonly cannons:number;readonly lifts:number;readonly families:readonly CannonType[];
  readonly distinctEquations:number;readonly fractionalPolynomialLegs:number;
  readonly nonIntegerAnchors:number;readonly leftwardLegs:number;readonly directionChanges:number;
  readonly interiorCriticalPoints:number;readonly terrainPieces:number;readonly routeLength:number;
@@ -28,10 +29,11 @@ export function auditDifficulty():readonly DifficultyAuditRow[]{
   for(const {tier,entries} of levelTiers(w.levels))for(const {level:l,number} of entries){
    const ref=referenceSolutions[wi][number-1];
    require(Object.keys(ref).length===l.cannons.length&&l.cannons.every(c=>Object.hasOwn(ref,c.id)),l.id+': mismatched reference IDs');
-   const {result,minimumClearance}=auditSolution(l,ref,l.cannons.map(c=>c.id));
-   const supports=levelSupports(l),crew=waitingCrewSlots(l,l.creatures),gems=bankedGems(result).length;
-   require(result.legs.length===tier.count,l.id+': incomplete route');
-   require(supports.length===l.cannons.length+1,l.id+': unsupported target');
+   const layout=referenceLayout(l),lifts=l.cannons.filter(c=>c.lift).length;
+   const {result,minimumClearance}=auditSolution(layout,ref,l.cannons.map(c=>c.id));
+   const supports=levelSupports(layout),crew=waitingCrewSlots(layout,l.creatures),gems=bankedGems(result).length;
+   require(result.legs.length===l.cannons.length,l.id+': incomplete route');
+   require(supports.length+lifts===l.cannons.length+1,l.id+': unsupported target');
    require(crew.length===l.creatures,l.id+': insufficient crew staging');
    require(gems===(l.gems?.length??0),l.id+': unreachable reference gem');
    require(levelPosition(l.id)?.index===number,l.id+': numbering drift');
@@ -54,10 +56,10 @@ export function auditDifficulty():readonly DifficultyAuditRow[]{
    if(xSpan>24||ySpan>18)review.push('large graph: check labels/zoom');
    if(distinctEquations<l.cannons.length)review.push('repeated reference equation');
    if(nonIntegerAnchors)review.push(l.exactCoordinateNote?'exact-coordinate note':'non-integer anchor: check readability');
-   rows.push({world:w.number,number,id:l.id,title:l.title,tier:tier.name,cannons:tier.count,
+   rows.push({world:w.number,number,id:l.id,title:l.title,tier:tier.name,cannons:l.cannons.length,lifts,
     families:l.cannons.map(c=>c.type),distinctEquations,fractionalPolynomialLegs,nonIntegerAnchors,
     leftwardLegs:l.cannons.filter(c=>c.direction===-1).length,directionChanges,interiorCriticalPoints,
-    terrainPieces:l.obstacles.length,routeLength:result.length,minClearance:minimumClearance,gems,supports:supports.length,xSpan,ySpan,review});
+    terrainPieces:l.obstacles.length,routeLength:result.length,minClearance:minimumClearance,gems,supports:supports.length+lifts,xSpan,ySpan,review});
   }
  }
  return rows;
@@ -66,16 +68,16 @@ export function difficultyReport(rows:readonly DifficultyAuditRow[]):string{
  const n=(v:number)=>v.toFixed(3),min=Math.min(...rows.map(r=>r.minClearance));
  const out=['# Cannon Graphs! — difficulty progression audit','',
   'Generated from the actual catalogue and test-only reference routes. This is a structural and mathematical audit, not empirical student difficulty data. Clearance is additional distance beyond the Pip radius. Critical points and fractional polynomial legs describe the reference route, not a mandated answer. Review flags are advisory; actual visual/classroom assessment remains necessary.','',
-  '**'+rows.length+' levels · '+rows.reduce((a,r)=>a+r.cannons,0)+' cannons · '+rows.reduce((a,r)=>a+r.supports,0)+' supported targets · '+rows.reduce((a,r)=>a+r.gems,0)+' collectible gems · minimum clearance '+n(min)+' units**','',
+  '**'+rows.length+' levels · '+rows.reduce((a,r)=>a+r.cannons,0)+' cannons · '+rows.reduce((a,r)=>a+r.supports,0)+' supported targets (including '+rows.reduce((a,r)=>a+r.lifts,0)+' lifts) · '+rows.reduce((a,r)=>a+r.gems,0)+' collectible gems · minimum clearance '+n(min)+' units**','',
   '| World | 1 cannon | 2 cannons | 3 cannons | 4 cannons | Min clearance | Leftward legs | Direction changes |','|---|---:|---:|---:|---:|---:|---:|---:|'];
  for(const w of worlds){
   const group=rows.filter(r=>r.world===w.number);
   out.push('| '+w.name+' | '+[1,2,3,4].map(k=>group.filter(r=>r.cannons===k).length).join(' | ')+' | '+n(Math.min(...group.map(r=>r.minClearance)))+' | '+group.reduce((a,r)=>a+r.leftwardLegs,0)+' | '+group.reduce((a,r)=>a+r.directionChanges,0)+' |');
  }
  for(const w of worlds){
-  out.push('','## '+w.name,'','| Level / ID | Tier | Families in flight order | Distinct equations | Fractional polynomial legs | Left / reversals | Critical points | Terrain | Grid span | Route length | Clearance | Gems | Review |','|---|---|---|---:|---:|---|---:|---:|---|---:|---:|---:|---|');
-  for(const r of rows.filter(r=>r.world===w.number))out.push('| '+r.number+' · '+r.title+' ('+r.id+') | '+r.tier+' | '+r.families.join(' → ')+' | '+r.distinctEquations+' | '+r.fractionalPolynomialLegs+' | '+r.leftwardLegs+' / '+r.directionChanges+' | '+r.interiorCriticalPoints+' | '+r.terrainPieces+' | '+n(r.xSpan)+' × '+n(r.ySpan)+' | '+n(r.routeLength)+' | '+n(r.minClearance)+' | '+r.gems+' | '+(r.review.join('; ')||'—')+' |');
+  out.push('','## '+w.name,'','| Level / ID | Tier | Families in flight order | Lifts | Distinct equations | Fractional polynomial legs | Left / reversals | Critical points | Terrain | Grid span | Route length | Clearance | Gems | Review |','|---|---|---|---:|---:|---:|---|---:|---:|---|---:|---:|---:|---|');
+  for(const r of rows.filter(r=>r.world===w.number))out.push('| '+r.number+' · '+r.title+' ('+r.id+') | '+r.tier+' | '+r.families.join(' → ')+' | '+r.lifts+' | '+r.distinctEquations+' | '+r.fractionalPolynomialLegs+' | '+r.leftwardLegs+' / '+r.directionChanges+' | '+r.interiorCriticalPoints+' | '+r.terrainPieces+' | '+n(r.xSpan)+' × '+n(r.ySpan)+' | '+n(r.routeLength)+' | '+n(r.minClearance)+' | '+r.gems+' | '+(r.review.join('; ')||'—')+' |');
  }
- out.push('','Existing independent regression suites verify all 216 level/mode combinations, exact graph-family validation and direct forward shortcut exclusions. Neither the reference equations nor this audit module is imported into the game.');
+ out.push('','Existing independent regression suites verify all '+(levels.length*3)+' level/mode combinations, exact graph-family validation and direct forward shortcut exclusions. Neither the reference equations nor this audit module is imported into the game.');
  return out.join('\n')+'\n';
 }

@@ -3,6 +3,7 @@ import type {Bounds,Point} from '../engine/coordinates';
 import {PIP_RADIUS,pointRectangleDistance} from '../engine/collisions/clearance';
 import {validateLevel,type Level,type Cannon,type Obstacle,type Gem} from '../levels/schema';
 import {floor} from '../levels/terrain';
+import {playedLayout,routeMatchesLayout} from './playedLayout';
 import {validateLiftSpec,type LiftSpec} from '../levels/liftSpec';
 import {levelSupports} from '../levels/supports';
 import {waitingCrewSlots} from '../animations/waitingCrew';
@@ -33,7 +34,7 @@ function id(v:unknown,rx:RegExp,ids:Set<string>){if(typeof v!=='string'||!rx.tes
 export function decodeDesign(value:unknown):CustomDesign{
  const o=object(value),b=bounds(o.bounds),w=o.world;
  if(!Object.values(b).every(Number.isInteger)||b.maxX-b.minX<6||b.maxX-b.minX>40||b.maxY-b.minY<5||b.maxY-b.minY>24)fail('Use integer grid limits: width 6–40, height 5–24 units.');
- if(typeof w!=='number'||!Number.isInteger(w)||w<1||w>6)fail('Choose one of the six world themes.');
+ if(typeof w!=='number'||!Number.isInteger(w)||w<1||w>7)fail('Choose one of the seven world themes.');
  const ids=new Set<string>(['exit','base-floor']);
  const cannons=list(o.cannons,MAX_CANNONS,'cannons').map(v=>{
   const c=object(v),type=c.type,direction=c.direction;
@@ -76,7 +77,7 @@ export function buildCustomLevel(input:CustomDesign):Level{
 }
 export function encodeCustomFile(d:CustomDesign):string{
  const design=decodeDesign(d);
- return JSON.stringify({format:'cannon-graphs-level',version:design.cannons.some(c=>c.lift)?2:1,design},null,2)+'\n';
+ return JSON.stringify({format:'cannon-graphs-level',version:design.world===7||design.cannons.some(c=>c.lift)?2:1,design},null,2)+'\n';
 }
 export function decodeCustomFile(raw:string):CustomDesign{
  if(raw.length>CUSTOM_FILE_LIMIT)fail('Level file is too large (maximum 64 KB).');
@@ -84,7 +85,7 @@ export function decodeCustomFile(raw:string):CustomDesign{
  const o=object(v);if(o.format!=='cannon-graphs-level'||o.version!==1&&o.version!==2)fail('This is not a supported Cannon Graphs level file.');
  // Only complete, structurally playable levels can be shared. Importing
  // never imports an authorisation, solved equation, or confirmation flag.
- const d=decodeDesign(o.design);if(o.version===1&&d.cannons.some(c=>c.lift))fail('Movable cannons require a version 2 level file.');buildCustomLevel(d);return d;
+ const d=decodeDesign(o.design);if(o.version===1&&(d.world===7||d.cannons.some(c=>c.lift)))fail('Movable cannons and the Foundry theme require a version 2 level file.');buildCustomLevel(d);return d;
 }
 export type PlacementTool=CannonType|'exit'|'platform'|'wall'|'ceiling'|'gem';
 export const placementTools:readonly PlacementTool[]=[...Object.keys(cannonTypes) as CannonType[],'exit','platform','wall','ceiling','gem'];
@@ -170,36 +171,13 @@ function decodeEntry(raw:unknown):CustomEntry{
 }
 // A successful run must match the selected design, revision, mode and
 // completed arrival state. The library never changes official progress.
-function playedLayout(authored:Level,played:Level):Level|undefined{
- // Reconstruct the only legal runtime change from the canonical design:
- // the y-coordinate of a lift. Reject changed rails, shapes, terrain,
- // direction, x positions or any other altered geometry.
- try{
-  const canonical:Level={...authored,cannons:authored.cannons.map(c=>{
-   if(!c.lift)return c;
-   const moved=played.cannons.find(other=>other.id===c.id);
-   if(!moved)fail('Missing lift');
-   return {...c,position:{x:c.position.x,y:moved.position.y}};
-  })};
-  if(JSON.stringify(canonical)!==JSON.stringify(played))return;
-  validateLevel(canonical);
-  return canonical;
- }catch{return;}
-}
 function completedRun(run:CustomRun,state:LevelState,played:Level){
  const l=playedLayout(run.level,played),r=state.lastResult;
  if(!l||!r)return false;
  const start=l.cannons.find(c=>c.id===l.startId)!;
  // Every reached leg must originate at the actual, legal runtime anchor.
  // Transfers must join the following leg at its marked point.
- const legs=routeLegs(r),near=(a:Point,b:Point)=>Math.hypot(a.x-b.x,a.y-b.y)<=1e-7;
- if(!legs.length||legs[0].cannonId!==start.id||legs.some((leg,i)=>{
-  const c=l.cannons.find(c=>c.id===leg.cannonId);
-  if(!c||leg.direction!==c.direction||!near(leg.source,c.position)||!near(leg.start,c.position))return true;
-  const next=legs[i+1];
-  return next?leg.event.kind!=='cannon'||leg.event.cannonId!==next.cannonId||!near(leg.end,next.source):leg.event.kind!=='exit'||!near(leg.end,l.exit);
- }))return false;
- const total=modeBudget(run.mode,l),unlimited=run.mode==='cadet';
+ if(!routeMatchesLayout(l,r))return false;
  return state.phase==='success'&&!!r&&r.event.kind==='exit'&&!state.active&&!state.celebration&&state.waiting===0&&
   state.total===total&&state.unlimited===unlimited&&Number.isSafeInteger(state.failed)&&state.failed>=0&&
   Number.isSafeInteger(state.failed+1)&&state.saved===(unlimited?total:total-state.failed)&&state.saved>0&&r.cannonId===start.id&&

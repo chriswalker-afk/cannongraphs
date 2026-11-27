@@ -685,3 +685,8 @@ main.custom-workshop,main.custom-library{gap:7px;min-width:0}
 .custom-lift-limits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35rem}
 .custom-lift-panel .custom-property{min-width:0}.custom-lift-panel input:not([type=checkbox]){width:100%;min-width:0;box-sizing:border-box}
 .custom-lift-equation{display:block;overflow-wrap:anywhere;font-weight:700;font-size:.85rem;color:#62481b;margin:.35rem 0}
+
+/* Seventh world: keep the two-row desktop world chooser and reachable touch controls. */
+@media(min-width:1050px){.world-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:801px) and (max-width:1049px){.world-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.world-card-art{height:clamp(60px,15vh,135px)}}
+main[data-world="7"] header,main[data-world="7"] footer,main[data-world="7"] .toolbar{background:#fff4da}main[data-world="7"] .stage{background:#cbd0c8}main[data-world="7"] .brand-mark{background:#e8c77d;color:#6c4b1e}

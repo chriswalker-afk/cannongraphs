@@ -15,7 +15,7 @@ function node<K extends keyof HTMLElementTagNameMap>(tag:K,parent:Element,cls=''
 }
 function button(parent:Element,cls:string,label:string,click:()=>void){const b=node('button',parent,cls,label);b.type='button';b.addEventListener('click',click);return b;}
 const status=(e:CustomEntry)=>e.confirmed?'Confirmed':e.tested?'Test passed':'Draft';
-const palettes=['#e3f1df','#e1ecfa','#e9e5f3','#f2e9d2','#e7e9e7','#e1e7f4'];
+const palettes=['#e3f1df','#e1ecfa','#e9e5f3','#f2e9d2','#e7e9e7','#e1e7f4','#efe4c5'];
 // Small actual geometry previews; never compute or display a solution.
 function thumbnail(parent:Element,e:CustomEntry){
  const d=e.design,svg=el('svg',{viewBox:'0 0 180 86','aria-hidden':'true',class:'custom-thumbnail'},parent);

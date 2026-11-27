@@ -1,6 +1,7 @@
 import {levels} from '../levels/catalog';
 import type {Level} from '../levels/schema';
 import {validAchievementIds} from './achievementIds';
+import {playedLayout,routeMatchesLayout} from './playedLayout';
 export type ProgressLevel=Pick<Level,'id'|'world'|'creatures'>&{readonly cannons:readonly unknown[];readonly gems?:readonly {readonly id:string}[]};
 import {learningModes,modeBudget,type LearningMode} from './learningModes';
 import type {LevelState} from './levelState';
@@ -30,10 +31,12 @@ function addRecord(p:Progress,l:ProgressLevel,mode:LearningMode,next:LevelRecord
 }
 // A record is earned only at the end of a completed, successfully animated run.
 // There is no reward for a preview, provisional gem pickup or pending celebration.
-export function recordCompletion(p:Progress,level:Level,mode:LearningMode,s:LevelState):Progress{
+export function recordCompletion(p:Progress,level:Level,mode:LearningMode,s:LevelState,played:Level=level):Progress{
  if(!levels.includes(level)||!learningModes.some(m=>m.id===mode))return p;
  const total=modeBudget(mode,level),unlimited=mode==='cadet';
- const source=level.cannons.find(c=>c.id===level.startId)!.position;
+ const actual=playedLayout(level,played);
+ if(!actual||!s.lastResult||!routeMatchesLayout(actual,s.lastResult))return p;
+ const source=actual.cannons.find(c=>c.id===actual.startId)!.position;
  if(s.phase!=='success'||s.lastResult?.event.kind!=='exit'||s.active||s.celebration||s.waiting!==0||
   !s.lastResult||Math.abs(s.lastResult.end.x-level.exit.x)>CAPTURE_EPSILON||Math.abs(s.lastResult.end.y-level.exit.y)>CAPTURE_EPSILON||s.lastResult.source.x!==source.x||s.lastResult.source.y!==source.y||
   s.total!==total||s.unlimited!==unlimited||!Number.isSafeInteger(s.failed)||s.failed<0||
