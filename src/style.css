@@ -734,3 +734,44 @@ main.game-screen[data-world="7"] #world-label{font-size:12px}
 main.game-screen[data-world="7"] #level-objective{font-size:12px;line-height:1.25}
 @media(min-width:801px){main.game-screen[data-world="7"] .brand h1{font-size:22px}main.game-screen[data-world="7"] .brand-mark{width:32px;height:32px}main.game-screen[data-world="7"] .queue-pip{width:27px;height:28px}}
 @media(max-height:550px){main.game-screen[data-world="7"]{padding:4px;gap:4px}main.game-screen[data-world="7"]>header,main.game-screen[data-world="7"]>.planning-footer{padding:4px 7px}main.game-screen[data-world="7"] #level-objective{font-size:11px}}
+
+/* Salvage Yard prototypes: compact tray, real docking brackets and a neutral
+   free-mount highlight. No colour encodes the mathematical answer. */
+.broken-world-extras{gap:8px;flex-wrap:wrap}
+.salvage-demo-menu{height:auto;min-height:100dvh;display:block;max-width:850px;padding:16px}
+.salvage-demo-menu>p{margin:12px 0;color:#3e5b54}
+.salvage-demo-menu .lift-demo-choices section{background:#f6f1e1;border-color:#b3b29c}
+main.game-screen[data-has-anchors=true]{gap:5px;padding:6px}
+main.game-screen[data-has-anchors=true]>header,main.game-screen[data-has-anchors=true]>.toolbar,main.game-screen[data-has-anchors=true]>.planning-footer{background:#f4f0e2;padding:6px 9px}
+main.game-screen[data-has-anchors=true] .stage{background:#cbd2c2}
+main.game-screen[data-has-anchors=true] .brand-mark{background:#d8c59a;color:#5f654b}
+main.game-screen[data-has-anchors=true] #world-label,main.game-screen[data-has-anchors=true] #level-objective{font-size:12px;line-height:1.2}
+.anchor-tray{display:flex;align-items:center;gap:5px 8px;flex-wrap:wrap;min-width:0;padding:5px 6px;border:1px solid #bcb79f;border-radius:9px;background:#e7e3d2}
+.anchor-tray-heading{display:grid;gap:1px;flex:0 0 auto;color:#56634c;font-size:12px}
+.anchor-count{font-size:10px;font-weight:650;white-space:nowrap}
+.anchor-parts{display:flex;flex:1 1 150px;min-width:0;gap:5px;flex-wrap:wrap}
+.anchor-part{display:flex;align-items:center;text-align:left;min-width:0;flex:1 1 118px;max-width:230px;gap:4px;padding:4px 6px;background:#fffaf0;color:#334d4a;border:1px solid #b3b8a4;border-left:4px solid var(--part-color);border-radius:7px;cursor:grab;touch-action:none}
+.anchor-part svg{width:38px;height:36px;flex-shrink:0;pointer-events:none}
+.anchor-part-copy{display:grid;gap:1px;min-width:0;pointer-events:none;font-size:11px;line-height:1.15}
+.anchor-part-copy strong{font-size:11px}
+.anchor-part-equation{font-weight:650;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.anchor-part-status{font-size:10px;color:#656e5a}
+.anchor-part[aria-pressed=true]{outline:2px solid #9b7940;outline-offset:1px;background:#fff3d2}
+.anchor-part[data-mounted=true] .anchor-part-status{font-weight:800;color:#5e704f}
+.anchor-part:disabled{cursor:default;opacity:.72}
+.anchor-tray-actions{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.anchor-tray-actions button{background:#faf7ed;border:1px solid #b6b49d;color:#53614e;border-radius:6px;font-size:10px;padding:6px 8px;min-height:30px;cursor:pointer}
+.anchor-tray-actions button:disabled{opacity:.42;cursor:default}
+.anchor-instructions{font-size:10px;line-height:1.2;color:#5a6252;flex-basis:100%;min-height:12px}
+.salvage-mount .mount-ring{transition:fill .12s,stroke .12s}
+.salvage-mount[data-drop-ready=true] .mount-ring{stroke:#477e81;fill:#ecf6ed;stroke-dasharray:none}
+.salvage-mount[data-drop-hover=true] .mount-ring{stroke:#244f70;fill:#d9eaf2;stroke-width:3}
+.anchor-grip{cursor:grab;outline:none;touch-action:none}
+.anchor-grip[data-active=true]>rect:nth-child(2),.anchor-grip:focus-visible>rect:nth-child(2){stroke:#fff;stroke-width:2}
+.anchor-grip[aria-disabled=true]{pointer-events:none;opacity:.55;cursor:default}
+.anchor-drag-ghost{position:fixed;z-index:1000;pointer-events:none;transform:translate(-50%,-65%);display:flex;align-items:center;gap:4px;padding:4px 9px;background:#fff8e4;border:1px solid #9d8e69;border-radius:8px;box-shadow:0 3px 10px #253e3838;font-size:12px;font-weight:800;color:#56634c;white-space:nowrap}
+.anchor-drag-ghost svg{width:46px;height:42px}
+.anchor-tray[data-dragging=true]{border-style:dashed;border-color:#8b794e}
+@media(max-width:650px){.anchor-tray{gap:4px;padding:4px}.anchor-tray-heading{font-size:11px}.anchor-part{max-width:100%;padding:3px 5px;flex-basis:110px}.anchor-part svg{width:32px;height:31px}.anchor-tray-actions button{padding:4px 6px;min-height:28px}.anchor-instructions{font-size:10px}}
+@media(max-height:550px) and (min-width:651px){.anchor-part svg{width:30px;height:29px}.anchor-tray{padding:3px 5px}.anchor-instructions{font-size:10px}.anchor-part{padding:3px 5px}}
+@media(prefers-reduced-motion:reduce){.salvage-mount .mount-ring{transition:none}}
