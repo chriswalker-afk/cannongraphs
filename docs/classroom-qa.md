@@ -34,3 +34,7 @@ Cannon pop-ups show the available algebraic forms as named formula buttons rathe
 ### PR37: Tiered level selection
 
 All six worlds show four labelled rows of three numbered levels: Introduction (one cannon), Development (two), Challenge (three) and Mastery (four). The rows use the same tier colours across worlds, while the world identity remains in the banner and detail card. Every level remains unlocked; level selection and best results are mode-specific, with the selected number visually pressed. Tab through the twelve levels in order, Enter/Space selects, and the Play button opens the selected puzzle. The selected detail panel shows the actual cannon count, learning mode, objective, families and optional gems. At short landscape sizes the repeated banner description is omitted; at very small screen sizes normal vertical scrolling remains available. Check real classroom displays for readability, touch target usability, and actual student difficulty.
+
+### PR38: Flight School
+
+On a fresh browser, choose Meadow Launchers, any mode, and level 1. Inspect the marked cannon and exit coordinates, follow the worked gradient/intercept calculation, use the real parameter boxes, move to B using Next Cannon, experience a practice splat and revise B using the worked cannon-to-exit calculation. Verify the rapid-fire celebration and fresh scored crew. Skip/reopen via the toolbar; existing progress must be unchanged. Check the coach and equation popup on phones, short landscape and projected desktop displays.

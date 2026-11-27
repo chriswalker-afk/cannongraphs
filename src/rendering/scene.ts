@@ -5,6 +5,7 @@ import {cannonTypes} from '../game/cannons';
 import {planStatus,type FlightPlan,type PlanStatus} from '../game/flightPlan';
 import {modePolicy,type LearningMode} from '../game/learningModes';
 import type {Level} from '../levels/schema';
+import type {CoordinateGuide} from '../game/firstFlightTutorial';
 import {BARREL_ANGLE} from '../animations/launch';
 import {attemptSounds,rapidSounds,createSoundCursor} from '../audio/timeline';
 import type {SoundEffect} from '../audio/effects';
@@ -53,6 +54,20 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  let selectedCannon:string|undefined,planningEditable=false,popupOpen=false;
  let statuses=new Map<string,PlanStatus>();
  const statusLabels:Record<PlanStatus,string>={empty:'Unprogrammed',invalid:'Invalid or incomplete equation',ready:'Programmed, not tested',revise:'Failed flight — revise',tested:'Successful flight'};
+ let tutorialGuides:readonly CoordinateGuide[]=[],tutorialLayer:Element|undefined;
+ function paintTutorialGuides(){
+  if(!tutorialLayer)return;tutorialLayer.replaceChildren();
+  for(const item of tutorialGuides){
+   const a=t.toScreen(item.point),base=t.toScreen({x:item.point.x,y:0}),left=t.toScreen({x:0,y:item.point.y});
+   const colour=item.id==='Exit'?'#8b5a12':item.id==='A'?'#176ca0':'#7a469d';
+   el('path',{d:'M'+left.x+' '+left.y+' H'+a.x+' V'+base.y,fill:'none',stroke:'#fff','stroke-width':4,opacity:.85,'stroke-dasharray':'5 4'},tutorialLayer);
+   el('path',{d:'M'+left.x+' '+left.y+' H'+a.x+' V'+base.y,fill:'none',stroke:colour,'stroke-width':2,'stroke-dasharray':'5 4'},tutorialLayer);
+   el('circle',{cx:a.x,cy:a.y,r:Math.max(5,t.scale*.16),fill:'none',stroke:colour,'stroke-width':2},tutorialLayer);
+   const q=plot(),x=Math.min(q.x+q.w-4,Math.max(q.x+4,a.x+9)),y=Math.min(q.y+q.h-6,Math.max(q.y+14,a.y-18)),end=x+78>q.x+q.w;
+   el('text',{x:end?a.x-8:x,y,'text-anchor':end?'end':'start','font-size':12,'font-weight':850,fill:colour,stroke:'#fffaf0','stroke-width':4,'paint-order':'stroke'},tutorialLayer,item.label);
+  }
+ }
+ function setTutorialGuides(guides:readonly CoordinateGuide[]){tutorialGuides=guides;paintTutorialGuides();}
  let previewPaths:readonly (readonly Point[])[]=[],previewLayer:Element|undefined;
  function paintGraphPreview(){
   if(!previewLayer)return;previewLayer.replaceChildren();
@@ -259,6 +274,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    const g=renderTerrain(content,o,p,scale,floating,peaks,ruins,factory,cosmic),info=terrainInspection(o,level.world);
    target(g,{id:o.id,...info,point:{x:(o.bounds.minX+o.bounds.maxX)/2,y:(o.bounds.minY+o.bounds.maxY)/2},bounds:o.bounds});
   }
+  tutorialLayer=el('g',{'data-layer':'tutorial-coordinates','pointer-events':'none','aria-hidden':'true'},content);paintTutorialGuides();
   crew=createWaitingCrew(content,level,crewTotal,p,scale,controls.look);crew.update(crewWaiting);
   for(const c of level.cannons){
    const a=p(c.position),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content),style=cannonTypes[c.type];
@@ -320,5 +336,5 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function revealCannon(id:string){const target=cannonTargets.get(id);if(target?.getAttribute('tabindex')==='-1'){camera=initialCamera(level.bounds);draw();}}
  function focusCannon(id:string){revealCannon(id);(cannonTargets.get(id) as SVGElement|undefined)?.focus({preventScroll:true});}
  function cannonRect(id:string){return cannonTargets.get(id)?.getBoundingClientRect();}
- return {playFlight,playRapidFire,clearFlight,setPlanningSelection,setPlanStatuses,revealCannon,focusCannon,cannonRect,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
+ return {playFlight,playRapidFire,clearFlight,setPlanningSelection,setPlanStatuses,revealCannon,focusCannon,cannonRect,setTutorialGuides,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
 }

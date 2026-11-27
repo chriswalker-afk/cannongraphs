@@ -1,6 +1,8 @@
 import {test,expect,type Page} from '@playwright/test';
+import {bypassTutorial} from './helpers/tutorial';
 import {enterFree} from './helpers/programming';
 async function level(page:Page,mode=1){
+ await bypassTutorial(page);
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/');await page.locator('#home-play').click();await page.locator('.world-card').first().click();await page.locator('.mode-card').nth(mode).click();await page.locator('.level-number').first().click();await page.locator('.selection-play').click();
  await expect(page.locator('main.game-screen')).toBeVisible();return errors;
