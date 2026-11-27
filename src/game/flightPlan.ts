@@ -3,23 +3,24 @@ import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {routeLegs} from '../engine/simulation/linearRoute';
 import type {Level} from '../levels/schema';
 import {lockedLiftEquation,lockedLiftText} from '../levels/liftSpec';
+import {inventoryCannon,lockedAnchorEquation} from '../levels/anchorSpec';
 export interface PlanDraft {readonly text:string;readonly equation:CannonEquation|null}
 export type LegEvidence='tested'|'revise';
 export type PlanStatus='empty'|'invalid'|'ready'|LegEvidence;
-export interface PlanEntry extends PlanDraft {readonly id:string;readonly evidence:LegEvidence|null;readonly locked?:true}
+export interface PlanEntry extends PlanDraft {readonly id:string;readonly evidence:LegEvidence|null;readonly locked?:true;readonly unplaced?:true}
 export type FlightPlan=readonly PlanEntry[];
 export function createFlightPlan(ids:readonly string[]):FlightPlan{
  if(!ids.length||new Set(ids).size!==ids.length)throw new Error('Invalid cannon IDs');
  return ids.map(id=>({id,text:'',equation:null,evidence:null}));
 }
-// Seed locked entries as ready without requiring user input. Existing ID-only
-// callers retain their original behaviour; PR44 will use the level-aware plan.
+// Inventory parts retain stable plan entries even while unmounted.
 export function createLevelFlightPlan(level:Level):FlightPlan{
- return createFlightPlan(level.cannons.map(c=>c.id)).map(entry=>{
-  const c=level.cannons.find(c=>c.id===entry.id)!;
-  if(!c.lift)return entry;
-  const equation=lockedLiftEquation(c);
-  return {...entry,text:lockedLiftText(equation),equation,locked:true};
+ const ids=[...level.cannons.filter(c=>!inventoryCannon(level,c.id)).map(c=>c.id),...(level.anchorPuzzle?.inventory.map(c=>c.id)??[])];
+ return createFlightPlan(ids).map(entry=>{
+  const c=level.cannons.find(c=>c.id===entry.id),item=inventoryCannon(level,entry.id);
+  if(!c)return {...entry,unplaced:true,...(item?.lockedShape!==undefined?{locked:true as const}:{})};
+  const equation=c.lift?lockedLiftEquation(c):lockedAnchorEquation(level,c);
+  return equation?{...entry,text:lockedLiftText(equation),equation,locked:true}:entry;
  });
 }
 export function getPlanEntry(plan:FlightPlan,id:string):PlanEntry|undefined{return plan.find(e=>e.id===id);}
@@ -27,17 +28,18 @@ const equationKey=(e:CannonEquation|null)=>e?cannonEquationKey(e):'';
 function sameDraft(a:PlanDraft,b:PlanDraft):boolean{return a.text===b.text&&equationKey(a.equation)===equationKey(b.equation);}
 export function editPlan(plan:FlightPlan,id:string,draft:PlanDraft):FlightPlan{
  const previous=getPlanEntry(plan,id);
- if(!previous||previous.locked||sameDraft(previous,draft))return plan;
+ if(!previous||previous.locked||previous.unplaced||sameDraft(previous,draft))return plan;
  return plan.map(entry=>entry.id===id?{id,text:draft.text,equation:draft.equation,evidence:null}:entry);
 }
 export function planStatus(entry:PlanEntry):PlanStatus{
+ if(entry.unplaced)return 'empty';
  if(!entry.equation)return !entry.text.trim()||/^y\s*=\s*$/i.test(entry.text.trim())?'empty':'invalid';
  return entry.evidence??'ready';
 }
-export function countReady(plan:FlightPlan):number{return plan.filter(e=>e.equation!==null).length;}
+export function countReady(plan:FlightPlan):number{return plan.filter(e=>!e.unplaced&&e.equation!==null).length;}
 export function snapshotPlan(plan:FlightPlan):ReadonlyMap<string,CannonEquation>|null{
  const result=new Map<string,CannonEquation>();
- for(const entry of plan){if(!entry.equation)return null;result.set(entry.id,entry.equation);}
+ for(const entry of plan){if(entry.unplaced||!entry.equation)return null;result.set(entry.id,entry.equation);}
  return result;
 }
 // Only call when an actual attempt has finished, never from editor validation.

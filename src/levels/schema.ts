@@ -3,6 +3,7 @@ import {cannonTypes,type CannonType} from '../game/cannons';
 import {PIP_RADIUS,pointRectangleDistance} from '../engine/collisions/clearance';
 import {GEOMETRY_EPS} from '../engine/collisions/sweep';
 import {validateLiftSpec,type LiftSpec} from './liftSpec';
+import {validateAnchorPuzzle,type AnchorPuzzle} from './anchorSpec';
 export const GEM_RADIUS=.14;
 export interface Gem {readonly id:string;readonly position:Point}
 export interface Cannon {id:string;type:CannonType;position:Point;direction:1|-1;lift?:LiftSpec}
@@ -10,7 +11,7 @@ export interface Obstacle {id:string;kind:'wall'|'floor'|'platform'|'ceiling';bo
 export type SupportKind='platform'|'suspended'|'wall';
 // Decorative mounting metadata only. It never adds a collision rectangle.
 export interface SupportSpec {readonly kind:SupportKind;readonly terrainId?:string}
-export interface Level {id:string;world:number;title:string;objective:string;bounds:Bounds;creatures:number;startId:string;cannons:Cannon[];exit:Point;obstacles:Obstacle[];gems?:readonly Gem[];exactCoordinateNote?:string;supports?:Readonly<Record<string,SupportSpec>>}
+export interface Level {id:string;world:number;title:string;objective:string;bounds:Bounds;creatures:number;startId:string;cannons:Cannon[];exit:Point;obstacles:Obstacle[];gems?:readonly Gem[];exactCoordinateNote?:string;supports?:Readonly<Record<string,SupportSpec>>;anchorPuzzle?:AnchorPuzzle}
 export function validateLevel(l:Level):void{
  const validBounds=(b:Bounds)=>[b.minX,b.maxX,b.minY,b.maxY].every(Number.isFinite)&&b.minX<b.maxX&&b.minY<b.maxY;
  if(!validBounds(l.bounds)||!Number.isInteger(l.creatures)||l.creatures<1) throw new Error('Invalid bounds or creature count');
@@ -36,4 +37,5 @@ export function validateLevel(l:Level):void{
    gems.slice(0,i).some(other=>distance(other.position)<=2*GEM_RADIUS+GEOMETRY_EPS))throw new Error('Invalid gem: '+g.id);
   ids.add(g.id);
  }
+ validateAnchorPuzzle(l);
 }
