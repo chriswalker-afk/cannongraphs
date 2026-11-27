@@ -48,7 +48,7 @@ test('a draft must be structurally playable, with real anchor clearance, support
  assert.throws(()=>buildCustomLevel(moveObject(d,'A',{x:0,y:3})),/grid edges/);
  assert.throws(()=>buildCustomLevel(moveObject(d,'A',{x:4,y:6})),/separate/);
  assert.throws(()=>decodeDesign({...d,bounds:{minX:0,maxX:400,minY:0,maxY:9}}));
- assert.equal(levels.length,84);assert.ok(!levels.some(l=>l.id==='custom-workshop-level'));
+ assert.equal(levels.length,96);assert.ok(!levels.some(l=>l.id==='custom-workshop-level'));
 });
 test('confirmation needs completion of the exact current design, not failure or a pending celebration',()=>{
  const mem=storage(),store=createCustomWorkshopStore(mem.storage),d=example();

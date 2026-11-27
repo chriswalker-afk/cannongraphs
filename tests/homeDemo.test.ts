@@ -17,7 +17,7 @@ for(const layout of ['landscape','switchback'] as const){
  test(layout+' is a verified separate demonstration, with exact captures and positive body clearance',()=>{
   const d=createHomeDemo(layout);assert.equal(d.result.event.kind,'exit');
   assert.equal(d.result.legs.length,d.level.cannons.length);
-  assert.ok(!levels.some(l=>l.id===d.level.id));assert.equal(levels.length,84);assert.equal(worlds.length,7);
+  assert.ok(!levels.some(l=>l.id===d.level.id));assert.equal(levels.length,96);assert.equal(worlds.length,8);
   for(const [i,leg] of d.result.legs.entries()){
    const target=d.level.cannons[i+1]?.position??d.level.exit;
    near(leg.end.x,target.x);near(leg.end.y,target.y);
