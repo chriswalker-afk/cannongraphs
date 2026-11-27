@@ -14,7 +14,8 @@ import {mountPipQueue} from './ui/pipQueue';
 import {simulateRoute} from './engine/simulation/linearRoute';
 import {createLevelFlightPlan,getPlanEntry,editPlan,countReady,snapshotPlan,recordFlightEvidence,clearEvidence} from './game/flightPlan';
 import type {Level} from './levels/schema';
-import {liftDemos,initialDemoPlan} from './levels/liftDemos';
+import {liftDemos} from './levels/liftDemos';
+import {foundryLinear,foundryStartPlan,nextFoundryLinear} from './levels/foundryLinear';
 import {moveLiftInPlanning} from './game/movableCannons';
 import {modeAttemptFeedback} from './game/modeFeedback';
 import {modePolicy,modeBudget,modeObjective,type LearningMode} from './game/learningModes';
@@ -54,13 +55,13 @@ function showHome(focusPlay=false){
 }
 function showLiftDemos(){
  cleanup();audio.setTheme('menu');
- app.innerHTML='<main class="lift-demo-menu"><header><button type="button" id="lift-demo-back">← Home</button><h1>Broken Foundry</h1></header><p>Experimental puzzles · progress is separate from the curriculum.</p><div class="lift-demo-choices"></div></main>';
+ app.innerHTML='<main class="lift-demo-menu"><header><button type="button" id="lift-demo-back">← Home</button><h1>Broken Foundry</h1></header><p>Vertical translations · separate practice, no curriculum records.</p><h2>Flight tests</h2><div class="lift-demo-choices"></div><h2>Linear puzzles</h2><div class="foundry-linear-choices lift-demo-choices"></div></main>';
  const choices=app.querySelector<HTMLElement>('.lift-demo-choices')!;
- for(const demo of liftDemos){
-  const card=document.createElement('section');const title=document.createElement('h2');title.textContent=demo.title;card.append(title);
+ for(const demo of [...liftDemos,...foundryLinear]){
+  const card=document.createElement('section');const title=document.createElement('h2');const index=foundryLinear.findIndex(l=>l.id===demo.id);title.textContent=index<0?demo.title:(index+1)+'. '+demo.title;card.dataset.foundryLevel=demo.id;card.append(title);
   const description=document.createElement('p');description.textContent=demo.objective;card.append(description);
   for(const mode of ['cadet','pilot','ace'] as const){const button=document.createElement('button');button.type='button';button.textContent=modePolicy(mode).name;button.addEventListener('click',()=>mountLevel(demo,mode,undefined,undefined,true));card.append(button);}
-  choices.append(card);
+  (index<0?choices:app.querySelector<HTMLElement>('.foundry-linear-choices')!).append(card);
  }
  app.querySelector<HTMLButtonElement>('#lift-demo-back')!.onclick=()=>showHome(true);
  cleanup=()=>{};
@@ -88,7 +89,7 @@ function mountLevel(level:Level,mode:LearningMode,tutorialReturn?:TutorialReturn
  cleanup();audio.setTheme(level.world as MusicTheme);if(!customRun&&!liftDemo){lastLevel=tutorialReturn?.level??level;lastMode=tutorialReturn?.mode??mode;}
  const policy=modePolicy(mode),budget=modeBudget(mode,level),look=lookStore.read(earnedAchievementIds(progressStore.read())),cannonLook=cannonStore.read(earnedAchievementIds(progressStore.read()));
 app.innerHTML=`<main class="game-screen"><header><div class="brand"><button class="brand-mark home-return" id="home-return" type="button" aria-label="Return to home" title="Return to home (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><button class="game-level-menu" id="level-menu" type="button" title="Choose levels (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.4" fill="currentColor"/></svg><span>Levels</span></button><button class="sound-settings game-sound-settings" id="sound-settings" type="button" aria-label="Sound settings">♪ Off</button></header><div class="toolbar"><div id="inspect-info" role="status">Click a cannon to program it. Hover or focus an object to inspect it.</div><button type="button" id="graph-preview" class="graph-preview-toggle" aria-pressed="false" hidden>Show graph</button><span id="gem-readout" class="gem-readout" role="status" hidden></span><button id="tutorial-help" class="motion-mode" type="button" hidden>Flight school</button><button id="motion-mode" class="motion-mode" type="button">Motion</button><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" role="region" aria-labelledby="resolution-heading" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><p id="resolution-gems" class="resolution-gems" hidden></p><p id="resolution-record" class="resolution-record" hidden></p><p id="resolution-achievements" class="resolution-achievements" hidden></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><section id="cannon-popup" class="cannon-popup" role="dialog" aria-modal="false" aria-labelledby="popup-title" hidden><div class="popup-heading"><h2 id="popup-title"></h2><button type="button" id="popup-close" aria-label="Close cannon editor">×</button></div><div id="popup-editor"></div><div class="popup-nav"><button type="button" id="previous-cannon">← Previous cannon</button><button type="button" id="next-cannon">Next cannon →</button><button type="button" id="popup-done">Done ✓</button></div></section><footer class="planning-footer"><div class="planning-editor"><div class="program-summary"><button type="button" id="edit-cannons">Edit cannons</button><span id="plan-ready" role="status"></span><div class="halo-legend" aria-label="Cannon programming status"><span data-status="empty">Unprogrammed</span><span data-status="ready">Programmed</span><span data-status="revise">Failed</span><span data-status="tested">Successful</span></div></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label" aria-live="off">Planning</small></div></footer></main>`;
-const world=customRun||liftDemo?worlds[level.world-1]:worldForLevel(lastLevel!.id)!,position=customRun||liftDemo?{index:0,total:0}:levelPosition(lastLevel!.id)!,following=customRun||liftDemo?undefined:tutorialReturn?.level??nextLevel(level.id);
+const world=customRun||liftDemo?worlds[level.world-1]:worldForLevel(lastLevel!.id)!,position=customRun||liftDemo?{index:0,total:0}:levelPosition(lastLevel!.id)!,following=liftDemo?nextFoundryLinear(level.id):customRun?undefined:tutorialReturn?.level??nextLevel(level.id);
 app.querySelector('main')!.dataset.world=String(world.number);app.querySelector('main')!.dataset.mode=mode;
 app.querySelector<HTMLElement>('#world-label')!.textContent=liftDemo?'Broken Foundry · '+level.title+' · '+policy.name:customRun?(customRun.kind==='test'?'Playtest · '+level.title+' · Free practice':'Custom level · '+level.title+' · '+policy.name):tutorialReturn?'Flight school · Free practice':world.name+' · '+position.index+' / '+position.total+' · '+policy.name;
 if(tutorialReturn)app.querySelector('main')!.dataset.tutorial='true';
@@ -101,11 +102,11 @@ paintMotion();
 let repositionPopup=()=>{},refreshCoach=()=>{};
 const scene=mountScene(app.querySelector<HTMLElement>('.stage')!,level,{in:button('zoom-in'),out:button('zoom-out'),reset:button('zoom-reset'),left:button('pan-left'),right:button('pan-right'),up:button('pan-up'),down:button('pan-down'),readout:document.querySelector('#zoom-readout')!,info:document.querySelector('#inspect-info')!,onCannonSelect:chooseCannon,onLiftMove:movePlatform,mode,look,cannonLook,onSound:audio.play,budget,reducedMotion,onViewChange:()=>{repositionPopup();refreshCoach();}});
 
-const levelMenu=button('level-menu');levelMenu.setAttribute('aria-label',customRun?(customRun.kind==='test'?'Return to Level Workshop':'Return to Custom Levels'):'Choose levels; current level '+position.index+' of '+world.name+'. Leaves this run.');if(liftDemo){levelMenu.querySelector('span')!.textContent='Demos';levelMenu.setAttribute('aria-label','Return to Broken Foundry demos');levelMenu.title='Return to Broken Foundry demos';}if(customRun){levelMenu.querySelector('span')!.textContent=customRun.kind==='test'?'Workshop':'Custom levels';levelMenu.title=levelMenu.getAttribute('aria-label')!;}
+const levelMenu=button('level-menu');levelMenu.setAttribute('aria-label',customRun?(customRun.kind==='test'?'Return to Level Workshop':'Return to Custom Levels'):'Choose levels; current level '+position.index+' of '+world.name+'. Leaves this run.');if(liftDemo){levelMenu.querySelector('span')!.textContent='Foundry';levelMenu.setAttribute('aria-label','Return to Broken Foundry');levelMenu.title='Return to Broken Foundry';}if(customRun){levelMenu.querySelector('span')!.textContent=customRun.kind==='test'?'Workshop':'Custom levels';levelMenu.title=levelMenu.getAttribute('aria-label')!;}
 const editorRoot=app.querySelector<HTMLElement>('#popup-editor')!,popup=app.querySelector<HTMLElement>('#cannon-popup')!,popupTitle=app.querySelector<HTMLElement>('#popup-title')!;
 const previousCannon=button('previous-cannon'),nextCannon=button('next-cannon'),editCannons=button('edit-cannons'),planReady=app.querySelector<HTMLElement>('#plan-ready')!;
 const ids=level.cannons.map(c=>c.id),memory=new Map<string,EditorMemory>();
- const freshPlan=()=>liftDemo?initialDemoPlan(level):createLevelFlightPlan(level);
+ const freshPlan=()=>liftDemo?foundryStartPlan(level):createLevelFlightPlan(level);
 let plan=freshPlan(),selected=level.startId,switching=false,previewOn=false;
 const previewButton=button('graph-preview');previewButton.hidden=!!tutorialReturn||!policy.preview;
 function clearPreview(){previewOn=false;scene.setGraphPreview([]);previewButton.textContent='Show graph';previewButton.setAttribute('aria-pressed','false');}
@@ -231,7 +232,7 @@ levelMenu.disabled=state.phase==='launching'||state.phase==='celebrating';homeBu
  phaseLabel.textContent=({planning:'Planning',launching:'Launching…',retry:'Adjust and retry',celebrating:'Rapid fire!',success:'Level complete',gameOver:'No Pips left'} as const)[state.phase];
  resolution.hidden=!terminal;
  advance.hidden=!success||(!following&&!customRun&&!liftDemo);
- advance.textContent=liftDemo?'More demos →':customRun?(customRun.kind==='test'?'Return to workshop →':'Return to custom levels →'):tutorialReturn?'Start level 1 →':following&&following.world!==level.world?'Next world →':'Next level →';
+ advance.textContent=liftDemo?(following?'Next puzzle →':'More puzzles →'):customRun?(customRun.kind==='test'?'Return to workshop →':'Return to custom levels →'):tutorialReturn?'Start level 1 →':following&&following.world!==level.world?'Next world →':'Next level →';
  if(terminal){
   resolution.dataset.outcome=success?'success':'failure';
   icon.textContent=success?'✦':'↻';
@@ -291,7 +292,7 @@ levelMenu.addEventListener('click',()=>{if(!levelMenu.disabled){if(liftDemo){sho
 homeButton.addEventListener('click',()=>{if(!homeButton.disabled)showHome(true);});
 restartButton.addEventListener('click',()=>reset(false));
 replay.addEventListener('click',()=>reset(!tutorialReturn));
-advance.addEventListener('click',()=>{if(state.phase!=='success')return;if(liftDemo){showLiftDemos();return;}if(customRun){if(customRun.kind==='test'){customStore.select(customRun.id);showCustomWorkshop();}else showCustomLibrary(customRun.id,mode);return;}if(following){if(tutorialReturn)leaveTutorial();else startLevel(following,mode);}});
+advance.addEventListener('click',()=>{if(state.phase!=='success')return;if(liftDemo){if(following)mountLevel(following,mode,undefined,undefined,true);else showLiftDemos();return;}if(customRun){if(customRun.kind==='test'){customStore.select(customRun.id);showCustomWorkshop();}else showCustomLibrary(customRun.id,mode);return;}if(following){if(tutorialReturn)leaveTutorial();else startLevel(following,mode);}});
 launchButton.addEventListener('click',()=>{
  if(!canLaunch(state))return;
  const equations=snapshotPlan(plan);if(!equations)return;

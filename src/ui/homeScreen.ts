@@ -17,7 +17,7 @@ export function mountHomeScreen(root:HTMLElement,onPlay:()=>void,focusPlay=false
  if(log?.onCannonWorkshop){cannonButton=document.createElement('button');cannonButton.type='button';cannonButton.id='home-cannon-workshop';cannonButton.className='home-log home-cannon-workshop';cannonButton.textContent='Cannon Workshop';cannonButton.addEventListener('click',log.onCannonWorkshop);details.append(cannonButton);}
  if(log?.onLevelWorkshop){const b=document.createElement('button');b.type='button';b.id='home-level-workshop';b.className='home-log home-level-workshop';b.textContent='Level Workshop';b.addEventListener('click',log.onLevelWorkshop);details.append(b);}
  if(log?.onCustomLibrary){const b=document.createElement('button');b.type='button';b.id='home-custom-library';b.className='home-log home-custom-library';b.textContent='Custom Levels';b.addEventListener('click',log.onCustomLibrary);details.append(b);}
- if(log?.onLiftDemos){const b=document.createElement('button');b.type='button';b.id='home-lift-demos';b.className='home-log home-lift-demos';b.textContent='Broken Foundry · Demo';b.addEventListener('click',log.onLiftDemos);details.append(b);}
+ if(log?.onLiftDemos){const b=document.createElement('button');b.type='button';b.id='home-lift-demos';b.className='home-log home-lift-demos';b.textContent='Broken Foundry';b.addEventListener('click',log.onLiftDemos);details.append(b);}
  const stop=mountHomeScene(root.querySelector<HTMLElement>('.home-art')!,motion,log?.look,log?.cannonLook,log?.reducedMotion??false);
  play.addEventListener('click',onPlay);
  if(focusPlay)play.focus();
