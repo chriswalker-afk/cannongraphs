@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "test": "tsx --test tests/*.test.ts",
     "preview": "vite preview",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "audit:supports": "tsx scripts/audit-supports.ts"
   },
   "devDependencies": {
     "vite": "6.3.5",

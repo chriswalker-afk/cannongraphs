@@ -26,6 +26,9 @@ import {renderCosmicScenery} from './cosmicScenery';
 import {flightPath} from './flightPath';
 import {renderGem} from './gem';
 import {renderCannonArt} from './cannonArt';
+import {levelSupports} from '../levels/supports';
+import {renderSupportArt} from './supportArt';
+import {EXIT_FOOTPRINT} from '../game/anchorArtGeometry';
 import {gemTimeline,gemsAt,bankedGems,type TimedGemHit} from '../animations/gemTimeline';
 
 type Inspection={id:string;label:string;detail:string;point:Point;lines?:string[];bounds?:Bounds};
@@ -40,7 +43,7 @@ const fmt=(n:number)=>String(Number(n.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
 export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void;budget?:number;reducedMotion?:()=>boolean}){
- const policy=modePolicy(controls.mode??'pilot');
+ const policy=modePolicy(controls.mode??'pilot'),supports=levelSupports(level);
  const svg=el('svg',{role:'group',tabindex:'-1','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
@@ -238,6 +241,8 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const loX=Math.max(b.minX,v.minX),hiX=Math.min(b.maxX,v.maxX),loY=Math.max(b.minY,v.minY),hiY=Math.min(b.maxY,v.maxY);
   const tl=p({x:b.minX,y:b.maxY}),br=p({x:b.maxX,y:b.minY});
   el('rect',{x:tl.x,y:tl.y,width:br.x-tl.x,height:br.y-tl.y,fill:'#fff','fill-opacity':.13,stroke:'#527d92','stroke-opacity':.4},content);
+  const supportLayer=el('g',{'data-layer':'anchor-supports','pointer-events':'none','aria-hidden':'true'},content);
+  for(const support of supports)renderSupportArt(supportLayer,support,level.world,p,scale,controls.cannonLook);
   const xGrid=gridTicks(loX,hiX,scale),yGrid=gridTicks(loY,hiY,scale),xs=xGrid.labels,ys=yGrid.labels;
   for(const x of xGrid.units){const a=p({x,y:b.minY}),z=p({x,y:b.maxY});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':x%xGrid.step===0?.40:.23,'data-grid-x':x},content);}
   for(const y of yGrid.units){const a=p({x:b.minX,y}),z=p({x:b.maxX,y});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':y%yGrid.step===0?.40:.23,'data-grid-y':y},content);}
@@ -261,8 +266,8 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    target(g,{id:c.id,label:'Cannon '+c.id+' · '+style.label,detail:coord(c.position)+' · fires '+(c.direction===1?'right':'left'),point:c.position},true);
   }
   const a=p(level.exit),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content);
-  el('path',{d:'M-.43 .44 V-.06 A.43 .43 0 0 1 .43 -.06 V.44Z',fill:'#b5a38b',stroke:'#6b665c','stroke-width':.04},g);
-  el('path',{d:'M-.29 .44 V-.05 A.29 .29 0 0 1 .29 -.05 V.44Z',fill:'url(#portal)',stroke:'#b27b29','stroke-width':.025},g);
+  el('path',{d:'M-'+EXIT_FOOTPRINT.halfWidth+' '+EXIT_FOOTPRINT.drop+' V-.06 A'+EXIT_FOOTPRINT.halfWidth+' '+EXIT_FOOTPRINT.halfWidth+' 0 0 1 '+EXIT_FOOTPRINT.halfWidth+' -.06 V'+EXIT_FOOTPRINT.drop+'Z',fill:'#b5a38b',stroke:'#6b665c','stroke-width':.04},g);
+  el('path',{d:'M-.29 '+EXIT_FOOTPRINT.drop+' V-.05 A.29 .29 0 0 1 .29 -.05 V'+EXIT_FOOTPRINT.drop+'Z',fill:'url(#portal)',stroke:'#b27b29','stroke-width':.025},g);
   el('path',{d:'M-.16 .20 Q-.25 -.09 0 -.15 Q.25 -.13 .14 .10 Q.03 .22 -.05 .08',stroke:'#fff7b8','stroke-width':.04,fill:'none','stroke-linecap':'round'},g);
   el('circle',{r:.047,fill:'#fff',stroke:'#7a5a25','stroke-width':.025},g);
   el('text',{x:0,y:-.56,'text-anchor':'middle','font-size':.21,'font-weight':800,fill:'#725024',stroke:'#fff5cf','stroke-width':.05,'paint-order':'stroke'},g,'EXIT');

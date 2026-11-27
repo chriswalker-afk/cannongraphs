@@ -25,8 +25,8 @@ function firstChicane(b:Bounds):Obstacle[]{
 // Authored coordinates, obstacles and optional gem locations only. Reference
 // equations are regression fixtures, not hidden answer requirements.
 export const contraptionFactory:readonly Level[]=[
- level(1,'Cube drive','Connect the marked points using the basic cube function.',area(-3,4,-5,11),
-  [cubic('A',-1,-1)],p(2,8),[perch('launch-stand',-1,-1)],[[0,0],[1,1]]),
+ {...level(1,'Cube drive','Connect the marked points using the basic cube function.',area(-3,4,-5,11),
+  [cubic('A',-1,-1)],p(2,8),[perch('launch-stand',-1,-1)],[[0,0],[1,1]]),supports:{exit:{kind:'suspended' as const}}},
  level(2,'Variable transmission','Scale the cube graph to fit the marked points and pass through the slot.',b2,
   [cubic('A',-2,-2)],p(2,2),[perch('launch-stand',-2,-2),...gate('scale-slot',.85,1.15,-.65,1.15,b2),perch('exit-stand',2,2)],[[0,0],[1,.25]]),
  level(3,'Reverse torque','Use a negative cubic coefficient to create a descending graph.',b3,
