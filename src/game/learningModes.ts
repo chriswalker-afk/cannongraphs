@@ -18,7 +18,7 @@ export function isLearningMode(value:unknown):value is LearningMode{return learn
 export function modePolicy(mode:LearningMode):ModePolicy{
  const p=learningModes.find(m=>m.id===mode);if(!p)throw new Error('Unknown learning mode');return p;
 }
-export function modeBudget(mode:LearningMode,level:Level):number{return mode==='ace'?3:level.creatures;}
+export function modeBudget(mode:LearningMode,level:Pick<Level,'creatures'>):number{return mode==='ace'?3:level.creatures;}
 export function modeBudgetLabel(mode:LearningMode,level?:Level):string{return mode==='cadet'?'Unlimited attempts':(mode==='ace'?3:level?.creatures??5)+' Pips';}
 export function modeObjective(mode:LearningMode,level:Level):string{
  if(mode!=='ace')return level.objective;

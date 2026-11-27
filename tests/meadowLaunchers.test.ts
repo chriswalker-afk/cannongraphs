@@ -14,8 +14,8 @@ import {levelStars} from '../src/game/scoring';
 const references=referenceSolutions[0];
 test('World 1 contains twelve accessible levels in deliberate curriculum order',()=>{
  assert.equal(worlds[0].levels,meadowLaunchers);assert.equal(meadowLaunchers.length,12);
- assert.deepEqual(meadowLaunchers.map(l=>l.id),Array.from({length:12},(_,i)=>'1-'+String(i+1).padStart(2,'0')));
- assert.deepEqual(meadowLaunchers.map(l=>l.cannons.length),[1,1,1,1,1,1,1,1,1,2,3,4]);
+ assert.equal(new Set(meadowLaunchers.map(l=>l.id)).size,12);
+ assert.deepEqual(meadowLaunchers.map(l=>l.cannons.length),[1,1,1,2,2,2,3,3,3,4,4,4]);
  assert.equal(new Set(meadowLaunchers.map(l=>l.title)).size,12);
  for(const l of meadowLaunchers){
   assert.equal(l.creatures,5);assert.equal(l.world,1);assert.ok(l.objective.length>10);
@@ -24,10 +24,10 @@ test('World 1 contains twelve accessible levels in deliberate curriculum order',
   assert.equal(worldForLevel(l.id)!.name,'Meadow Launchers');
  }
 });
-test('curriculum introduces integer slopes, intercepts, horizontal and descending lines before relays',()=>{
- const equations=references.slice(0,9).map(r=>parseLinearEquation(r.A));
- assert.deepEqual(equations.map(e=>e.gradient),[1,2,3,1,2,0,-1,2,-2]);
- assert.deepEqual(equations.map(e=>e.intercept),[0,0,0,2,1,3,9,-3,15]);
+test('curriculum introduces positive slopes before relays, then signed intercepts, horizontal and descending lines',()=>{
+ const equations=references.flatMap(r=>Object.values(r).map(parseLinearEquation));
+ assert.deepEqual(references.slice(0,3).map(r=>parseLinearEquation(r.A).gradient),[1,2,3]);
+ assert.ok(equations.some(e=>e.gradient<0)&&equations.some(e=>e.gradient===0)&&equations.some(e=>e.intercept<0)&&equations.some(e=>e.intercept>0));
  for(const reference of references)for(const input of Object.values(reference)){
   const e=parseLinearEquation(input);assert.equal(e.exactGradient.denominator,'1');assert.equal(e.exactIntercept.denominator,'1');
  }
@@ -41,7 +41,7 @@ for(const [i,l] of meadowLaunchers.entries()){
  });
 }
 test('every possible forward shortcut in each relay fails to reach the skipped destination',()=>{
- for(const l of meadowLaunchers.slice(9)){
+ for(const l of meadowLaunchers.slice(3)){
   const targets=[...l.cannons.map(c=>({id:c.id,position:c.position})),{id:'exit',position:l.exit}];
   for(let i=0;i<l.cannons.length;i++){
    const c=l.cannons[i];

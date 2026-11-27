@@ -32,3 +32,12 @@
 | 28 | Classroom QA and accessibility |
 
 Phases 1–3 complete: all seven cannon families and 72 levels across six worlds, with optional gems. Phase 4 begins with PR21 animated home screen. PR22 adds illustrated world and numbered level selection. PR23 adds Cadet, Pilot and Ace learning modes. PR24 adds local mode-specific progress, Flight log and achievements. PR25 adds achievement-gated Pip cosmetics and the Creature Workshop. PR26 adds achievement-gated cannon styles and firing effects. PR27 adds optional original sound and world music. PR28 adds classroom layout, keyboard and browser regression QA. All 28 planned implementation stages are now covered; release acceptance remains subject to CI and real-device checks.
+
+## Difficulty progression revision
+
+| PR | Scope |
+|---|---|
+| 34 | Worlds 1–2: three one-cannon, three two-cannon, three three-cannon and three four-cannon puzzles per world; preserve unchanged puzzle IDs and archived rewards |
+| 35 | Worlds 3–4: equivalent progression for quadratics and mixed routes |
+| 36 | Worlds 5–6: equivalent progression for advanced families; plan optional former finales separately |
+| 37 | Level-selection tiers and whole-catalogue progression audit |

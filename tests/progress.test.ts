@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import {levels,worlds} from '../src/levels/catalog';
 import {emptyProgress,recordCompletion,getRecord,recordStars,decodeProgress,parseProgress,mergeProgress,summarizeProgress,type Progress} from '../src/game/progress';
 import {achievements,achievementDefinitions,earnedAchievementIds,newlyEarned} from '../src/game/achievements';
-import {createProgressStore,PROGRESS_KEY,type ProgressStorage} from '../src/game/progressStore';
+import {createProgressStore,PROGRESS_KEY,LEGACY_PROGRESS_KEY,type ProgressStorage} from '../src/game/progressStore';
 import {modeBudget,type LearningMode} from '../src/game/learningModes';
 import {createLevelState,beginAttempt,finishAttempt,advanceCelebration,finishCelebration,restartLevel,type LevelState} from '../src/game/levelState';
 import {parseCannonEquation} from '../src/engine/equations/advanced';
 import {simulateRoute} from '../src/engine/simulation/linearRoute';
 import type {Level} from '../src/levels/schema';
+import {originalCurriculum} from '../src/game/originalCurriculum';
 const l=levels[0],l2=levels[1],plan=(expression:string)=>new Map([['A',parseCannonEquation(expression,'linear')]]);
 const win=simulateRoute(l,plan('x')),fail=simulateRoute(l,plan('x+1')),win2=simulateRoute(l2,plan('2x'));
 function attempt(s:LevelState,r=fail){const launched=beginAttempt(s,r);return finishAttempt(launched,launched.active!.id);}
@@ -134,4 +135,25 @@ test('sequential tabs merge new levels and retain stronger records without overw
  const latest=createProgressStore(mem.storage).read();
  assert.equal(getRecord(latest,l.id,'pilot')!.bestAttempts,1);assert.equal(getRecord(latest,l2.id,'ace')!.bestAttempts,1);
  assert.deepEqual(b.read(),latest);assert.equal(summarizeProgress(latest).completed,2);
+});
+
+test('legacy curriculum migration preserves existing earned cosmetics, not redesigned puzzle completions',()=>{
+ const mem=memoryStorage();
+ const old=Object.fromEntries(originalCurriculum.filter(l=>l.world===1).map(l=>[l.id,{ace:{bestAttempts:1,gems:(l.gems??[]).map(g=>g.id)}}]));
+ const raw=JSON.stringify({version:1,records:old});
+ mem.data.set(LEGACY_PROGRESS_KEY,raw);
+ const p=createProgressStore(mem.storage).read();
+ assert.equal(summarizeProgress(p,worlds[0].levels).completed,6);
+ assert.ok(!getRecord(p,'1-r05','ace'));
+ assert.ok(getRecord(p,'1-10','ace'));assert.equal(getRecord(p,'1-01','ace')!.gems.length,2);
+ assert.ok(earnedAchievementIds(p).has('ace-world'));assert.ok(earnedAchievementIds(p).has('world-explorer'));assert.ok(earnedAchievementIds(p).has('star-collector'));
+ assert.equal(mem.data.get(LEGACY_PROGRESS_KEY),raw);assert.ok(mem.data.get(PROGRESS_KEY));
+ assert.deepEqual(createProgressStore(mem.storage).read(),p);
+});
+test('stored historic achievement IDs are whitelisted and survive merging without changing level records',()=>{
+ const a=fixture({'1-01':{pilot:{bestAttempts:1,gems:[]}}});
+ const b=decodeProgress({version:1,records:{},retainedAchievements:['ace-world','fake','ace-world']});
+ const merged=mergeProgress(a,b);assert.deepEqual(merged.records,a.records);assert.deepEqual(merged.retainedAchievements,['ace-world']);
+ assert.ok(earnedAchievementIds(merged).has('ace-world'));
+ assert.equal(summarizeProgress(merged).completed,1);assert.equal(mergeProgress(merged,b),merged);
 });

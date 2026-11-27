@@ -50,6 +50,6 @@ export function mountFlightLog(root:HTMLElement,p:Progress,persisted:boolean,onH
   const rewards=cosmeticsForAchievement(a.id);if(rewards.length)node('p','log-cosmetic-rewards',copy,'Pips: '+rewards.map(c=>c.name).join(', '));
   const cannonRewards=cannonRewardsForAchievement(a.id);if(cannonRewards.length)node('p','log-cosmetic-rewards',copy,'Cannons: '+cannonRewards.map(c=>c.name).join(', '));
  }
- node('p','log-local-note',content,'Saved on this browser only. No account or cloud sync. All levels remain unlocked.');
+ node('p','log-local-note',content,'Saved on this browser only. All levels remain unlocked. Earned badges are permanent; redesigned puzzles have fresh completion records.');
  heading.focus();return ()=>back.removeEventListener('click',onHome);
 }

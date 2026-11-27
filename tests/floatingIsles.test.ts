@@ -24,7 +24,8 @@ test('the first two complete unlocked worlds contain 24 unique levels and transi
  assert.equal(worlds[1].name,'The Floating Isles');
  assert.equal(nextLevel(meadowLaunchers[11].id),floatingIsles[0]);
  assert.equal(nextLevel(floatingIsles[11].id),worlds[2].levels[0]);
- assert.deepEqual(floatingIsles.map(l=>l.id),Array.from({length:12},(_,i)=>'2-'+String(i+1).padStart(2,'0')));
+ assert.equal(new Set(floatingIsles.map(l=>l.id)).size,12);
+ assert.deepEqual(floatingIsles.map(l=>l.cannons.length),[1,1,1,2,2,2,3,3,3,4,4,4]);
  for(const [i,l] of floatingIsles.entries()){
   assert.deepEqual(levelPosition(l.id),{index:i+1,total:12});
   assert.equal(worldForLevel(l.id),worlds[1]);assert.equal(l.creatures,5);
@@ -33,12 +34,13 @@ test('the first two complete unlocked worlds contain 24 unique levels and transi
  }
 });
 test('curriculum introduces fractions, negative intercepts, all four quadrants and reverse firing',()=>{
- const first=refs.slice(0,9).map(r=>parseLinearEquation(r.A));
+ const first=refs.map(r=>parseLinearEquation(r.A));
  assert.equal(first[0].exactGradient.denominator,'2');assert.equal(first[1].exactGradient.denominator,'3');
- assert.equal(first[2].gradient,-.5);assert.equal(first[3].exactIntercept.denominator,'2');
+ assert.equal(first[2].gradient,-.5);assert.ok(refs.flatMap(r=>Object.values(r).map(parseLinearEquation)).some(e=>e.exactIntercept.denominator==='2'));
  const points=floatingIsles.flatMap(l=>[...l.cannons.map(c=>c.position),l.exit]);
  assert.equal(new Set(points.filter(p=>p.x!==0&&p.y!==0).map(p=>Math.sign(p.x)+','+Math.sign(p.y))).size,4);
- assert.deepEqual(floatingIsles.slice(7,9).map(l=>l.cannons[0].direction),[-1,-1]);
+ assert.equal(floatingIsles[5].cannons[0].direction,-1);assert.equal(floatingIsles[10].cannons[0].direction,-1);
+ assert.ok(floatingIsles[8].cannons.some(c=>c.direction===-1));
  assert.ok(first.some(e=>e.intercept<0));
 });
 for(const [i,l] of floatingIsles.entries())test(l.id+' '+l.title+' has a clear exact reference route',()=>{
@@ -47,7 +49,7 @@ for(const [i,l] of floatingIsles.entries())test(l.id+' '+l.title+' has a clear e
  assert.ok(audit.minimumClearance>.025,l.id+' clearance '+audit.minimumClearance);
 });
 test('every forward shortcut past an intermediate cannon fails in the authored relays',()=>{
- for(const l of floatingIsles.slice(9)){
+ for(const l of floatingIsles.slice(3)){
   const targets=[...l.cannons.map(c=>({id:c.id,position:c.position})),{id:'exit',position:l.exit}];
   for(const [i,c] of l.cannons.entries())for(let j=i+2;j<targets.length;j++){
    const t=targets[j],dx=t.position.x-c.position.x,dy=t.position.y-c.position.y;
@@ -65,11 +67,11 @@ test('signed coordinates retain equal axis scale and accurate camera round trips
  for(const c of l.cannons){const round=t.toWorld(t.toScreen(c.position));near(round.x,c.position.x);near(round.y,c.position.y);}
 });
 test('reverse flights distinguish movement direction from gradient sign',()=>{
- for(const i of [7,8]){
-  const l=floatingIsles[i],r=simulateLinearRoute(l,plan(i)),e=plan(i).get('A')!;
-  assert.equal(r.direction,-1);assert.ok(r.pointAt(.75).x<r.pointAt(.25).x);
-  near(r.pointAt(.4).y,e.gradient*r.pointAt(.4).x+e.intercept);
-  assert.equal(Math.sign(r.angle),-Math.sign(e.gradient));
+ for(const i of [5,10]){
+  const l=floatingIsles[i],r=simulateLinearRoute(l,plan(i)),e=plan(i).get('A')!,leg=r.legs[0];
+  assert.equal(leg.direction,-1);assert.ok(leg.pointAt(.75).x<leg.pointAt(.25).x);
+  near(leg.pointAt(.4).y,e.gradient*leg.pointAt(.4).x+e.intercept);
+  assert.equal(Math.sign(leg.angle),-Math.sign(e.gradient));
  }
 });
 test('four-leg switchback animation and rapid fire reverse along the actual second equation',()=>{
