@@ -1,0 +1,11 @@
+# PR50 — Foundry composition and mechanical controls
+
+The old floating yellow arrow control is replaced by a compact grip integrated beneath the striped deck. Drag directly on the deck with mouse or touch. The transparent interaction area is at least 44×44 CSS pixels before clipping at the scene boundary, with the area extending downward rather than over the cannon muzzle. The existing accessible slider, keyboard arrows, Home/End, and popup Raise/Lower controls remain. A lift's selected equation remains visible while dragging when the popup is open, and end-stop buttons disable at the rail limits. Movement remains planning-only and keeps the exact geometry/simulation state.
+
+The graph uses a quiet cream backing, lower-contrast background machinery, tighter viewport-dependent margins and compact Foundry chrome. Each level fits its full authored domain using the existing equal-scale camera; all rails and collision boundaries remain available. We deliberately do not stretch axes or crop the flight domain simply to fill unused desktop width. Wide stages use the empty wings for the measured equation popup wherever possible; a candidate search minimises graph/anchor overlap on smaller displays. Other worlds retain their existing framing and editor placement.
+
+The four halls have visually distinct landmarks: Repair Bay (tools and benches), Hydraulic Workshop (piston presses), Furnace Hall (glowing furnaces), Assembly Line (conveyors and hoists). These are decorative, remain behind the coordinate plane, and do not alter collision geometry. The world card retains its stronger contrast.
+
+Unit tests exercise all twelve level extents at five stage sizes, equal scales, mirrored grips and popup placement. Browser tests cover direct deck drags, keyboard, reset, touch and screenshots of four halls and the popup wing. The existing mathematical audit remains the source of truth for routes and unique solutions. Real device visual review remains required.
+
+No new world or puzzle data in this PR. Next proposed world: movable cannon placement on discrete candidate anchors, with normal and fixed-coefficient cannons, recalculating the constant from the chosen anchor, and decoy anchor points.

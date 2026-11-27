@@ -9,8 +9,8 @@ import type {Cannon,Level} from '../levels/schema';
 // Work in a fixed 800×380 design space with aspect-preserving scale. Draw the
 // wide pieces across the viewport; graph axes remain the dominant marks.
 export function renderFoundryScenery(parent:Element,w:number,h:number,variant=0,postcard=false){
- const layer=el('g',{'aria-hidden':'true','pointer-events':'none','data-scenery':'broken-foundry'},parent);
- const alpha=postcard?.95:.55,unit=Math.min(w/800,h/380),floor=h*.91;
+ const layer=el('g',{'aria-hidden':'true','pointer-events':'none','data-scenery':'broken-foundry','data-foundry-hall':['repair-bay','hydraulic-workshop','furnace-hall','assembly-line'][variant]??'repair-bay'},parent);
+ const alpha=postcard?.95:.28,unit=Math.min(w/800,h/380),floor=h*.91;
  const wall=el('g',{opacity:alpha*.55},layer);
  for(let i=0;i<5;i++){
   const x=w*(.025+i*.2),width=w*.15,top=h*.18,bottom=h*.74;
@@ -26,11 +26,40 @@ export function renderFoundryScenery(parent:Element,w:number,h:number,variant=0,
   el('path',{d:'M'+x+' '+y+' V'+floor,stroke:'#778580','stroke-width':Math.max(4,15*unit)},truss);
   el('path',{d:'M'+(x-2*unit)+' '+(y+10*unit)+' V'+floor,stroke:'#d0c8aa','stroke-width':Math.max(1,3*unit)},truss);
  }
- // Four distinct halls: intake, press, furnace and assembly line.
- const hall=el('g',{opacity:alpha*.84},layer);
+ // Four distinct halls: repair benches, hydraulic presses, furnaces and assembly line.
+ const hall=el('g',{opacity:alpha*.84,'data-hall-machinery':''},layer);
  const positions=variant===0?[.12,.84]:variant===1?[.22,.79]:variant===2?[.11,.51,.88]:[.13,.37,.82];
  for(const [i,f] of positions.entries()){
   const g=el('g',{transform:'translate('+(w*f)+' '+floor+') scale('+unit+')'},hall);
+  if(variant===0){
+   // Repair bay: workbench, drawers and hanging tools.
+   el('rect',{x:-64,y:-55,width:128,height:12,rx:3,fill:'#7f8172',stroke:'#596964','stroke-width':3},g);
+   for(const x of [-52,40])el('rect',{x,y:-43,width:13,height:43,fill:'#82918a'},g);
+   el('rect',{x:-29,y:-43,width:58,height:40,rx:2,fill:'#b8ad8d',stroke:'#748078','stroke-width':3},g);
+   for(const y of [-34,-20,-7])el('path',{d:'M-25 '+y+' h50 M-7 '+(y-5)+' h14',stroke:'#778580','stroke-width':3},g);
+   el('rect',{x:-54,y:-133,width:108,height:65,rx:4,fill:'#bcc5b3',stroke:'#7b887d','stroke-width':3},g);
+   for(const x of [-34,0,34])el('path',{d:'M'+x+' -122 v32 m-7 -30 l7 8 7 -8',fill:'none',stroke:'#667a72','stroke-width':5,'stroke-linecap':'round'},g);
+   continue;
+  }
+  if(variant===1){
+   // Hydraulic workshop: steel press frames and piston cylinders.
+   el('path',{d:'M-47 0 V-141 H47 V0',fill:'none',stroke:'#74867e','stroke-width':13,'stroke-linejoin':'round'},g);
+   el('rect',{x:-20,y:-138,width:40,height:44,rx:5,fill:'#aa956c',stroke:'#65756d','stroke-width':3},g);
+   el('rect',{x:-8,y:-94,width:16,height:52,fill:'#c1cbc1',stroke:'#7d8880','stroke-width':3},g);
+   el('rect',{x:-36,y:-42,width:72,height:14,rx:2,fill:'#b9a274',stroke:'#65756d','stroke-width':3},g);
+   el('path',{d:'M-56 0 H56 M-42 -13 H42',stroke:'#778980','stroke-width':10},g);
+   continue;
+  }
+  if(variant===3){
+   // Assembly line: conveyor, rollers and overhead hoist.
+   el('rect',{x:-78,y:-35,width:156,height:25,rx:10,fill:'#88978a',stroke:'#687b72','stroke-width':3},g);
+   for(let x=-62;x<=62;x+=25)el('circle',{cx:x,cy:-22,r:8,fill:'#c5cbb5',stroke:'#748278','stroke-width':3},g);
+   for(const x of [-60,60])el('path',{d:'M'+x+' -9 V0',stroke:'#687b72','stroke-width':12},g);
+   el('path',{d:'M-58 -45 V-145 H58 V-45',fill:'none',stroke:'#829187','stroke-width':9,'stroke-linejoin':'round'},g);
+   el('rect',{x:-19,y:-142,width:38,height:24,rx:4,fill:'#b59a67',stroke:'#758175','stroke-width':3},g);
+   el('path',{d:'M0 -118 V-76 q-15 0 -15 12 q0 14 15 9',fill:'none',stroke:'#71827a','stroke-width':5},g);
+   continue;
+  }
   const tall=variant===2||i%2===0,top=tall?-128:-91;
   el('path',{d:'M-42 0 V'+(top+21)+' Q-42 '+top+' -21 '+top+' H21 Q42 '+top+' 42 '+(top+21)+' V0Z',fill:'#7a8985',stroke:'#616c69','stroke-width':3},g);
   el('rect',{x:-17,y:top-26,width:34,height:27,rx:4,fill:'#8b8e80',stroke:'#6d7167','stroke-width':3},g);

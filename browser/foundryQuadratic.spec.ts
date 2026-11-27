@@ -30,7 +30,7 @@ test('Foundry lift is touch draggable at phone width and remains usable after zo
   await page.goto('/');await page.locator('#home-play').tap();await page.getByRole('button',{name:'Broken cannons',exact:true}).tap();await page.locator('[data-world-number="7"]').tap();await page.locator('.mode-card').first().tap();
   await page.locator('[data-level-id="foundry-quadratic-7"]').tap();await page.locator('.selection-play').tap();
   const handle=page.locator('[data-lift-handle="B"]');await expect(handle).toHaveAttribute('aria-valuenow','6');await handle.scrollIntoViewIfNeeded();
-  const box=await handle.boundingBox(),rail=await page.locator('[data-layer="lift-rail"] line').first().boundingBox();if(!box||!rail)throw Error('Lift not visible');
+  const box=await page.locator('[data-inspect="B"] [data-lift-deck] rect').first().boundingBox(),rail=await page.locator('[data-layer="lift-rail"] line').first().boundingBox();if(!box||!rail)throw Error('Lift not visible');
   const x=box.x+box.width/2,y=box.y+box.height/2,delta=3*rail.height/6.47;
   const cdp=await context.newCDPSession(page);
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
