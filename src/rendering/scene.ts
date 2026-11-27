@@ -92,7 +92,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function setPlanningSelection(id:string,editable:boolean,open=false){
   if(id!==selectedCannon&&pinned&&cannonTargets.has(pinned))pinned=undefined;
   if(id!==selectedCannon||!editable){previewPaths=[];paintGraphPreview();}
-  selectedCannon=id;planningEditable=editable;popupOpen=open;paintSelection();for(const handle of svg.querySelectorAll('[data-lift-handle]')){handle.setAttribute('aria-disabled',String(!editable));handle.setAttribute('tabindex',editable?'0':'-1');}inspect();
+  selectedCannon=id;planningEditable=editable;popupOpen=open;paintSelection();for(const handle of Array.from(svg.querySelectorAll('[data-lift-handle]'))){handle.setAttribute('aria-disabled',String(!editable));handle.setAttribute('tabindex',editable?'0':'-1');}inspect();
  }
  const reducedMotion=()=>controls.reducedMotion?.()??false;
  const crewTotal=controls.budget??level.creatures;
