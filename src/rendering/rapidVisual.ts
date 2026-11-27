@@ -3,9 +3,11 @@ import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import type {RapidFrame} from '../animations/rapidFire';
 import {createPip,svgNode} from './pip';
 import type {PipLook} from '../game/pipCosmetics';
+import type {CannonLook} from '../game/cannonCosmetics';
+import {createBurstParticles} from './cannonBurst';
 import {routeLegs} from '../engine/simulation/linearRoute';
 import {flightPath} from './flightPath';
-export function createRapidVisual(parent:Element,count:number,variantOffset:number,result:AttemptResult,look?:PipLook){
+export function createRapidVisual(parent:Element,count:number,variantOffset:number,result:AttemptResult,look?:PipLook,cannonLook?:CannonLook){
  const layer=svgNode('g',{'pointer-events':'none','aria-hidden':'true','data-rapid-visual':''},parent);
  const trailLayer=svgNode('g',{},layer),spritesLayer=svgNode('g',{},layer);
  // Pool only the visible celebration's sprites; redraw restores the same sample.
@@ -13,7 +15,7 @@ export function createRapidVisual(parent:Element,count:number,variantOffset:numb
   const trail=svgNode('path',{fill:'none','stroke-width':2.5,'stroke-linecap':'round',stroke:'#f1b346',opacity:.8},trailLayer);
   const pip=createPip(spritesLayer,variantOffset+i,look);return {trail,pip};
  });
- const smokeGroups=routeLegs(result).map(leg=>{const smoke=svgNode('g',{},layer);const clouds=Array.from({length:5},()=>svgNode('circle',{fill:'#fff8e5',stroke:'#b9b4a9','stroke-width':.01},smoke));return {leg,smoke,clouds};});
+ const smokeGroups=routeLegs(result).map(leg=>{const smoke=svgNode('g',{},layer);const particles=createBurstParticles(smoke,cannonLook?.effect,5);return {leg,smoke,particles};});
  const flare=svgNode('g',{},layer);
  const ring=svgNode('circle',{r:.34,fill:'none',stroke:'#ffe16d','stroke-width':.045},flare);
  const sparks=Array.from({length:8},()=>svgNode('path',{d:'M0 -.08 L.025 -.025 .08 0 .025 .025 0 .08 -.025 .025 -.08 0 -.025 -.025Z',fill:'#ffdc68',stroke:'#b87e31','stroke-width':.012},flare));
@@ -29,11 +31,10 @@ export function createRapidVisual(parent:Element,count:number,variantOffset:numb
    if(f.trailStart){trail.setAttribute('display','inline');trail.setAttribute('d',flightPath(routeLegs(result)[f.legIndex],f.trailStart,f.point,project));}
   }
   const b=project(result.end);
-  smokeGroups.forEach(({leg,smoke,clouds},i)=>{
+  smokeGroups.forEach(({leg,smoke,particles},i)=>{
    const a=project(leg.source),angle=leg.angle*Math.PI/180,vx=Math.cos(angle)*leg.direction,vy=-Math.sin(angle),burst=frame.cannonCues[i].burst;
    smoke.setAttribute('transform','translate('+a.x+' '+a.y+') scale('+scale+')');
-   smoke.setAttribute('opacity',String(burst===null?0:1-burst));
-   clouds.forEach((c,i)=>{const k=burst??0,d=.08+k*(.19+i*.04),side=(i-2)*.055;c.setAttribute('cx',String(vx*d-vy*side));c.setAttribute('cy',String(vy*d+vx*side));c.setAttribute('r',String(.045+k*.08));});
+   particles.paint(reduced?null:burst,vx,vy,true);
   });
   flare.setAttribute('transform','translate('+b.x+' '+b.y+') scale('+scale+')');
   flare.setAttribute('opacity',String(frame.portal));
