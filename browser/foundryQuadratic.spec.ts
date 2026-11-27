@@ -1,0 +1,23 @@
+import {test,expect} from '@playwright/test';
+test('quadratic progression opens a locked arc, updates its constant, and advances after flight',async({page})=>{
+ await page.goto('./');await page.locator('#home-lift-demos').click();
+ await expect(page.locator('.foundry-quadratic-choices section')).toHaveCount(6);
+ await page.locator('[data-foundry-level="foundry-quadratic-7"]').getByRole('button',{name:'Cadet'}).click();
+ await expect(page.locator('#launch')).toBeEnabled();
+ const handle=page.locator('[data-lift-handle="B"]');
+ await handle.focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowDown');
+ await expect(handle).toHaveAttribute('aria-valuenow','3');
+ await page.locator('[data-inspect="B"]').click();
+ await expect(page.locator('.lift-equation')).toHaveText('y = -1/4x^2 + 3x - 5');
+ await page.locator('#popup-done').click();
+ await page.locator('#launch').click();
+ await expect(page.locator('#resolution-heading')).toHaveText('Level complete!',{timeout:30000});
+ await page.locator('#next-level').click();
+ await expect(page.locator('#world-label')).toContainText('Under the press');
+ await page.locator('#level-menu').click();
+ await page.locator('[data-foundry-level="foundry-quadratic-12"]').getByRole('button',{name:'Pilot'}).click();
+ await expect(page.locator('#launch')).toBeDisabled();
+ await expect(page.locator('#plan-ready')).toHaveText('2 / 4 programmed');
+ await expect(page.locator('[data-lift-handle]')).toHaveCount(2);
+ await expect(page.locator('#graph-preview')).toBeHidden();
+});
