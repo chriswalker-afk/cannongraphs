@@ -8,7 +8,7 @@ async function enter(page:Page,w:number,l:number,mode=1){
 const status=(page:Page,id:string)=>page.locator('.cannon-target[data-inspect="'+id+'"]');
 const field=(page:Page,id:string)=>page.locator('#parameter-boxes [data-parameter="'+id+'"]');
 test('click a cannon, enter exact coefficients, navigate, see failed/successful halos, and revise only the failed cannon',async({page},info)=>{
- const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await enter(page,1,10);
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await enter(page,1,4);
  const popup=page.locator('#cannon-popup'),a=status(page,'A'),b=status(page,'B');
  await expect(a).toHaveAttribute('data-status','empty');await expect(b).toHaveAttribute('data-status','empty');
  await a.click();await expect(popup).toBeVisible();await expect(field(page,'m')).toBeFocused();
@@ -26,7 +26,7 @@ test('click a cannon, enter exact coefficients, navigate, see failed/successful 
  await info.attach('successful-halos',{body:await page.screenshot(),contentType:'image/png'});expect(errors).toEqual([]);
 });
 test('small-screen popup stays on screen, has accessible navigation, and keeps fractional drafts across redraws',async({page},info)=>{
- await page.setViewportSize({width:390,height:844});await enter(page,2,10);await openCannon(page,'A');
+ await page.setViewportSize({width:390,height:844});await enter(page,2,4);await openCannon(page,'A');
  await field(page,'m').fill('2/3');await field(page,'m').press('ArrowUp');await expect(field(page,'m')).toHaveValue('5/3');await field(page,'m').press('ArrowDown');await expect(field(page,'m')).toHaveValue('2/3');await field(page,'c').fill('10/3');
  await expect(status(page,'A')).toHaveAttribute('data-status','ready');
  await page.locator('#next-cannon').click();await page.locator('#previous-cannon').click();await expect(field(page,'m')).toHaveValue('2/3');

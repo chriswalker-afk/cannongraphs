@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {levels} from '../src/levels/catalog';
+import {levels,worlds} from '../src/levels/catalog';
+import {referenceSolutions} from './fixtures/referenceSolutions';
 import {validateLevel,GEM_RADIUS,type Gem,type Level} from '../src/levels/schema';
 import {PIP_RADIUS} from '../src/engine/collisions/clearance';
 import {parseFlightEquation,parseLinearEquation,parseQuadraticEquation,type FlightEquation} from '../src/engine/equations/linear';
@@ -16,15 +17,7 @@ import {levelStars} from '../src/game/scoring';
 const get=(id:string)=>levels.find(l=>l.id===id)!;
 const gem=(id:string,x:number,y:number):Gem=>({id,position:{x,y}});
 const near=(a:number,b:number,tol=1e-6)=>assert.ok(Math.abs(a-b)<tol,a+' != '+b);
-const references:Readonly<Record<string,Readonly<Record<string,string>>>>={
- '1-01':{A:'x'},'1-06':{A:'3'},'1-10':{A:'x+1',B:'11-x'},
- '2-01':{A:'x/2'},'2-08':{A:'11/3-x/3'},'2-12':{A:'x/2',B:'4-x/2',C:'6',D:'22-2x'},
- '3-01':{A:'x²'},'3-06':{A:'7-(x-4)²/2'},'3-10':{A:'-(x-1)(x-7)/2+2',B:'x/2-3/2'},
- '3-12':{A:'-(x-4)²/2+13/2',B:'(x-10)²/3-1',C:'-(x-16)²/2+13/2',D:'2'},
- '4-01':{A:'4-(x+3)^2/3'},'4-08':{A:'2(x-2)^2/3-4'},
- '4-11':{A:'-4-(x+8)(x-4)/12',B:'(x-4)^2/8-4',C:'4'},
- '4-12':{A:'4-4(x+9)^2/9',B:'(x+3)^2/3-3',C:'0',D:'4-4(x-9)^2/9',E:'(x-15)^2/3-3'}
-};
+const references:Readonly<Record<string,Readonly<Record<string,string>>>>=Object.fromEntries(worlds.flatMap((w,wi)=>w.levels.flatMap((l,li)=>l.world<=4&&l.gems?.length?[[l.id,referenceSolutions[wi][li]] as const]:[])));
 function solve(id:string){
  const l=get(id),plan=new Map<string,FlightEquation>(l.cannons.map(c=>{
   if(c.type!=='linear'&&c.type!=='quadratic')throw new Error('Unexpected cannon family');
@@ -54,7 +47,7 @@ test('schema rejects gem IDs colliding with anchors, terrain or each other; vali
  assert.doesNotThrow(()=>validateLevel({...l,gems:undefined}));
 });
 test('continuous linear contact includes a tangent and excludes a nearby miss',()=>{
- const l:Level={...get('1-06'),obstacles:[],gems:[],exit:{x:9,y:3}};
+ const base=get('1-r05'),l:Level={...base,cannons:[base.cannons[0]],obstacles:[],gems:[],exit:{x:9,y:3}};
  const leg=simulateLinearAttempt(parseLinearEquation('3'),l.cannons[0],l),r=PIP_RADIUS+GEM_RADIUS;
  const hits=collectRouteGems([gem('touch',4,3+r),gem('miss',5,3+r+.00001),gem('direct',6,3)], [leg]);
  assert.deepEqual(hits.map(h=>h.gemId),['touch','direct']);near(hits[0].progress,3/8,2e-6);
@@ -69,7 +62,7 @@ test('quadratic contact follows the curve rather than its chord, including verte
  assert.deepEqual(tangent.map(h=>h.gemId),['touch']);near(tangent[0].progress,.5,2e-6);
 });
 test('reverse traversal orders pickups by flight time, not ascending x',()=>{
- const r=solve('2-08');assert.deepEqual(r.gemHits.map(h=>h.gemId),['gem-1','gem-2']);
+ const r=solve('2-r06');assert.deepEqual(r.gemHits.map(h=>h.gemId),['gem-1','gem-2','gem-3']);
  const leg=r.legs[0],hits=collectRouteGems([gem('west',2,3),gem('east',5,2)],[leg]);
  assert.deepEqual(hits.map(h=>h.gemId),['east','west']);
 });
@@ -82,7 +75,7 @@ test('multiple passes collect a gem only once; misfire and unreached legs cannot
  assert.equal(r.event.kind,'misfire');assert.deepEqual(r.gemHits.map(h=>h.gemId),['gem-1']);assert.deepEqual(bankedGems(r),[]);
 });
 test('solid collision truncates the pickup path and a simultaneous solid contact wins',()=>{
- const l:Level={...get('1-06'),gems:[],obstacles:[{id:'wall',kind:'wall',bounds:{minX:5,maxX:5.2,minY:0,maxY:8}}]};
+ const base=get('1-r05'),l:Level={...base,cannons:[base.cannons[0]],exit:{x:9,y:3},gems:[],obstacles:[{id:'wall',kind:'wall',bounds:{minX:5,maxX:5.2,minY:0,maxY:8}}]};
  const leg=simulateLinearAttempt(parseLinearEquation('3'),l.cannons[0],l);assert.equal(leg.event.kind,'obstacle');
  const r=PIP_RADIUS+GEM_RADIUS;
  assert.deepEqual(collectRouteGems([gem('before',3,3),gem('tie',leg.end.x+r,3),gem('behind',6,3)],[leg]).map(h=>h.gemId),['before']);

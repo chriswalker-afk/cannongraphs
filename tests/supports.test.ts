@@ -54,7 +54,7 @@ test('Skyward (the reported example) joins the actual launch and exit ledges and
  assert.ok(e.deck.minX<3-.43&&e.deck.maxX>3+.43);
 });
 test('reverse cannons mirror the rearward contact deck and explicit suspension/wall mounts connect to their real terminations',()=>{
- const l=levels.find(l=>l.id==='2-08')!,c=l.cannons[0],a=levelSupports(l)[0];assert.equal(c.direction,-1);
+ const l=levels.find(l=>l.id==='2-r06')!,c=l.cannons[0],a=levelSupports(l)[0];assert.equal(c.direction,-1);
  assert.ok(a.deck.maxX>c.position.x+.74&&a.deck.minX<c.position.x);assert.equal(a.terrainId,'launch-isle');
  const suspended=levelSupports(levels.find(l=>l.id==='5-01')!).find(s=>s.id==='exit')!;
  assert.equal(suspended.kind,'suspended');assert.ok(suspended.backgroundRoof);assert.ok(suspended.segments.every(s=>s.role==='hanger'));
