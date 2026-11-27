@@ -183,3 +183,19 @@ test('advanced-world revision retains historical rewards without transferring ol
  assert.equal(getRecord(p,'6-12','ace'),undefined);assert.equal(getRecord(p,'6-r12','ace'),undefined);
  for(const id of ['ace-world','graphiverse-explorer','gem-explorer'])assert.ok(earnedAchievementIds(p).has(id));
 });
+
+test('Foundry progress validates moved anchors and preserves original six-world achievement semantics',()=>{
+ const authored=worlds[6].levels[0],moved={...authored,cannons:authored.cannons.map(c=>c.lift?{...c,position:{x:c.position.x,y:2}}:c)};
+ const result=simulateRoute(moved,new Map([['A',parseCannonEquation('2','linear')]])),state=completed('pilot',0,authored,result);
+ const p=emptyProgress();
+ assert.equal(recordCompletion(p,authored,'pilot',state),p);
+ assert.equal(recordCompletion(p,moved,'pilot',state,moved),p);
+ assert.equal(recordCompletion(p,authored,'pilot',state,{...moved,exit:{x:9,y:7}}),p);
+ const next=recordCompletion(p,authored,'pilot',state,moved);
+ assert.equal(getRecord(next,authored.id,'pilot')?.bestAttempts,1);
+ assert.equal(parseProgress(JSON.stringify(next)).records[authored.id]?.pilot?.bestAttempts,1);
+ assert.equal(authored.cannons[1].position.y,5);
+ const historic=fixture(Object.fromEntries(levels.slice(0,72).map(l=>[l.id,{pilot:{bestAttempts:1,gems:[]}}])));
+ const earned=earnedAchievementIds(historic);
+ assert.ok(earned.has('graphiverse-explorer'));assert.ok(!earned.has('foundry-explorer'));assert.ok(!earned.has('all-worlds-explorer'));
+});

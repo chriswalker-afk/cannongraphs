@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {levels,worlds} from '../src/levels/catalog';
 import {referenceSolutions} from './fixtures/referenceSolutions';
+import {referenceLayout} from './fixtures/referenceLayout';
 import {waitingCrewSlots,waitingIndices,departingIndex,canBoardFrom,boardingPoint} from '../src/animations/waitingCrew';
 import {pointRectangleDistance,segmentRectangleDistance} from '../src/engine/collisions/clearance';
 import {parseCannonEquation,evaluateCannonEquation} from '../src/engine/equations/advanced';
@@ -39,7 +40,8 @@ test('crew indices follow the actual finite queue, Cadet replenishment, and rapi
 });
 test('pre-fire hop is optional, bounded and clearance-checked, including reverse and raised starts',()=>{
  let checked=0;
- for(const [wi,w] of worlds.entries())for(const [li,level] of w.levels.entries()){
+ for(const [wi,w] of worlds.entries())for(const [li,authored] of w.levels.entries()){
+  const level=referenceLayout(authored);
   const c=level.cannons.find(c=>c.id===level.startId)!,e=parseCannonEquation(referenceSolutions[wi][li][c.id],c.type),route=simulateRoute(level,new Map(level.cannons.map(c=>[c.id,parseCannonEquation(referenceSolutions[wi][li][c.id],c.type)])));
   const first=route.legs[0],from=waitingCrewSlots(level,5)[0],to=sampleLaunchCue(LOAD_MS-1,first.source,first.direction,false,first.angle).loadingPoint!;
   if(!from||!canBoardFrom(level,from,to))continue;
@@ -55,7 +57,8 @@ test('pre-fire hop is optional, bounded and clearance-checked, including reverse
  assert.ok(checked>0,'at least some real levels have a visible hop');
 });
 test('normal animation moves the same Pip along all seven families without revealing a path before launch',()=>{
- for(const [wi,w] of worlds.entries())for(const [li,level] of w.levels.entries()){
+ for(const [wi,w] of worlds.entries())for(const [li,authored] of w.levels.entries()){
+  const level=referenceLayout(authored);
   const plan=new Map(level.cannons.map(c=>[c.id,parseCannonEquation(referenceSolutions[wi][li][c.id],c.type)])),route=simulateRoute(level,plan);
   assert.equal(route.event.kind,'exit',level.id);
   let offset=0;

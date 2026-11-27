@@ -13,7 +13,7 @@ import {levels} from '../src/levels/catalog';
 import {emptyProgress,recordCompletion} from '../src/game/progress';
 const draft=(s:string)=>({text:s,equation:parseLinearEquation(s)});
 test('practice geometry has a safe two-leg solution and the intentionally wrong line really splats',()=>{
- assert.equal(levels.length,72);assert.ok(!levels.includes(lesson));
+ assert.equal(levels.length,84);assert.ok(!levels.includes(lesson));
  assert.deepEqual(firstLine,{dx:3,dy:3,m:1,c:2});assert.deepEqual(exitLine,{dx:4,dy:-4,m:-1,c:10});
  assert.throws(()=>lineBetween({x:2,y:1},{x:2,y:3}),/nonvertical/);
  const good=auditSolution(lesson,{A:'x+2',B:'10-x'},['A','B']);assert.ok(good.minimumClearance>0);

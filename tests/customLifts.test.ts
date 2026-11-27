@@ -73,3 +73,11 @@ test('relay confirmation checks the actual moved intermediate anchor, not merely
  assert.equal(state.phase,'success');assert.equal(store.completeTest(run,state),false);
  assert.equal(store.completeTest(run,state,solved),true);assert.equal(store.read().design.cannons[1].position.y,2);
 });
+
+test('Foundry theme alone requires v2 while old theme files retain their original format',()=>{
+ const ordinary=setCustomLift(design(),'A',null),foundry={...ordinary,world:7};
+ const raw=encodeCustomFile(foundry);assert.equal(JSON.parse(raw).version,2);
+ assert.equal(decodeCustomFile(raw).world,7);
+ assert.throws(()=>decodeCustomFile(JSON.stringify({...JSON.parse(raw),version:1})),/version 2/);
+ assert.equal(JSON.parse(encodeCustomFile(ordinary)).version,1);
+});
