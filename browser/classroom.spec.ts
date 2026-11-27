@@ -60,8 +60,8 @@ for(const viewport of [{width:1366,height:768},{width:768,height:1024},{width:39
   await expect(page.locator('#motion-mode')).toHaveText('Motion: full');await chooseReduced(page);
   await expect.poll(async()=>Math.round((await page.locator('.stage').boundingBox())?.height??0)).toBeGreaterThanOrEqual(210);
   await fits(page);await expect(page.locator('.cannon-target')).toHaveCount(4);await expect(page.locator('#cannon-popup')).toBeHidden();
-  await openCannon(page,'A');await expect(page.locator('[data-parameter="m"]')).toBeEditable();await expect(page.locator('#graph-preview')).toBeHidden();await page.locator('#popup-done').click();
-  await expect(page.locator('[data-grid-x="1"]')).toHaveCount(1);await expect(page.locator('[data-grid-x="2"]')).toHaveCount(1);
+  await openCannon(page,'A');await expect(page.locator('[data-parameter="a"]')).toBeEditable();await expect(page.locator('[data-form-id="reciprocal"]')).toHaveAttribute('aria-pressed','true');await expect(page.locator('#graph-preview')).toBeHidden();await page.locator('#popup-done').click();
+  await expect(page.locator('[data-grid-x="17"]')).toHaveCount(1);await expect(page.locator('[data-grid-x="18"]')).toHaveCount(1);
   await capture(page,info,'finale-planning');
   await page.locator('#zoom-in').click();await expect(page.locator('#zoom-readout')).toHaveText('125%');await page.locator('#zoom-reset').click();
   await expect(page.locator('#zoom-readout')).toHaveText('100%');
