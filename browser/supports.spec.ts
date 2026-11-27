@@ -9,7 +9,7 @@ const scenarios=[
  {w:3,l:10,width:1366,height:768,name:'peaks-relay'},
  {w:4,l:7,width:1366,height:768,name:'wall-bracket'},
  {w:5,l:1,width:390,height:844,name:'suspended-exit'},
- {w:6,l:12,width:844,height:390,name:'seven-cannons'}
+ {w:6,l:12,width:844,height:390,name:'four-family-finale'}
 ] as const;
 async function enter(page:Page,w:number,l:number){
  await page.goto('/');await page.locator('#home-play').click();await page.locator('.world-card').nth(w-1).click();

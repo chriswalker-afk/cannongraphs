@@ -26,7 +26,7 @@ function relay(n:number,title:string,objective:string,bounds:Bounds,anchors:read
  const [,x,y]=anchors[anchors.length-1];
  const stands=anchors.map(([,px,py,,drop=1.6],i)=>perch(i===0?'launch-stand':i===anchors.length-1?'exit-stand':'relay-'+i,px,py,drop));
  const barriers=openings.flatMap(([id,cx,half,bottom,top])=>gate(id,cx,half,bottom,top,bounds));
- return {...level(n,title,objective,bounds,cannons,p(x,y),[...stands,...barriers],collectibles),id:'6'+'-r'+String(n).padStart(2,'0'),...(exactCoordinateNote?{exactCoordinateNote}:{})};
+ return {...level(n,title,objective+(exactCoordinateNote?' '+exactCoordinateNote:''),bounds,cannons,p(x,y),[...stands,...barriers],collectibles),id:'6'+'-r'+String(n).padStart(2,'0'),...(exactCoordinateNote?{exactCoordinateNote}:{})};
 }
 export const beyondGraphiverse:readonly Level[]=[
  level(1,'Starburst','Use exponential growth with base 2.',b1,

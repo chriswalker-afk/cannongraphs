@@ -30,23 +30,24 @@ test('fresh selection requires world and explicit mode before any of the 72 leve
  assert.equal(ids.size,216);
 });
 test('return from gameplay preserves mode and level, and changing mode is an explicit new selection',()=>{
- const s=beginSelection('6-12',true,'ace');assert.equal(s.step,'levels');
+ const s=beginSelection('6-r12',true,'ace');assert.equal(s.step,'levels');
  if(s.step==='levels')assert.equal(s.mode,'ace');
- assert.equal(selectedLevel(s)?.id,'6-12');
+ assert.equal(selectedLevel(s)?.id,'6-r12');
  const modes=backToModes(s);assert.equal(modes.step,'modes');assert.equal(selectedLevel(modes),undefined);
  if(modes.step==='modes')assert.equal(modes.previousMode,'ace');
- const practice=selectMode(modes,'cadet');assert.equal(selectedLevel(practice)?.id,'6-12');
+ const practice=selectMode(modes,'cadet');assert.equal(selectedLevel(practice)?.id,'6-r12');
  if(practice.step==='levels')assert.equal(practice.mode,'cadet');
  assert.equal(backToWorlds(practice).step,'worlds');
- assert.equal(beginSelection('6-12',false,'ace').step,'worlds');
+ assert.equal(beginSelection('6-r12',false,'ace').step,'worlds');
 });
 test('mode policies and budgets preserve the same puzzle definitions; Ace retains essential exact anchor data',()=>{
  assert.equal(modeBudget('pilot',level),5);assert.equal(modeBudget('ace',level),3);
  assert.equal(modeBudgetLabel('cadet',level),'Unlimited attempts');
  assert.deepEqual(learningModes.map(p=>[p.preview,p.templates,p.coordinates,p.hints,p.unlimited]),[[true,true,true,true,true],[false,false,true,true,false],[false,false,false,false,false]]);
  assert.equal(modeObjective('pilot',level),level.objective);assert.equal(modeObjective('ace',level),'Plan a route to the exit.');
- assert.match(modeObjective('ace',levels.find(l=>l.id==='6-03')!),/1\+ln\(4\)/);
- assert.match(modeObjective('ace',levels.find(l=>l.id==='6-05')!),/1\+e²/);
+ assert.match(modeObjective('ace',levels.find(l=>l.id==='6-r07')!),/1\+ln\(4\)/);
+ assert.match(modeObjective('ace',levels.find(l=>l.id==='6-r05')!),/1\+e²/);
+ for(const mode of learningModes)for(const id of ['6-r05','6-r07']){const l=levels.find(l=>l.id===id)!;assert.ok(modeObjective(mode.id,l).includes(l.exactCoordinateNote!));}
  assert.match(modeObjective('ace',levels.find(l=>l.id==='6-04')!),/0\.1/);
  assert.equal(level.creatures,5);assert.equal(modePolicy('ace').name,'Ace');
 });

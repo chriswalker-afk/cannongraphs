@@ -59,7 +59,7 @@ for(const viewport of [{width:1366,height:768},{width:768,height:1024},{width:39
   await page.locator('.selection-play').click();await expect(page.locator('main.game-screen')).toBeVisible();
   await expect(page.locator('#motion-mode')).toHaveText('Motion: full');await chooseReduced(page);
   await expect.poll(async()=>Math.round((await page.locator('.stage').boundingBox())?.height??0)).toBeGreaterThanOrEqual(210);
-  await fits(page);await expect(page.locator('.cannon-target')).toHaveCount(7);await expect(page.locator('#cannon-popup')).toBeHidden();
+  await fits(page);await expect(page.locator('.cannon-target')).toHaveCount(4);await expect(page.locator('#cannon-popup')).toBeHidden();
   await openCannon(page,'A');await expect(page.locator('[data-parameter="m"]')).toBeEditable();await expect(page.locator('#graph-preview')).toBeHidden();await page.locator('#popup-done').click();
   await expect(page.locator('[data-grid-x="1"]')).toHaveCount(1);await expect(page.locator('[data-grid-x="2"]')).toHaveCount(1);
   await capture(page,info,'finale-planning');
@@ -110,13 +110,17 @@ test('Cadet preview is optional and edit invalidates it; Ace has no preview or m
  await expect(page.locator('#phase-label')).toHaveText('Adjust and retry');await expect(page.locator('#flight-hint')).toBeHidden();
  await expect(page.locator('#pip-queue')).toContainText('2 waiting');expect(errors).toEqual([]);
 });
-test('all seven cannon families can be programmed and flown in the final level',async({page},info)=>{
- const errors=await start(page);await pick(page,6,'ace',12);
+test('all seven cannon families can be programmed and flown across the final relays',async({page},info)=>{
+ const errors=await start(page);await pick(page,6,'ace',10);
+ await expect(page.locator('#launch')).toBeDisabled();await program(page,6,10);await complete(page);
+ await expect(page.locator('#resolution-stars')).toHaveAttribute('aria-label','3 out of 3 stars');
+ await expect(page.locator('#resolution-gems')).toContainText('6 / 6');await capture(page,info,'orbital-transfer-completion');
+ await page.locator('#home-return').click();await pick(page,6,'ace',12);
  await expect(page.locator('#launch')).toBeDisabled();
  await program(page,6,12);await complete(page);
  await expect(page.locator('#resolution-stars')).toHaveAttribute('aria-label','3 out of 3 stars');
- await expect(page.locator('#resolution-gems')).toContainText('11 / 11');
- await expect(page.locator('#next-level')).toBeHidden();await capture(page,info,'seven-family-completion');expect(errors).toEqual([]);
+ await expect(page.locator('#resolution-gems')).toContainText('7 / 7');
+ await expect(page.locator('#next-level')).toBeHidden();await capture(page,info,'graphiverse-completion');expect(errors).toEqual([]);
 });
 test('focus on an inspected cannon survives scene resize and controls remain keyboard accessible',async({page})=>{
  const errors=await start(page);await pick(page,1,'pilot',1);

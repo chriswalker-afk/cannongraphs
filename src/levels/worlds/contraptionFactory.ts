@@ -52,7 +52,7 @@ export const contraptionFactory:readonly Level[]=[
   [...firstChicane(b11),perch('exit-stand',10,-2)],[[-2,4],[2,-4],[6,0]]),
  relay(7,'Double-action chain','Control two turning points of a translated cubic, then change to reciprocal and linear graphs.',area(-5,19,-8,9),[
  ['cubic',-3,-3],['reciprocal',5,5,1,3.8],['linear',11,-4,1,1.7],['linear',17,2]],[
- ['high-press',-1,.3,4.2,5.8],['low-press',3,.3,-3.8,-2.2],['return-pressure',6,.12,.1,2.1],['pressure-release',10,.15,-4.4,-2.8],['final-rise',14,.2,-1.65,-.35]],[
+ ['high-press',-1,.3,4.2,5.8],['low-press',3,.3,-3.8,-2.2],['return-pressure',6,.1,-.05,2.3],['pressure-release',10,.15,-4.4,-2.8],['final-rise',14,.2,-1.65,-.35]],[
  [-1,5],[3,-3],[6,1],[10,-25/7],[14,-1]]),
  relay(8,'Westward gear train','Reverse all three flights: shifted reciprocal, two-turn cubic, then a straight line.',area(-15,7,-9,9),[
  ['reciprocal',5,0,-1,1.7],['cubic',1,-4,-1,1.9],['linear',-7,4,-1,3.7],['linear',-13,-2,-1,1.6]],[

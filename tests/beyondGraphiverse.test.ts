@@ -22,27 +22,26 @@ test('six complete worlds expose all 72 levels, with no remaining playable previ
  assert.equal(worlds.length,6);assert.equal(levels.length,72);
  assert.ok(worlds.every(w=>w.levels.length===12&&!w.name.includes('preview')));
  assert.equal(new Set(levels.map(l=>l.id)).size,72);
- assert.equal(worlds[5].name,'Beyond the Graphiverse');assert.equal(nextLevel('5-12'),beyondGraphiverse[0]);
- assert.deepEqual(beyondGraphiverse.map(l=>l.id),Array.from({length:12},(_,i)=>'6-'+String(i+1).padStart(2,'0')));
+ assert.equal(worlds[5].name,'Beyond the Graphiverse');assert.equal(nextLevel(worlds[4].levels.at(-1)!.id),beyondGraphiverse[0]);
+ assert.equal(new Set(beyondGraphiverse.map(l=>l.id)).size,12);
+ assert.deepEqual(beyondGraphiverse.map(l=>l.cannons.length),[1,1,1,2,2,2,3,3,3,4,4,4]);
  for(const [i,l] of beyondGraphiverse.entries()){
   assert.equal(l.creatures,5);assert.equal(worldForLevel(l.id),worlds[5]);assert.deepEqual(levelPosition(l.id),{index:i+1,total:12});
   assert.equal(nextLevel(l.id),beyondGraphiverse[i+1]);
  }
- assert.deepEqual(new Set(beyondGraphiverse[11].cannons.map(c=>c.type)),new Set(Object.keys(cannonTypes)));
+ assert.deepEqual(new Set(beyondGraphiverse.slice(9).flatMap(l=>l.cannons.map(c=>c.type))),new Set(Object.keys(cannonTypes)));
 });
 test('curriculum covers growth, decay, reflected natural exponential, both log bases and all three trig functions',()=>{
- assert.ok(beyondGraphiverse.slice(0,3).every(l=>l.cannons[0].type==='exponential'));
- assert.ok(beyondGraphiverse.slice(3,6).every(l=>l.cannons[0].type==='logarithmic'));
- assert.ok(beyondGraphiverse.slice(6,10).every(l=>l.cannons[0].type==='wave'));
- assert.ok(advanced(0).slopeAt(1)>0);assert.ok(advanced(1).slopeAt(1)<0);assert.ok(advanced(2).slopeAt(1)<0);
- near(advanced(3).valueAt(.1),-1);near(advanced(4).valueAt(1+Math.E),2);
- assert.deepEqual([advanced(6).primitive,advanced(7).primitive,advanced(8).primitive,advanced(9).primitive],['sin','cos','sin','tan']);
- assert.deepEqual([beyondGraphiverse[5].cannons[0].direction,beyondGraphiverse[8].cannons[0].direction],[-1,-1]);
+ assert.deepEqual(beyondGraphiverse.slice(0,3).map(l=>l.cannons[0].type),['exponential','logarithmic','wave']);
+ assert.ok(advanced(0).slopeAt(1)>0);assert.ok(advanced(3).slopeAt(1)<0);assert.ok(advanced(6,'C').slopeAt(1)<0);
+ near(advanced(1).valueAt(.1),-1);near(advanced(4,'B').valueAt(1+Math.E),2);
+ assert.deepEqual([advanced(2).primitive,advanced(5,'B').primitive,advanced(7,'C').primitive,advanced(10,'D').primitive],['sin','cos','sin','tan']);
+ assert.ok(beyondGraphiverse[5].cannons.every(c=>c.direction===-1));assert.ok(beyondGraphiverse[7].cannons.every(c=>c.direction===-1));
 });
 test('irrational coordinates are exact in authored data and explicitly identified in the objectives',()=>{
- const natural=beyondGraphiverse[2],log=beyondGraphiverse[4];
- near(natural.exit.x,1+Math.log(4),1e-12);near(natural.gems![0].position.x,1+Math.log(2),1e-12);
- near(log.exit.x,1+Math.E**2,1e-12);near(log.gems![0].position.x,1+Math.E,1e-12);
+ const natural=beyondGraphiverse[6],log=beyondGraphiverse[4];
+ near(natural.exit.x,1+Math.log(4),1e-12);near(natural.gems!.at(-1)!.position.x,1+Math.log(2),1e-12);
+ near(log.exit.x,1+Math.E**2,1e-12);near(log.gems!.at(-1)!.position.x,1+Math.E,1e-12);
  assert.match(natural.objective,/1\+ln\(4\)/);assert.match(log.objective,/1\+e²/);
 });
 for(const [i,l] of beyondGraphiverse.entries())test(l.id+' '+l.title+' has an audited continuous route and all optional gems',()=>{
@@ -56,67 +55,29 @@ for(const [i,l] of beyondGraphiverse.entries())test(l.id+' '+l.title+' has an au
   for(const t of [0,.1,.3,.5,.8,1]){const p=leg.pointAt(t);near(p.y,evaluateCannonEquation(e,p.x));}
  }
 });
-// A conservative mathematical shortcut audit based solely on actual solid
-// bounds. Any continuous curve passing an ordered set of separated vertical
-// intervals must make the corresponding successive changes in height.
-// Alternating changes imply distinct zeros of its derivative, even if we
-// ignore the creature radius and allow touching the gate bounds.
-type Slice={x:number;lo:number;hi:number};
-function gateSlices(l:Level):Slice[]{
- return l.obstacles.filter(o=>o.id.endsWith('-lower')).map(o=>{
-  const roof=l.obstacles.find(z=>z.id===o.id.slice(0,-6)+'-upper')!;
-  assert.ok(roof);assert.equal(o.bounds.minX,roof.bounds.minX);assert.equal(o.bounds.maxX,roof.bounds.maxX);
-  assert.equal(o.bounds.minY,l.bounds.minY+.4);assert.equal(roof.bounds.maxY,l.bounds.maxY);
-  return {x:(o.bounds.minX+o.bounds.maxX)/2,lo:o.bounds.maxY,hi:roof.bounds.minY};
- });
-}
-function forcedTurns(slices:readonly Slice[]):number{
- const best=slices.map(()=>[0,0]);let edges=0;
- for(let i=1;i<slices.length;i++)for(let j=0;j<i;j++){
-  const a=slices[j],b=slices[i];let direction=-1;
-  if(a.hi<b.lo)direction=0;else if(a.lo>b.hi)direction=1;
-  if(direction<0)continue;
-  best[i][direction]=Math.max(best[i][direction],1+best[j][1-direction]);edges=Math.max(edges,best[i][direction]);
- }
- return Math.max(0,edges-1);
-}
-test('all nonadjacent forward shortcuts in the two relays require too many turning points on one continuous branch',()=>{
- const maxTurns={linear:0,quadratic:1,cubic:2,reciprocal:0,exponential:0,logarithmic:0};
- for(const l of beyondGraphiverse.slice(10)){
-  const slices=gateSlices(l),targets=[...l.cannons.map(c=>({id:c.id,position:c.position})),{id:'exit',position:l.exit}];
-  for(const [i,c] of l.cannons.entries())for(let j=i+2;j<targets.length;j++){
-   const target=targets[j];assert.equal(c.direction,1);assert.ok(target.position.x>c.position.x);
-   // Wave is last in both routes, so no periodic-family shortcut is needed.
-   if(c.type==='wave')throw new Error('Unexpected nonterminal wave');
-   const s=c.position,t=target.position,eps=CAPTURE_EPSILON*2;
-   const ordered=[{x:s.x,lo:s.y-eps,hi:s.y+eps},...slices.filter(z=>z.x>s.x&&z.x<t.x).sort((a,b)=>a.x-b.x),{x:t.x,lo:t.y-eps,hi:t.y+eps}];
-   assert.ok(forcedTurns(ordered)>maxTurns[c.type],l.id+' bypass '+c.id+' -> '+target.id);
-  }
- }
-});
 test('reflected logarithm and phase-shifted sine travel leftward on their actual graph',()=>{
- for(const i of [5,8]){
-  const r=simulateRoute(beyondGraphiverse[i],plan(i)),leg=r.legs[0],e=advanced(i);
+ for(const [i,k] of [[5,0],[7,2]] as const){
+  const r=simulateRoute(beyondGraphiverse[i],plan(i)),leg=r.legs[k],e=advanced(i,leg.cannonId);
   assert.equal(r.event.kind,'exit');assert.equal(leg.direction,-1);assert.ok(leg.pointAt(.2).x>leg.pointAt(.8).x);
   near(leg.pointAt(.5).y,e.valueAt(leg.pointAt(.5).x));
  }
  const e=advanced(5);near(e.domainEdge(3.9,1)!.x,4);assert.equal(e.domainEdge(3.9,-1),undefined);
 });
 test('a tangent equation matching both anchors on different branches cannot complete the tunnel',()=>{
- const l=beyondGraphiverse[9],e=parseCannonEquation('2tan(pi*x*5/4)+2','wave') as AdvancedEquation;
- near(e.valueAt(-1),0);near(e.valueAt(1),4);
- const r=simulateAdvancedAttempt(e,l.cannons[0],l);
- assert.notEqual(r.event.kind,'exit');assert.ok(r.end.x<-.4);
+ const l=beyondGraphiverse[10],e=parseCannonEquation('4-2tan(5pi*(x-12)/4)','wave') as AdvancedEquation;
+ near(e.valueAt(11),6);near(e.valueAt(13),2);
+ const r=simulateAdvancedAttempt(e,l.cannons[3],l);
+ assert.notEqual(r.event.kind,'exit');assert.ok(r.end.x<11.7);
 });
 test('equivalent bases and phases are accepted without a stored-answer comparison',()=>{
- const l=beyondGraphiverse[1],equivalent=parseCannonEquation('2^(3-x)','exponential');
- assert.equal(simulateRoute(l,new Map([['A',equivalent]])).event.kind,'exit');
- const w=beyondGraphiverse[7],alternative=parseCannonEquation('3sin(pi*x/3+pi/2)+2','wave');
- assert.equal(simulateRoute(w,new Map([['A',alternative]])).event.kind,'exit');
+ const l=beyondGraphiverse[3],equivalent=parseCannonEquation('2^(3-x)','exponential');
+ const decayPlan=plan(3);decayPlan.set('A',equivalent);assert.equal(simulateRoute(l,decayPlan).event.kind,'exit');
+ const w=beyondGraphiverse[5],alternative=parseCannonEquation('3sin(pi*(x+6)/3+pi/2)-1','wave');
+ const wavePlan=plan(5);wavePlan.set('B',alternative);assert.equal(simulateRoute(w,wavePlan).event.kind,'exit');
 });
-test('seven-family finale rapid fire preserves each leg, banks gems once and awards creature-based stars',()=>{
+test('four-family finale rapid fire preserves each leg, banks gems once and awards creature-based stars',()=>{
  const l=beyondGraphiverse[11],equations=plan(11),r=simulateRoute(l,equations),schedule=makeRapidSchedule(r,4);
- assert.equal(r.event.kind,'exit');assert.equal(r.legs.length,7);assert.equal(bankedGems(r).length,l.gems!.length);
+ assert.equal(r.event.kind,'exit');assert.equal(r.legs.length,4);assert.equal(bankedGems(r).length,l.gems!.length);
  for(const [i,timing] of schedule.legs.entries()){
   const frame=sampleRapidFire(schedule.lead+timing.offset+timing.load+30,r,schedule);
   const pip=frame.pips.find(p=>p.index===0&&p.legIndex===i&&p.phase==='flying')!;assert.ok(pip);

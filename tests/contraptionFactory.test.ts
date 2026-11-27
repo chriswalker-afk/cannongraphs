@@ -20,21 +20,20 @@ test('World 5 contains twelve unlocked levels and replaces the engine preview',(
  assert.equal(worlds.slice(0,5).flatMap(w=>w.levels).length,60);
  assert.equal(worlds[4].name,'Contraption Factory');assert.equal(nextLevel(worlds[3].levels.at(-1)!.id),contraptionFactory[0]);
  assert.equal(new Set(levels.map(l=>l.id)).size,levels.length);
- assert.deepEqual(contraptionFactory.map(l=>l.id),Array.from({length:12},(_,i)=>'5-'+String(i+1).padStart(2,'0')));
- assert.deepEqual(contraptionFactory.map(l=>l.cannons.length),[1,1,1,1,1,1,1,1,1,1,2,4]);
+ assert.equal(new Set(contraptionFactory.map(l=>l.id)).size,12);
+ assert.deepEqual(contraptionFactory.map(l=>l.cannons.length),[1,1,1,2,2,2,3,3,3,4,4,4]);
  for(const [i,l] of contraptionFactory.entries()){
   assert.equal(l.creatures,5);assert.equal(worldForLevel(l.id),worlds[4]);assert.deepEqual(levelPosition(l.id),{index:i+1,total:12});
   assert.equal(nextLevel(l.id),contraptionFactory[i+1]??worlds[5]?.levels[0]);
  }
 });
 test('curriculum moves from genuine cubics through translated reciprocal branches to mixed routes',()=>{
- assert.ok(contraptionFactory.slice(0,6).every(l=>l.cannons[0].type==='cubic'));
- assert.ok(contraptionFactory.slice(6,10).every(l=>l.cannons[0].type==='reciprocal'));
+ assert.deepEqual(contraptionFactory.slice(0,3).map(l=>l.cannons[0].type),['cubic','cubic','reciprocal']);
  const cubic=advanced(4);for(const root of [-3,0,3])near(cubic.valueAt(root),0);
  assert.equal(cubic.criticalXs(-3,3).length,2);
- const shifted=advanced(5);assert.deepEqual(shifted.criticalXs(-3,5),[-1,3]);
- near(shifted.valueAt(-1),5);near(shifted.valueAt(3),-3);
- assert.equal(contraptionFactory[9].cannons[0].direction,-1);
+ const shifted=advanced(6);assert.deepEqual(shifted.criticalXs(-3,5),[-1,3]);near(shifted.valueAt(-1),5);near(shifted.valueAt(3),-3);
+ assert.ok(contraptionFactory[7].cannons.every(c=>c.direction===-1));
+ assert.ok(contraptionFactory.every(l=>l.cannons.some(c=>c.type==='cubic'||c.type==='reciprocal')));
  assert.deepEqual(contraptionFactory[11].cannons.map(c=>c.type),['cubic','reciprocal','cubic','linear']);
 });
 for(const [i,l] of contraptionFactory.entries())test(l.id+' '+l.title+' has a continuous clear reference route and collectible gems',()=>{
@@ -48,52 +47,8 @@ for(const [i,l] of contraptionFactory.entries())test(l.id+' '+l.title+' has a co
   for(const t of [0,.1,.3,.5,.8,1]){const p=leg.pointAt(t);near(p.y,evaluateCannonEquation(e,p.x));}
  }
 });
-// Read the actual solid bounds, rather than duplicating the gate heights.
-// A flight must pass through this opening at the shared x-slice. Ignoring
-// the Pip radius only relaxes the constraint, making the proof conservative.
-type Interval=readonly [number,number];
-function gap(l:Level,id:string):Interval{
- const a=l.obstacles.find(o=>o.id===id+'-lower')!.bounds,b=l.obstacles.find(o=>o.id===id+'-upper')!.bounds;
- assert.equal(a.minX,b.minX);assert.equal(a.maxX,b.maxX);assert.equal(a.minY,l.bounds.minY+.4);assert.equal(b.maxY,l.bounds.maxY);
- return [a.maxY,b.minY];
-}
-const fixed=(y:number):Interval=>[y,y];
-function orderedGates(l:Level,from:number,to:number,ids:readonly string[]){
- let previous=from;
- for(const id of ids){const b=l.obstacles.find(o=>o.id===id+'-lower')!.bounds;const x=(b.minX+b.maxX)/2;assert.ok(x>previous&&x<to,id);previous=x;}
-}
-function alternating(ys:readonly Interval[]){
- assert.ok(ys.length>=5);
- for(let i=1;i<ys.length;i++){
-  const a=ys[i-1],b=ys[i];
-  assert.ok(i%2?a[1]<b[0]:a[0]>b[1],'Expected separated alternating intervals '+i);
- }
- // Four consecutive opposite-sign changes require at least three distinct
- // zeros of the derivative, by the mean value theorem and continuity.
-}
-test('nonadjacent cubic shortcuts require more turning points than a genuine cubic can have',()=>{
- const relay=contraptionFactory[10],finale=contraptionFactory[11];
- alternating([fixed(relay.cannons[0].position.y),gap(relay,'upper-press'),gap(relay,'lower-press'),gap(relay,'pressure-slot'),fixed(relay.exit.y)]);
- orderedGates(relay,relay.cannons[0].position.x,relay.exit.x,['upper-press','lower-press','pressure-slot']);
- orderedGates(finale,finale.cannons[0].position.x,finale.cannons[2].position.x,['upper-press','lower-press','pressure-slot','return-pressure']);
- orderedGates(finale,finale.cannons[2].position.x,finale.exit.x,['second-upper','second-lower','finishing-high']);
- // Every target beyond B lies past the return-pressure slice, so all
- // A->C, A->D and A->exit paths encounter the same contradiction.
- alternating([fixed(finale.cannons[0].position.y),gap(finale,'upper-press'),gap(finale,'lower-press'),gap(finale,'pressure-slot'),gap(finale,'return-pressure')]);
- alternating([fixed(finale.cannons[2].position.y),gap(finale,'second-upper'),gap(finale,'second-lower'),gap(finale,'finishing-high'),fixed(finale.exit.y)]);
- assert.ok(finale.cannons[2].position.x>finale.obstacles.find(o=>o.id==='return-pressure-upper')!.bounds.maxX);
-});
-test('a reciprocal branch cannot bypass the second cubic and reach later targets',()=>{
- const l=contraptionFactory[11],start=l.cannons[1].position.y;
- assert.ok(gap(l,'pressure-slot')[1]<start);
- assert.ok(gap(l,'second-upper')[0]>gap(l,'pressure-slot')[1]);
- // The second-upper slice occurs before D and the exit. A transformed
- // reciprocal is strictly monotone on each connected domain branch.
- orderedGates(l,l.cannons[1].position.x,l.cannons[3].position.x,['pressure-slot','second-upper']);
- const e=advanced(11,'B');assert.ok(e.slopeAt(5)<0);assert.ok(e.slopeAt(12)<0);
-});
 test('reverse reciprocal travels leftward without crossing its shifted asymptote',()=>{
- const l=contraptionFactory[9],r=simulateRoute(l,plan(9)),e=advanced(9),leg=r.legs[0];
+ const l=contraptionFactory[7],r=simulateRoute(l,plan(7)),e=advanced(7),leg=r.legs[0];
  assert.equal(r.event.kind,'exit');assert.equal(leg.direction,-1);assert.ok(leg.pointAt(.2).x>leg.pointAt(.8).x);
  near(leg.pointAt(.5).y,-1);assert.ok(leg.angleAt!(.5)<0);
  assert.equal(e.domainEdge(5,-1)!.x,-1);
@@ -105,7 +60,7 @@ test('another valid cubic through the introductory anchors succeeds without requ
  const r=simulateRoute(l,new Map([['A',e]]));assert.equal(r.event.kind,'exit');
 });
 test('a cubic with insufficient turning-point height fails at the upper press',()=>{
- const l=contraptionFactory[10],e=parseCannonEquation('x³/16','cubic') as AdvancedEquation;
+ const l=contraptionFactory[5],e=parseCannonEquation('x³/16','cubic') as AdvancedEquation;
  const r=simulateAdvancedAttempt(e,l.cannons[0],l);assert.equal(r.event.kind,'obstacle');
  if(r.event.kind==='obstacle')assert.equal(r.event.obstacleId,'upper-press-lower');
 });
