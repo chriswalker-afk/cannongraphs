@@ -42,13 +42,13 @@ export function renderAnchorMount(parent:Element,anchor:AnchorPoint,p:(p:Point)=
   el('rect',{x:-Math.max(18,.48*s),y:-Math.max(18,.48*s),width:Math.max(36,.96*s),height:Math.max(36,.96*s),rx:6,fill:'transparent','pointer-events':'all'},g);
   el('circle',{r:Math.max(7,.17*s),fill:'#fff8df',stroke:'#9b7c43','stroke-width':1.8,'stroke-dasharray':'3 2',class:'mount-ring','data-anchor-dot':'','pointer-events':'none'},g);
   const r=Math.max(3,.08*s);el('path',{d:'M-'+r+' 0 H'+r+' M0 -'+r+' V'+r,stroke:'#887244','stroke-width':1.25,'pointer-events':'none'},g);
-  el('text',{x:0,y:-Math.max(13,.29*s),'text-anchor':'middle','font-size':Math.max(11,Math.min(16,.23*s)),'font-weight':800,fill:'#71582e',stroke:'#fffaf0','stroke-width':3,'paint-order':'stroke','pointer-events':'none'},g,anchor.id);
+  el('text',{x:0,y:-Math.max(13,.29*s),'text-anchor':'middle','font-size':Math.max(11,Math.min(16,.23*s)),'font-weight':800,fill:'#71582e',stroke:'#fffaf0','stroke-width':3,'paint-order':'stroke','pointer-events':'none'},g).textContent=anchor.id;
  }else{
   // Occupied dots remain measurable for drop hit testing, but are invisible
   // and never intercept a click intended for the mounted cannon.
   g.setAttribute('pointer-events','none');
   el('circle',{r:3,fill:'transparent','data-anchor-dot':'','pointer-events':'none'},g);
-  el('text',{x:dir*Math.max(12,.30*s),y:deckY+Math.max(13,.23*s),'text-anchor':'middle','font-size':Math.max(10,Math.min(13,.20*s)),'font-weight':750,fill:'#71582e',stroke:'#fffaf0','stroke-width':2.5,'paint-order':'stroke'},g,anchor.id);
+  el('text',{x:dir*Math.max(12,.30*s),y:deckY+Math.max(13,.23*s),'text-anchor':'middle','font-size':Math.max(10,Math.min(13,.20*s)),'font-weight':750,fill:'#71582e',stroke:'#fffaf0','stroke-width':2.5,'paint-order':'stroke'},g).textContent=anchor.id;
  }
  return g;
 }
