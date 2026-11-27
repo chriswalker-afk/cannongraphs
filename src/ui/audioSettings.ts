@@ -8,7 +8,7 @@ export function createAudioSettingsDialog(audio:AudioPlayback){
  let opener:HTMLButtonElement|undefined;
  function update(){
   const s=audio.settings(),state=audio.status();
-  mute.textContent=s.muted?'Enable audio':'Mute all audio';mute.setAttribute('aria-pressed',String(!s.muted));
+  mute.textContent=s.muted?'Enable audio':'Mute all audio';mute.dataset.muted=String(s.muted);
   music.value=String(Math.round(s.music*100));effects.value=String(Math.round(s.effects*100));
   dialog.querySelector('#music-value')!.textContent=music.value+'%';dialog.querySelector('#effects-value')!.textContent=effects.value+'%';
   test.disabled=s.muted||s.effects===0||state==='unavailable';
@@ -17,7 +17,7 @@ export function createAudioSettingsDialog(audio:AudioPlayback){
  mute.addEventListener('click',()=>{const muted=!audio.settings().muted;audio.set({muted});if(!muted)void audio.activate();});
  music.addEventListener('input',()=>audio.set({music:Number(music.value)/100}));
  effects.addEventListener('input',()=>audio.set({effects:Number(effects.value)/100}));
- test.addEventListener('click',()=>{void audio.activate().then(()=>audio.play('gem'));});
+ test.addEventListener('click',()=>{void audio.activate().then(()=>{if(dialog.open)audio.play('gem');});});
  close.addEventListener('click',()=>dialog.close());
  dialog.addEventListener('close',()=>{if(opener?.isConnected)opener.focus();opener=undefined;});
  audio.subscribe(update);update();
@@ -25,7 +25,7 @@ export function createAudioSettingsDialog(audio:AudioPlayback){
   const refresh=()=>{const s=audio.settings();button.textContent=s.muted?'♪ Off':'♪ Audio';button.setAttribute('aria-label',s.muted?'Sound settings, audio muted':'Sound settings, audio enabled');button.setAttribute('title','Sound and music settings');button.setAttribute('aria-haspopup','dialog');};
   const open=()=>{opener=button;update();if(!dialog.open)dialog.showModal();mute.focus();};
   button.addEventListener('click',open);const unsubscribe=audio.subscribe(refresh);refresh();
-  return ()=>{button.removeEventListener('click',open);unsubscribe();};
+  return ()=>{if(opener===button&&dialog.open)dialog.close();button.removeEventListener('click',open);unsubscribe();};
  }
  return {bind};
 }

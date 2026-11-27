@@ -8,7 +8,7 @@ import {learningModes,modePolicy,modeBudgetLabel,modeObjective,type LearningMode
 import {createPip,svgNode} from '../rendering/pip';
 import {emptyProgress,getRecord,recordStars,summarizeProgress,type Progress} from '../game/progress';
 
-interface Options {progress?:Progress;preferredId?:string;preferredMode?:LearningMode;openCurrentWorld?:boolean;onHome:()=>void;onPlay:(level:Level,mode:LearningMode)=>void}
+interface Options {bindAudio?:(button:HTMLButtonElement)=>()=>void;progress?:Progress;preferredId?:string;preferredMode?:LearningMode;openCurrentWorld?:boolean;onHome:()=>void;onPlay:(level:Level,mode:LearningMode)=>void}
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,className:string,parent:Element,text?:string):HTMLElementTagNameMap[K]{
  const e=document.createElement(tag);e.className=className;if(text!==undefined)e.textContent=text;parent.append(e);return e;
 }
@@ -26,16 +26,17 @@ function familyChip(parent:Element,type:CannonType,count?:number){
 export function mountLevelSelection(root:HTMLElement,options:Options){
  const progress=options.progress??emptyProgress();
  let state=beginSelection(options.preferredId,options.openCurrentWorld,options.preferredMode),disposed=false;
- let refreshLevel:()=>void=()=>{};
+ let refreshLevel:()=>void=()=>{},unbindAudio:()=>void=()=>{};
  function screen(title:string,subtitle:string,backText:string,back:()=>void){
-  root.replaceChildren();
+  unbindAudio();root.replaceChildren();
   const main=element('main','selection-screen',root);
   const bar=element('div','selection-top',main);
   action(bar,'selection-back',backText,()=>{if(!disposed)back();});
   const heading=element('div','selection-heading',bar);
   const h1=element('h1','',heading,title);h1.tabIndex=-1;
   element('p','',heading,subtitle);
-  const end=element('div','selection-top-end',bar);end.setAttribute('aria-hidden','true');
+  if(options.bindAudio){bar.classList.add('has-audio');const sound=element('button','sound-settings workshop-sound-settings',bar,'♪ Off');sound.type='button';unbindAudio=options.bindAudio(sound);}
+  else {const end=element('div','selection-top-end',bar);end.setAttribute('aria-hidden','true');}
   return {main,h1};
  }
  function renderWorlds(focusNumber?:number){
@@ -150,5 +151,5 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   refreshLevel();h1.focus();
  }
  if(state.step==='levels')renderLevels();else if(state.step==='modes')renderModes();else renderWorlds();
- return ()=>{disposed=true;refreshLevel=()=>{};};
+ return ()=>{disposed=true;unbindAudio();refreshLevel=()=>{};};
 }

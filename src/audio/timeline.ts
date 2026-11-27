@@ -25,6 +25,7 @@ export function attemptSounds(result:AttemptResult,reduced=false):readonly Timed
 }
 export function rapidSounds(result:AttemptResult,s:RapidSchedule):readonly TimedSound[]{
  const events:TimedSound[]=[];
+ if(result.event.kind!=='exit'||routeLegs(result).length!==s.legs.length)return events;
  for(let i=0;i<s.count;i++)for(const [j,leg] of s.legs.entries()){
   const fire=s.lead+i*s.interval+leg.offset+leg.load;
   events.push({at:fire,sound:'fire'},{at:fire+leg.flight,sound:j===s.legs.length-1?'exit':'catch'});
