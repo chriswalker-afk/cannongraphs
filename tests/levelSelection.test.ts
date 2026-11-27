@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {levels,worlds} from '../src/levels/catalog';
-import {beginSelection,selectWorld as chooseDestination,selectMode,selectLevel,backToWorlds,selectedWorld,selectedLevel,summarizeLevel} from '../src/game/levelSelection';
+import {beginSelection,selectCategory,worldsInCategory,categoryForWorld,selectWorld as chooseDestination,selectMode,selectLevel,backToWorlds,selectedWorld,selectedLevel,summarizeLevel} from '../src/game/levelSelection';
 import {identityForWorld,worldIdentities} from '../src/game/worldIdentity';
 import type {SelectionState} from '../src/game/levelSelection';
 const selectWorld=(s:SelectionState,w:number)=>selectMode(chooseDestination(s,w),'pilot');
@@ -14,7 +14,7 @@ test('fresh selection begins with seven destinations and requires a world then a
 test('every one of the 84 levels is immediately selectable without any completion state',()=>{
  const ids=new Set<string>();
  for(const w of worlds){
-  const s=selectWorld(beginSelection(),w.number);assert.equal(selectedWorld(s),w);
+  const s=selectWorld(beginSelection(undefined,false,'pilot',categoryForWorld(w)),w.number);assert.equal(selectedWorld(s),w);
   assert.equal(selectedLevel(s),undefined);
   for(const l of w.levels){const picked=selectLevel(s,l.id);assert.equal(selectedLevel(picked),l);ids.add(l.id);}
  }
@@ -59,4 +59,19 @@ test('details are derived from each selected puzzle, including exact objectives 
   for(const f of summary.families)assert.equal(f.count,l.cannons.filter(c=>c.type===f.type).length);
  }
  const finale=summarizeLevel(levels[71]);assert.equal(finale.families.length,4);assert.equal(finale.gemCount,7);
+});
+
+test('normal and broken categories show only their own worlds, remember category on back, and never change IDs',()=>{
+ const normal=beginSelection();
+ assert.equal(normal.step,'worlds');if(normal.step==='worlds')assert.equal(normal.category,'normal');
+ assert.equal(worldsInCategory('normal').length,6);assert.equal(worldsInCategory('normal').reduce((n,w)=>n+w.levels.length,0),72);
+ assert.equal(chooseDestination(normal,7),normal);
+ const broken=selectCategory(normal,'broken');assert.equal(worldsInCategory('broken').length,1);assert.equal(worldsInCategory('broken')[0],worlds[6]);
+ assert.equal(chooseDestination(broken,1),broken);
+ const levelsState=selectWorld(broken,7);assert.equal(selectedWorld(levelsState),worlds[6]);assert.equal(selectCategory(levelsState,'normal'),levelsState);
+ const picked=selectLevel(levelsState,worlds[6].levels[4].id),back=backToWorlds(picked);
+ assert.equal(back.step,'worlds');if(back.step==='worlds')assert.equal(back.category,'broken');
+ assert.equal(selectedLevel(beginSelection(worlds[6].levels[4].id,true,'ace')),worlds[6].levels[4]);
+ const last=beginSelection(worlds[6].levels[4].id);if(last.step==='worlds')assert.equal(last.category,'broken');
+ assert.equal(selectCategory(broken,'normal').step,'worlds');
 });

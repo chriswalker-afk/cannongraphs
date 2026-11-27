@@ -32,6 +32,12 @@ const factoryPalette={
  platform:{base:'#83979d',mortar:'#526a72',light:'#bdcdcc',edge:'#7c623e',cap:'#d9b882'},
  ceiling:{base:'#6d7f8a',mortar:'#4d5e6a',light:'#adbbc4',edge:'#795c38',cap:'#c9aa76'}
 };
+const foundryPalette={
+ floor:{base:'#777f73',mortar:'#485750',light:'#aab4a1',edge:'#79603a',cap:'#dcb45e'},
+ wall:{base:'#93968a',mortar:'#5f6d63',light:'#d2cbb5',edge:'#8c6337',cap:'#e2b563'},
+ platform:{base:'#828e80',mortar:'#4c6256',light:'#c6ccad',edge:'#8a6a3b',cap:'#dcb35c'},
+ ceiling:{base:'#75837a',mortar:'#495d54',light:'#bdc6b7',edge:'#8c6337',cap:'#e1b965'}
+};
 const cosmicPalette={
  floor:{base:'#737e9f',mortar:'#46536f',light:'#abb7d5',edge:'#508e9d',cap:'#91d1dc'},
  wall:{base:'#8f9abb',mortar:'#586480',light:'#c4cce3',edge:'#537f9a',cap:'#a1d2de'},
@@ -48,8 +54,8 @@ export function terrainInspection(o:Obstacle,world?:number){
 }
 // A nested SVG gives every texture an exact rectangular clip, including strokes.
 // Local units are world units. Decorative patterning never expands the hitbox.
-export function renderTerrain(parent:Element,o:Obstacle,project:(p:Point)=>Point,scale:number,floating=false,peaks=false,ruins=false,factory=false,cosmic=false):SVGGElement{
- const a=project({x:o.bounds.minX,y:o.bounds.maxY}),{width:w,height:h}=terrainDimensions(o),p=(cosmic?cosmicPalette:factory?factoryPalette:ruins?ruinsPalette:peaks?peakPalette:floating?skyPalette:palette)[o.kind];
+export function renderTerrain(parent:Element,o:Obstacle,project:(p:Point)=>Point,scale:number,floating=false,peaks=false,ruins=false,factory=false,cosmic=false,foundry=false):SVGGElement{
+ const a=project({x:o.bounds.minX,y:o.bounds.maxY}),{width:w,height:h}=terrainDimensions(o),p=(foundry?foundryPalette:cosmic?cosmicPalette:factory?factoryPalette:ruins?ruinsPalette:peaks?peakPalette:floating?skyPalette:palette)[o.kind];
  const group=svgNode('g',{'data-terrain-kind':o.kind},parent) as SVGGElement;
  const art=svgNode('svg',{x:a.x,y:a.y,width:w*scale,height:h*scale,viewBox:'0 0 '+w+' '+h,overflow:'hidden','aria-hidden':'true'},group);
  svgNode('rect',{width:w,height:h,fill:p.base},art);
@@ -65,6 +71,14 @@ export function renderTerrain(parent:Element,o:Obstacle,project:(p:Point)=>Point
     svgNode('path',{d:'M'+(x+inset)+' '+(y+rowH*.6)+' l'+(colW*.18)+' '+(-rowH*.25)+' H'+(x+colW-inset),fill:'none',stroke:p.light,'stroke-width':.022,opacity:.8},art);
     if((row+col)%3===0)svgNode('rect',{x:x+colW*.38,y:y+rowH*.72,width:colW*.24,height:Math.min(.045,rowH*.1),rx:.012,fill:p.cap,opacity:.9},art);
    }
+  }
+ }else if(foundry&&inner>0){
+  const rows=Math.min(22,Math.max(1,Math.ceil(inner/.85))),cols=Math.min(20,Math.max(1,Math.ceil(w/1.1))),rh=inner/rows,cw=w/cols;
+  for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
+   const x=col*cw,y=top+row*rh;svgNode('rect',{x,y,width:cw,height:rh,fill:p.light,'fill-opacity':(row+col)%2?.10:.22,stroke:p.mortar,'stroke-width':.026},art);
+   if(cw>.25&&rh>.25){for(const bx of [x+cw*.18,x+cw*.82])svgNode('circle',{cx:bx,cy:y+rh*.2,r:Math.min(.035,cw*.09,rh*.09),fill:p.mortar},art);}
+   // Warm inspection grilles on furnace/boiler walls, pressure plates on roofs.
+   if(o.kind==='wall'&&rh>.36&&cw>.4&&(row+col)%2===0){svgNode('rect',{x:x+cw*.19,y:y+rh*.40,width:cw*.62,height:rh*.36,rx:.04,fill:'#685a48',stroke:'#525a50','stroke-width':.025},art);for(let i=0;i<3;i++)svgNode('rect',{x:x+cw*(.26+i*.17),y:y+rh*.46,width:cw*.08,height:rh*.24,rx:.015,fill:'#e6a356'},art);}
   }
  }else if(factory&&inner>0){
   // Broad steel panels, inset bolt heads and a brass rim, all inside the clip.
@@ -90,6 +104,7 @@ export function renderTerrain(parent:Element,o:Obstacle,project:(p:Point)=>Point
  }
  const capY=isRoof?h-cap:0;
  svgNode('rect',{x:0,y:capY,width:w,height:cap,fill:p.cap},art);
+ if(foundry)for(let x=-cap;x<w;x+=.32)svgNode('path',{d:'M'+x+' '+capY+' h.11 l'+cap+' '+cap+' h-.11Z',fill:'#5b5745',opacity:.9},art);
  const edgeY=isRoof?capY:cap;
  svgNode('line',{x1:0,x2:w,y1:edgeY,y2:edgeY,stroke:p.edge,'stroke-width':.028},art);
  svgNode('rect',{width:w,height:h,fill:'none',stroke:p.mortar,'stroke-width':.035},art);

@@ -5,7 +5,7 @@ import {PROGRESS_KEY} from '../src/game/progressStore';
 
 async function choose(page:Page,world:number,mode=1){
  await page.goto('/');await page.locator('#home-play').click();
- await page.locator('.world-card').nth(world-1).click();await page.locator('.mode-card').nth(mode).click();
+ if(world===7)await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.locator('[data-world-number="'+world+'"]').click();await page.locator('.mode-card').nth(mode).click();
  await expect(page.locator('.level-tier')).toHaveCount(4);
 }
 for(const w of worlds)test('all twelve '+w.name+' levels appear in the correct labelled tiers',async({page},info)=>{

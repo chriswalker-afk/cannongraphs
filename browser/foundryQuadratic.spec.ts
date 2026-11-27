@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 test('quadratic progression opens a locked arc, updates its constant, and advances after flight',async({page})=>{
- await page.goto('./');await page.locator('#home-play').click();await page.locator('.world-card').nth(6).click();await page.locator('.mode-card').first().click();
+ await page.goto('./');await page.locator('#home-play').click();await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.locator('[data-world-number="7"]').click();await page.locator('.mode-card').first().click();
  await expect(page.locator('.level-number')).toHaveCount(12);
  await page.locator('[data-level-id="foundry-quadratic-7"]').click();await page.locator('.selection-play').click();
  await expect(page.locator('#launch')).toBeEnabled();
@@ -27,7 +27,7 @@ test('Foundry lift is touch draggable at phone width and remains usable after zo
  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
  const page=await context.newPage();
  try{
-  await page.goto('/');await page.locator('#home-play').tap();await page.locator('.world-card').nth(6).tap();await page.locator('.mode-card').first().tap();
+  await page.goto('/');await page.locator('#home-play').tap();await page.getByRole('button',{name:'Broken cannons',exact:true}).tap();await page.locator('[data-world-number="7"]').tap();await page.locator('.mode-card').first().tap();
   await page.locator('[data-level-id="foundry-quadratic-7"]').tap();await page.locator('.selection-play').tap();
   const handle=page.locator('[data-lift-handle="B"]');await expect(handle).toHaveAttribute('aria-valuenow','6');await handle.scrollIntoViewIfNeeded();
   const box=await handle.boundingBox(),rail=await page.locator('[data-layer="lift-rail"] line').first().boundingBox();if(!box||!rail)throw Error('Lift not visible');

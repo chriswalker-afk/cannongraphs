@@ -687,8 +687,31 @@ main.custom-workshop,main.custom-library{gap:7px;min-width:0}
 .custom-lift-equation{display:block;overflow-wrap:anywhere;font-weight:700;font-size:.85rem;color:#62481b;margin:.35rem 0}
 
 /* Seventh world: keep the two-row desktop world chooser and reachable touch controls. */
-@media(min-width:1050px){.world-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(min-width:801px) and (max-width:1049px){.world-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.world-card-art{height:clamp(60px,15vh,135px)}}
+
 main[data-world="7"] header,main[data-world="7"] footer,main[data-world="7"] .toolbar{background:#fff4da}main[data-world="7"] .stage{background:#cbd0c8}main[data-world="7"] .brand-mark{background:#e8c77d;color:#6c4b1e}
 
 .lift-handle:focus-visible>rect:first-child{stroke:#fff;stroke-width:2}.lift-handle:focus-visible>rect:nth-child(2){stroke:#57441e;stroke-width:3}
+
+/* The category switch occupies the previously unused space above the cards. */
+main.selection-screen[data-selection=worlds]{grid-template-rows:auto auto minmax(0,1fr);gap:clamp(8px,1.5vh,15px)}
+.cannon-category-switch{isolation:isolate;position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;width:min(100%,390px);justify-self:center;padding:4px;border:1px solid #b7c8c9;border-radius:999px;background:#e4eae6;box-shadow:inset 0 1px 3px #263b5016}
+.cannon-category-switch::before{content:'';position:absolute;z-index:-1;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:#234d78;box-shadow:0 2px 4px #263b5026;transition:transform .2s ease,background .2s ease}
+.cannon-category-switch[data-active=broken]::before{transform:translateX(100%);background:#805822}
+.cannon-category-option{min-width:0;min-height:40px;padding:6px 10px;border:0;border-radius:999px;background:transparent;color:#405866;cursor:pointer;font-size:clamp(12px,1.5vw,15px);font-weight:800;line-height:1.12}
+.cannon-category-option[aria-pressed=true]{color:#fff}.cannon-category-option:focus-visible{outline:3px solid #c18733;outline-offset:2px}
+main.selection-screen[data-cannon-category=broken]{background:#f3eee1;grid-template-rows:auto auto minmax(0,1fr) auto}
+.world-grid[data-single=true]{grid-template-columns:minmax(0,600px);justify-content:center;align-content:center}
+.world-grid[data-single=true] .world-card-art{height:clamp(126px,32vh,270px)}
+.world-grid[data-single=true] .world-card-copy{padding:clamp(12px,2vw,22px);gap:6px}
+.world-grid[data-single=true] .world-card-name{font-size:clamp(22px,3vw,33px)}
+.world-card-description{font-size:clamp(12px,1.4vw,15px);color:#405866;font-weight:500;line-height:1.4;max-width:54ch}
+.broken-world-extras{display:flex;justify-content:center;align-items:center;padding:2px 0 6px}.lift-tests-link{background:transparent;color:#78551f;border:1px solid #c9b58e;border-radius:9px;padding:6px 12px;font-size:12px;cursor:pointer}
+@media(max-height:620px) and (min-width:801px){.cannon-category-option{min-height:32px}.world-card-art{height:clamp(48px,13vh,95px)}.world-grid[data-single=true] .world-card-art{height:clamp(88px,29vh,170px)}.world-grid[data-single=true] .world-card-copy{padding:8px 14px;gap:3px}.world-grid[data-single=true] .world-card-name{font-size:22px}}
+@media(max-width:480px){.cannon-category-option{min-height:38px}.world-grid[data-single=true] .world-card-art{height:clamp(110px,25vh,200px)}.world-grid[data-single=true] .world-card-copy{padding:12px}.world-card-description{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.cannon-category-switch::before{transition:none}}
+
+/* Match the normal world styling while letting the Foundry graph dominate. */
+main[data-world="7"] .stage{background:#d2d5c5}
+main[data-world="7"] #world-label{font-size:clamp(11px,1.3vw,14px);line-height:1.2}
+main[data-world="7"] .lift-handle{filter:drop-shadow(0 1px 1px #38493855)}
+@media(max-height:620px){main[data-world="7"] #world-label{font-size:11px;line-height:1.1}}

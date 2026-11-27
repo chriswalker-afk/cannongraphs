@@ -1,15 +1,15 @@
-import {worlds,levels,type World} from '../levels/catalog';
+import type {World} from '../levels/catalog';
 import type {Level} from '../levels/schema';
 import {levelTiers} from '../levels/progression';
 import {cannonTypes,type CannonType} from '../game/cannons';
 import {identityForWorld} from '../game/worldIdentity';
-import {beginSelection,selectWorld,selectMode,backToModes,selectLevel,backToWorlds,selectedWorld,selectedLevel,summarizeLevel} from '../game/levelSelection';
+import {beginSelection,selectCategory,worldsInCategory,selectWorld,selectMode,backToModes,selectLevel,backToWorlds,selectedWorld,selectedLevel,summarizeLevel,type WorldCategory} from '../game/levelSelection';
 import {renderWorldMenuArt} from '../rendering/worldMenuArt';
 import {learningModes,modePolicy,modeBudgetLabel,modeObjective,type LearningMode} from '../game/learningModes';
 import {createPip,svgNode} from '../rendering/pip';
 import {emptyProgress,getRecord,recordStars,summarizeProgress,type Progress} from '../game/progress';
 
-interface Options {bindAudio?:(button:HTMLButtonElement)=>()=>void;progress?:Progress;preferredId?:string;preferredMode?:LearningMode;openCurrentWorld?:boolean;onHome:()=>void;onPlay:(level:Level,mode:LearningMode)=>void}
+interface Options {bindAudio?:(button:HTMLButtonElement)=>()=>void;progress?:Progress;preferredId?:string;preferredMode?:LearningMode;openCurrentWorld?:boolean;preferredCategory?:WorldCategory;onLiftDemos?:()=>void;onCategoryChange?:(category:WorldCategory)=>void;onHome:()=>void;onPlay:(level:Level,mode:LearningMode)=>void}
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,className:string,parent:Element,text?:string):HTMLElementTagNameMap[K]{
  const e=document.createElement(tag);e.className=className;if(text!==undefined)e.textContent=text;parent.append(e);return e;
 }
@@ -26,7 +26,7 @@ function familyChip(parent:Element,type:CannonType,count?:number){
 }
 export function mountLevelSelection(root:HTMLElement,options:Options){
  const progress=options.progress??emptyProgress();
- let state=beginSelection(options.preferredId,options.openCurrentWorld,options.preferredMode),disposed=false;
+ let state=beginSelection(options.preferredId,options.openCurrentWorld,options.preferredMode,options.preferredCategory),disposed=false;
  let refreshLevel:()=>void=()=>{},unbindAudio:()=>void=()=>{};
  function screen(title:string,subtitle:string,backText:string,back:()=>void){
   unbindAudio();root.replaceChildren();
@@ -40,30 +40,44 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   else {const end=element('div','selection-top-end',bar);end.setAttribute('aria-hidden','true');}
   return {main,h1};
  }
- function renderWorlds(focusNumber?:number){
-  const {main,h1}=screen('Choose a world',worlds.length+' worlds · '+levels.length+' levels','← Home',options.onHome);
-  main.dataset.selection='worlds';
-  const grid=element('div','world-grid',main);grid.setAttribute('role','group');grid.setAttribute('aria-label','Worlds');
+ function renderWorlds(focusNumber?:number,focusCategory=false){
+  if(state.step!=='worlds')return;
+  const category=state.category,visible=worldsInCategory(category),total=visible.reduce((n,w)=>n+w.levels.length,0);
+  options.onCategoryChange?.(category);
+  const {main,h1}=screen('Choose a world',visible.length+' '+(visible.length===1?'world':'worlds')+' · '+total+' levels','← Home',options.onHome);
+  main.dataset.selection='worlds';main.dataset.cannonCategory=category;
+  const switcher=element('div','cannon-category-switch',main);switcher.setAttribute('role','group');switcher.setAttribute('aria-label','Cannon type');
+  switcher.dataset.active=category;
+  let activeButton:HTMLButtonElement|undefined;
+  for(const [id,label] of [['normal','Normal cannons'],['broken','Broken cannons']] as const){
+   const b=action(switcher,'cannon-category-option',label,()=>{if(disposed)return;const next=selectCategory(state,id);if(next!==state){state=next;renderWorlds(undefined,true);}});
+   b.dataset.category=id;b.setAttribute('aria-pressed',String(category===id));if(category===id)activeButton=b;
+   b.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const target=event.key==='ArrowLeft'||event.key==='Home'?'normal':'broken';state=selectCategory(state,target);renderWorlds(undefined,true);});
+  }
+  const grid=element('div','world-grid',main);grid.setAttribute('role','group');grid.setAttribute('aria-label',category==='normal'?'Normal cannon worlds':'Broken cannon worlds');
+  grid.dataset.single=String(visible.length===1);
   const cards=new Map<number,HTMLButtonElement>();
-  for(const w of worlds){
+  for(const [index,w] of visible.entries()){
    const identity=identityForWorld(w.number),summary=summarizeProgress(progress,w.levels);
    const card=action(grid,'world-card','',()=>{
     if(disposed)return;
     state=selectWorld(state,w.number);if(state.step==='modes')renderModes();
    });
-   theme(card,w);cards.set(w.number,card);
+   theme(card,w);cards.set(w.number,card);card.dataset.worldNumber=String(w.number);
    card.setAttribute('aria-label','World '+w.number+': '+w.name+'. '+identity.focus+'. '+summary.completed+' of '+w.levels.length+' levels completed.');
    const art=element('span','world-card-art',card);art.setAttribute('aria-hidden','true');renderWorldMenuArt(art,w.number);
-   const flag=element('span','world-number',art,'WORLD '+String(w.number).padStart(2,'0'));
+   const flag=element('span','world-number',art,category==='broken'?'BROKEN CANNONS':'WORLD '+String(index+1).padStart(2,'0'));
    flag.setAttribute('aria-hidden','true');
    const copy=element('span','world-card-copy',card);
    element('strong','world-card-name',copy,w.name);
    element('span','world-card-focus',copy,identity.focus);
+   if(category==='broken')element('span','world-card-description',copy,identity.description);
    const row=element('span','world-card-bottom',copy);
    element('span','',row,summary.completed+' / '+w.levels.length+' completed');
    element('span','world-card-arrow',row,'→').setAttribute('aria-hidden','true');
   }
-  if(focusNumber!==undefined&&cards.has(focusNumber))cards.get(focusNumber)!.focus();
+  if(category==='broken'&&options.onLiftDemos){const extras=element('div','broken-world-extras',main);action(extras,'lift-tests-link','Lift flight tests ↗',()=>{if(!disposed)options.onLiftDemos?.();});}
+  if(focusCategory)activeButton?.focus({preventScroll:true});else if(focusNumber!==undefined&&cards.has(focusNumber))cards.get(focusNumber)!.focus();
   else h1.focus();
  }
  function renderModes(){
@@ -93,10 +107,10 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   const w=selectedWorld(state);if(!w||state.step!=='levels'){renderWorlds();return;}
   const mode=state.mode,policy=modePolicy(mode);
   const identity=identityForWorld(w.number);
-  const {main,h1}=screen(w.name,'World '+w.number+' · '+policy.name+' · '+identity.focus,'← Modes',()=>{
+  const {main,h1}=screen(w.name,(w.number===7?'Broken cannons':'World '+w.number)+' · '+policy.name+' · '+identity.focus,'← Modes',()=>{
    state=backToModes(state);renderModes();
   });
-  main.dataset.selection='levels';theme(main,w);
+  main.dataset.selection='levels';main.dataset.worldNumber=String(w.number);theme(main,w);
   const shell=element('div','level-selection-shell',main);
   const board=element('section','level-board',shell);
   const banner=element('div','level-world-banner',board);

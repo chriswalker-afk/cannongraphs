@@ -30,7 +30,8 @@ export function narrowPassage(id:string,s:PassageSpec):readonly [Obstacle,Obstac
 }
 export function terrainLabel(o:Obstacle,world?:number):string{
  if(world===6)return ({floor:'Station floor',wall:'Alloy wall',platform:'Station platform',ceiling:'Ceiling panel'})[o.kind];
- if(world===5||world===7)return ({floor:'Factory floor',wall:'Metal wall',platform:'Steel platform',ceiling:'Ceiling panel'})[o.kind];
+ if(world===7)return ({floor:'Foundry floor',wall:o.id.includes('furnace')?'Furnace':o.id.includes('boiler')?'Boiler':'Steel bulkhead',platform:'Steel platform',ceiling:'Overhead press'})[o.kind];
+ if(world===5)return ({floor:'Factory floor',wall:'Metal wall',platform:'Steel platform',ceiling:'Ceiling panel'})[o.kind];
  return ({floor:'Floor',wall:'Stone wall',platform:'Floating platform',ceiling:'Ceiling'})[o.kind];
 }
 export function terrainDimensions(o:Obstacle){

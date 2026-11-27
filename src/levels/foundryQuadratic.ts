@@ -5,10 +5,10 @@ import {createLevelFlightPlan,editPlan} from '../game/flightPlan';
 const normal=(id:string,x:number,y:number):Cannon=>({id,type:'linear',position:{x,y},direction:1});
 const lift=(id:string,x:number,y:number,type:'linear'|'quadratic',lockedShape:string,minY=1,maxY=7):Cannon=>({id,type,position:{x,y},direction:1,lift:{minY,maxY,lockedShape}});
 const wall=(id:string,x1:number,x2:number,top:number):Obstacle=>({id,kind:'wall',bounds:{minX:x1,maxX:x2,minY:-1,maxY:top}});
-const ceiling=(id:string,x1:number,x2:number,bottom:number):Obstacle=>({id,kind:'ceiling',bounds:{minX:x1,maxX:x2,minY:bottom,maxY:11}});
+const ceiling=(id:string,x1:number,x2:number,bottom:number):Obstacle=>({id,kind:'ceiling',bounds:{minX:x1,maxX:x2,minY:bottom,maxY:9}});
 const make=(number:number,title:string,objective:string,cannons:Cannon[],exit:Level['exit'],obstacles:Obstacle[]):Level=>({
- id:'foundry-quadratic-'+number,world:7,title,objective,bounds:{minX:-1,maxX:Math.max(12,exit.x+1),minY:-2,maxY:11},creatures:5,startId:'A',cannons,exit,
- obstacles:[{id:'floor',kind:'floor',bounds:{minX:-1,maxX:Math.max(12,exit.x+1),minY:-2,maxY:-1}},...obstacles]
+ id:'foundry-quadratic-'+number,world:7,title,objective,bounds:{minX:-1,maxX:exit.x+1,minY:-2,maxY:9},creatures:5,startId:'A',cannons,exit,
+ obstacles:[{id:'floor',kind:'floor',bounds:{minX:-1,maxX:exit.x+1,minY:-2,maxY:-1}},...obstacles]
 });
 // Only authored starting positions, locked shapes and scaffolding are
 // shipped. Reference placements and solutions live in the regression suite.

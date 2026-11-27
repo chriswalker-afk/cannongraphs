@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {PROGRESS_KEY} from '../src/game/progressStore';
 test('linear progression starts with a ready incoming equation and later requires programming',async({page})=>{
- await page.goto('./');await page.locator('#home-play').click();await page.locator('.world-card').nth(6).click();await page.locator('.mode-card').first().click();
+ await page.goto('./');await page.locator('#home-play').click();await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.locator('[data-world-number="7"]').click();await page.locator('.mode-card').first().click();
  await expect(page.locator('.level-number')).toHaveCount(12);
  await page.locator('[data-level-id="foundry-linear-1"]').click();await page.locator('.selection-play').click();
  await expect(page.locator('#launch')).toBeEnabled();

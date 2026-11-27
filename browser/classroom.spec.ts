@@ -14,8 +14,8 @@ async function start(page:Page){
 }
 async function pick(page:Page,world:number,mode:Mode,level:number,launch=true){
  await page.locator('#home-play').click();
- await expect(page.locator('.world-card')).toHaveCount(7);
- await page.locator('.world-card').nth(world-1).click();
+ await expect(page.locator('.world-card')).toHaveCount(6);
+ if(world===7)await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.locator('[data-world-number="'+world+'"]').click();
  await expect(page.locator('.mode-card')).toHaveCount(3);
  await page.locator('.mode-card').nth(modeIndex[mode]).click();
  await expect(page.locator('.level-number')).toHaveCount(12);
@@ -55,7 +55,7 @@ for(const viewport of [{width:1366,height:768},{width:768,height:1024},{width:39
  test('classroom viewport '+viewport.width+' × '+viewport.height,async({page},info)=>{
   await page.setViewportSize(viewport);const errors=await start(page);
   await fits(page);await capture(page,info,'home');
-  await page.locator('#home-play').click();await expect(page.locator('.world-card')).toHaveCount(7);await fits(page);await capture(page,info,'worlds');
+  await page.locator('#home-play').click();await expect(page.locator('.world-card')).toHaveCount(6);await fits(page);await capture(page,info,'worlds');
   await page.locator('.world-card').nth(5).click();await expect(page.locator('.mode-card')).toHaveCount(3);await fits(page);await capture(page,info,'modes');
   await page.locator('.mode-card').nth(2).click();await expect(page.locator('.level-tier')).toHaveCount(4);for(const count of [1,2,3,4])await expect(page.locator('.level-tier[data-cannons="'+count+'"] .level-number')).toHaveCount(3);await expect(page.locator('.selection-play')).toBeDisabled();await page.locator('.level-number').nth(11).click();await fits(page);await capture(page,info,'levels');
   await page.locator('.selection-play').click();await expect(page.locator('main.game-screen')).toBeVisible();
