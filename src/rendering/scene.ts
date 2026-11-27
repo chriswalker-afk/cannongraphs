@@ -69,7 +69,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(id!==selectedCannon||!editable){previewPaths=[];paintGraphPreview();}
   selectedCannon=id;planningEditable=editable;paintSelection();inspect();
  }
- const motion=window.matchMedia('(prefers-reduced-motion: reduce)'),reducedMotion=()=>controls.reducedMotion?.()??motion.matches;
+ const reducedMotion=()=>controls.reducedMotion?.()??false;
  const crewTotal=controls.budget??level.creatures;
  let crewWaiting=crewTotal,crew:ReturnType<typeof createWaitingCrew>|undefined,launchParent:Element|undefined,flightTrail:Element|undefined;
  const tracePaths=new Map<string,{path:Element;to:Point;color:string;leg:AttemptResult}>();

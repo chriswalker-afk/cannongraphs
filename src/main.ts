@@ -37,13 +37,14 @@ function bindAudioButton(){const b=app.querySelector<HTMLButtonElement>('#sound-
 function addMenuAudio(){const top=app.querySelector<HTMLElement>('.selection-top'),end=top?.querySelector('.selection-top-end');if(!top||!end)return;const b=document.createElement('button');b.type='button';b.id='sound-settings';b.className='sound-settings workshop-sound-settings';b.textContent='♪ Off';end.replaceWith(b);top.classList.add('has-audio');addAudioCleanup();}
 function addAudioCleanup(){const prior=cleanup,unbind=bindAudioButton();cleanup=()=>{unbind();prior();};}
 let lastLevel:Level|undefined,lastMode:LearningMode='pilot';
-// An explicit choice applies only to this browser session. Initially use the OS setting.
-let reducedOverride:boolean|undefined;
+// Full animation is the default on every device. A deliberate reduced-motion
+// choice is retained during this page session, independently of OS settings.
+let reducedOverride=false;
 function showHome(focusPlay=false){
- cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay,{progress,persisted:progressStore.persisted(),onOpen:showFlightLog,look:lookStore.read(earnedAchievementIds(progress)),onWorkshop:showWorkshop,cannonLook:cannonStore.read(earnedAchievementIds(progress)),onCannonWorkshop:showCannonWorkshop});addAudioCleanup();
+ cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay,{progress,persisted:progressStore.persisted(),onOpen:showFlightLog,look:lookStore.read(earnedAchievementIds(progress)),onWorkshop:showWorkshop,cannonLook:cannonStore.read(earnedAchievementIds(progress)),onCannonWorkshop:showCannonWorkshop,reducedMotion:reducedOverride});addAudioCleanup();
 }
 function showWorkshop(){cleanup();audio.setTheme('menu');cleanup=mountCreatureWorkshop(app,earnedAchievementIds(progressStore.read()),lookStore,()=>{showHome();app.querySelector<HTMLButtonElement>('#home-workshop')?.focus();});addMenuAudio();}
-function showCannonWorkshop(){cleanup();audio.setTheme('menu');cleanup=mountCannonWorkshop(app,earnedAchievementIds(progressStore.read()),cannonStore,()=>{showHome();app.querySelector<HTMLButtonElement>('#home-cannon-workshop')?.focus();},()=>audio.play('fire'));addAudioCleanup();}
+function showCannonWorkshop(){cleanup();audio.setTheme('menu');cleanup=mountCannonWorkshop(app,earnedAchievementIds(progressStore.read()),cannonStore,()=>{showHome();app.querySelector<HTMLButtonElement>('#home-cannon-workshop')?.focus();},()=>audio.play('fire'),()=>reducedOverride);addAudioCleanup();}
 function showFlightLog(){cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountFlightLog(app,progress,progressStore.persisted(),()=>showHome(true));addMenuAudio();}
 function showSelection(openCurrentWorld=false){
  cleanup();audio.setTheme('menu');cleanup=mountLevelSelection(app,{bindAudio:audioDialog.bind,progress:progressStore.read(),preferredId:lastLevel?.id,preferredMode:lastMode,openCurrentWorld,onHome:()=>showHome(true),onPlay:(level,mode)=>{mountLevel(level,mode);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();}});
@@ -57,9 +58,9 @@ app.querySelector('main')!.dataset.world=String(world.number);app.querySelector(
 app.querySelector<HTMLElement>('#world-label')!.textContent=world.name+' · '+position.index+' / '+position.total+' · '+policy.name;
 app.querySelector<HTMLElement>('#level-objective')!.textContent=modeObjective(mode,level);
 const button=(id:string)=>document.querySelector<HTMLButtonElement>('#'+id)!;
-const motionPreference=window.matchMedia('(prefers-reduced-motion: reduce)'),reducedMotion=()=>reducedOverride??motionPreference.matches,motionButton=button('motion-mode');
+const reducedMotion=()=>reducedOverride,motionButton=button('motion-mode');
 function paintMotion(){const reduced=reducedMotion();app.querySelector('main')!.dataset.motion=reduced?'reduced':'full';motionButton.textContent=reduced?'Motion: reduced':'Motion: full';motionButton.title=reduced?'Enable full flight animations':'Use reduced motion';motionButton.setAttribute('aria-label',motionButton.title);}
-paintMotion();motionPreference.addEventListener('change',paintMotion);
+paintMotion();
 const scene=mountScene(app.querySelector<HTMLElement>('.stage')!,level,{in:button('zoom-in'),out:button('zoom-out'),reset:button('zoom-reset'),left:button('pan-left'),right:button('pan-right'),up:button('pan-up'),down:button('pan-down'),readout:document.querySelector('#zoom-readout')!,info:document.querySelector('#inspect-info')!,onCannonSelect:chooseCannon,mode,look,cannonLook,onSound:audio.play,budget,reducedMotion});
 
 const levelMenu=button('level-menu');levelMenu.setAttribute('aria-label','Choose levels; current level '+position.index+' of '+world.name+'. Leaves this run.');
@@ -198,6 +199,6 @@ launchButton.addEventListener('click',()=>{
 });
 sync();
 
-cleanup=()=>{motionPreference.removeEventListener('change',paintMotion);scene.destroy();};addAudioCleanup();
+cleanup=scene.destroy;addAudioCleanup();
 }
 showHome();
