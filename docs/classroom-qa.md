@@ -38,3 +38,7 @@ All six worlds show four labelled rows of three numbered levels: Introduction (o
 ### PR38: Flight School
 
 On a fresh browser, choose Meadow Launchers, any mode, and level 1. Inspect the marked cannon and exit coordinates, follow the worked gradient/intercept calculation, use the real parameter boxes, move to B using Next Cannon, experience a practice splat and revise B using the worked cannon-to-exit calculation. Verify the rapid-fire celebration and fresh scored crew. Skip/reopen via the toolbar; existing progress must be unchanged. Check the coach and equation popup on phones, short landscape and projected desktop displays.
+
+### PR39: Level Workshop
+
+Create a two-cannon design using drag and drop, resize terrain and enter exact coordinates. Test it in the real game, try a splat, then complete the route. Confirm and download only after the completion; verify that any edit revokes confirmation. Upload the downloaded file on a fresh browser and check that its geometry, types and firing directions match without importing answers or proof. Check phone placement, scrolling and keyboard controls. No custom level earns official stars, gems or achievements.
