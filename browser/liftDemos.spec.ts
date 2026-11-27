@@ -19,7 +19,7 @@ test('quadratic demo supports pointer movement and pilot has no preview',async({
  await page.locator('.lift-demo-choices section').nth(1).getByRole('button',{name:'Pilot'}).click();
  const handle=page.locator('[data-lift-handle="B"]');
  await expect(handle).toHaveAttribute('aria-valuenow','6');
- const box=await handle.boundingBox();const rail=await page.locator('[data-layer="lift-rail"] line').first().boundingBox();
+ const box=await page.locator('[data-inspect="B"] [data-lift-deck] rect').first().boundingBox();const rail=await page.locator('[data-layer="lift-rail"] line').first().boundingBox();
  if(!box||!rail)throw Error('Missing lift geometry');
  const scale=rail.height/6.47;
  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2,box.y+box.height/2+3*scale,{steps:8});await page.mouse.up();

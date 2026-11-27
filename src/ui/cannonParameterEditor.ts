@@ -19,12 +19,12 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
   const down=node('button','lift-step',row,'↓ Lower');down.type='button';
   const position=node('output','lift-position',row);
   const up=node('button','lift-step',row,'↑ Raise');up.type='button';
-  node('p','parameter-help',root,'Drag the striped platform or use the arrows. Only the constant changes.');
-  function updateLift(next:Cannon){current=next;equation.textContent=lockedLiftText(lockedLiftEquation(current));position.textContent=modePolicy(mode).coordinates?'y = '+current.position.y:'Slide';}
+  node('p','parameter-help',root,'Drag the striped deck or use these arrows. Only the constant changes.');
+  function updateLift(next:Cannon){current=next;equation.textContent=lockedLiftText(lockedLiftEquation(current));position.textContent=modePolicy(mode).coordinates?'y = '+current.position.y:'Slide';down.disabled=current.position.y<=current.lift!.minY;up.disabled=current.position.y>=current.lift!.maxY;}
   down.onclick=()=>onLiftMove?.(current.id,current.position.y-1);
   up.onclick=()=>onLiftMove?.(current.id,current.position.y+1);
   updateLift(cannon);
-  return {getDraft:()=>({text:lockedLiftText(lockedLiftEquation(current)),equation:lockedLiftEquation(current)}),getMemory:():EditorMemory=>({form:'locked',values:{},raw:false}),focus:()=>up.focus(),updateLift};
+  return {getDraft:()=>({text:lockedLiftText(lockedLiftEquation(current)),equation:lockedLiftEquation(current)}),getMemory:():EditorMemory=>({form:'locked',values:{},raw:false}),focus:()=>{(up.disabled?down:up).focus();},updateLift};
  }
  const forms=formsFor(cannon.type);
  let form=forms.find(f=>f.id===memory?.form)??forms[0],values={...memory?.values},rawMode=memory?.raw??!!text;
