@@ -116,7 +116,7 @@ test('general factorised coefficients must still produce a genuine quadratic',()
  assert.equal(cannonEquationKey(p),cannonEquationKey(parseCannonEquation('x²+13x/2-12','quadratic')));
 });
 test('the same authored route can be flown from equivalent expanded, general factorised and root forms',()=>{
- const l=levels.find(l=>l.id==='3-07')!;
+ const l=levels.find(l=>l.id==='3-r06')!;
  const cases:[string,ParameterValues][]=[
   ['quadratic',{a:'1',b:'-6',c:'5'}],
   ['factorised',{a:'2',b:'-2',c:'1/2',d:'-5/2'}],
@@ -126,7 +126,7 @@ test('the same authored route can be flown from equivalent expanded, general fac
  const keys=new Set<string>();
  for(const [id,values] of cases){
   const eq=parseCannonEquation(parameterEquation(form(id),values),'quadratic');
-  keys.add(cannonEquationKey(eq));assert.equal(simulateRoute(l,new Map([['A',eq]])).event.kind,'exit',id);
+  keys.add(cannonEquationKey(eq));assert.equal(simulateRoute(l,new Map([['A',eq],['B',parseCannonEquation('x-5','linear')]])).event.kind,'exit',id);
  }
  assert.equal(keys.size,1);
 });

@@ -157,3 +157,18 @@ test('stored historic achievement IDs are whitelisted and survive merging withou
  assert.ok(earnedAchievementIds(merged).has('ace-world'));
  assert.equal(summarizeProgress(merged).completed,1);assert.equal(mergeProgress(merged,b),merged);
 });
+
+test('quadratic curriculum update retains completed unchanged puzzles and earned badges but not retired completion credit',()=>{
+ const mem=memoryStorage();
+ const historic=originalCurriculum.filter(l=>l.world===3||l.world===4);
+ const old=Object.fromEntries(historic.map(l=>[l.id,{ace:{bestAttempts:1,gems:(l.gems??[]).map(g=>g.id)}}]));
+ mem.data.set(PROGRESS_KEY,JSON.stringify({version:1,records:old,retainedAchievements:['ace-world','world-explorer','star-collector','gem-collector']}));
+ const p=createProgressStore(mem.storage).read();
+ for(const w of worlds.slice(2,4)){
+  assert.equal(summarizeProgress(p,w.levels).completed,5);
+  for(const l of w.levels)assert.equal(!!getRecord(p,l.id,'ace'),!l.id.includes('-r'),l.id);
+ }
+ assert.equal(getRecord(p,'3-01','ace')!.gems.length,2);
+ assert.ok(!getRecord(p,'3-r04','ace'));assert.ok(!getRecord(p,'4-r12','ace'));
+ for(const id of ['ace-world','world-explorer','star-collector','gem-collector'])assert.ok(earnedAchievementIds(p).has(id));
+});

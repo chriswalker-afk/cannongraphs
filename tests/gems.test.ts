@@ -56,7 +56,7 @@ test('continuous linear contact includes a tangent and excludes a nearby miss',(
 test('quadratic contact follows the curve rather than its chord, including vertex tangency',()=>{
  const l=get('3-01'),leg=simulateQuadraticAttempt(parseQuadraticEquation('x²'),l.cannons[0],l);
  assert.deepEqual(collectRouteGems([gem('on-curve',2,4)],[leg]).map(h=>h.gemId),['on-curve']);
- const arch=solve('3-10').legs[0],r=PIP_RADIUS+GEM_RADIUS;
+ const arch=solve('3-r04').legs[0],r=PIP_RADIUS+GEM_RADIUS;
  assert.deepEqual(collectRouteGems([gem('on-arch',4,6.5),gem('on-chord',4,2)],[arch]).map(h=>h.gemId),['on-arch']);
  const tangent=collectRouteGems([gem('touch',4,6.5+r),gem('miss',4,6.5+r+.00001)],[arch]);
  assert.deepEqual(tangent.map(h=>h.gemId),['touch']);near(tangent[0].progress,.5,2e-6);
@@ -71,7 +71,7 @@ test('multiple passes collect a gem only once; misfire and unreached legs cannot
  assert.equal(collectRouteGems([g],[leg,leg]).length,1);
  const l=get('1-01'),misfire=simulateRoute(l,new Map([['A',parseLinearEquation('x+1')]]));
  assert.equal(misfire.event.kind,'misfire');assert.deepEqual(misfire.gemHits,[]);
- const relay=get('3-10'),r=simulateRoute(relay,new Map<string,FlightEquation>([['A',parseQuadraticEquation('-(x-1)(x-7)/2+2')],['B',parseLinearEquation('x')]]));
+ const relay=get('3-r04'),r=simulateRoute(relay,new Map<string,FlightEquation>([['A',parseQuadraticEquation('-(x-1)(x-7)/2+2')],['B',parseLinearEquation('x')]]));
  assert.equal(r.event.kind,'misfire');assert.deepEqual(r.gemHits.map(h=>h.gemId),['gem-1']);assert.deepEqual(bankedGems(r),[]);
 });
 test('solid collision truncates the pickup path and a simultaneous solid contact wins',()=>{
@@ -81,7 +81,7 @@ test('solid collision truncates the pickup path and a simultaneous solid contact
  assert.deepEqual(collectRouteGems([gem('before',3,3),gem('tie',leg.end.x+r,3),gem('behind',6,3)],[leg]).map(h=>h.gemId),['before']);
 });
 test('pickup timeline never credits a gem before the corresponding leg reaches it',()=>{
- const r=solve('3-10'),t=gemTimeline(r);
+ const r=solve('3-r04'),t=gemTimeline(r);
  assert.equal(t.length,2);assert.ok(t[0].at>FIRE_MS);
  assert.deepEqual(gemsAt(t,t[0].at-1e-5),[]);assert.deepEqual(gemsAt(t,t[0].at),['gem-1']);
  assert.ok(t[1].at>attemptDuration(r.legs[0])+FIRE_MS);

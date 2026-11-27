@@ -7,7 +7,7 @@ const scenarios=[
  {w:1,l:1,width:390,height:844,name:'grounded'},
  {w:2,l:6,width:768,height:1024,name:'reverse'},
  {w:3,l:10,width:1366,height:768,name:'peaks-relay'},
- {w:4,l:10,width:1366,height:768,name:'wall-bracket'},
+ {w:4,l:7,width:1366,height:768,name:'wall-bracket'},
  {w:5,l:1,width:390,height:844,name:'suspended-exit'},
  {w:6,l:12,width:844,height:390,name:'seven-cannons'}
 ] as const;

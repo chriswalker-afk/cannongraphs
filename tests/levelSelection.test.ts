@@ -33,11 +33,11 @@ test('returning from gameplay opens the current world and highlights its actual 
  assert.equal(selectedLevel(selectWorld(back,1)),undefined);
 });
 test('fresh home Play still shows all worlds, with only the last played level remembered',()=>{
- const start=beginSelection('3-07');assert.equal(start.step,'worlds');
- const first=selectWorld(start,3);assert.equal(selectedLevel(first)?.id,'3-07');
- const edited=selectLevel(first,'3-09');assert.equal(selectedLevel(edited)?.id,'3-09');
+ const start=beginSelection('3-r07');assert.equal(start.step,'worlds');
+ const first=selectWorld(start,3);assert.equal(selectedLevel(first)?.id,'3-r07');
+ const edited=selectLevel(first,'3-r09');assert.equal(selectedLevel(edited)?.id,'3-r09');
  // Browsing without launching does not rewrite the remembered level.
- assert.equal(selectedLevel(selectWorld(backToWorlds(edited),3))?.id,'3-07');
+ assert.equal(selectedLevel(selectWorld(backToWorlds(edited),3))?.id,'3-r07');
  assert.equal(selectedLevel(selectWorld(backToWorlds(edited),4)),undefined);
 });
 test('all world cards have unique visual identities and mathematically relevant family descriptions',()=>{
