@@ -2,7 +2,9 @@ import './style.css';
 import {firstFlightTutorial} from './levels/firstFlightTutorial';
 import {browserTutorialStore,type TutorialIntro} from './game/firstFlightTutorial';
 import {mountFirstFlightTutorial} from './ui/firstFlightTutorial';
-import {worldForLevel,levelPosition,nextLevel} from './levels/catalog';
+import {worldForLevel,levelPosition,nextLevel,worlds} from './levels/catalog';
+import {browserCustomWorkshopStore,type CustomWorkshopStore} from './game/customLevels';
+import {mountCustomWorkshop} from './ui/customWorkshop';
 import {mountScene} from './rendering/scene';
 import {mountCannonParameterEditor,type EditorMemory} from './ui/cannonParameterEditor';
 import {popupPosition} from './ui/popupPosition';
@@ -35,7 +37,7 @@ import {browserAudioPlayback} from './audio/webAudio';
 import {createAudioSettingsDialog} from './ui/audioSettings';
 import type {MusicTheme} from './audio/music';
 const app=document.querySelector<HTMLDivElement>('#app')!,progressStore=browserProgressStore(),lookStore=browserPipLookStore(),cannonStore=browserCannonLookStore();
-const audio=browserAudioPlayback(),audioDialog=createAudioSettingsDialog(audio),tutorialStore=browserTutorialStore();
+const audio=browserAudioPlayback(),audioDialog=createAudioSettingsDialog(audio),tutorialStore=browserTutorialStore(),customStore=browserCustomWorkshopStore();
 let cleanup:()=>void=()=>{};
 function bindAudioButton(){const b=app.querySelector<HTMLButtonElement>('#sound-settings');return b?audioDialog.bind(b):()=>{};}
 function addMenuAudio(){const top=app.querySelector<HTMLElement>('.selection-top'),end=top?.querySelector('.selection-top-end');if(!top||!end)return;const b=document.createElement('button');b.type='button';b.id='sound-settings';b.className='sound-settings workshop-sound-settings';b.textContent='♪ Off';end.replaceWith(b);top.classList.add('has-audio');addAudioCleanup();}
@@ -45,10 +47,11 @@ let lastLevel:Level|undefined,lastMode:LearningMode='pilot';
 // choice is retained during this page session, independently of OS settings.
 let reducedOverride=false;
 function showHome(focusPlay=false){
- cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay,{progress,persisted:progressStore.persisted(),onOpen:showFlightLog,look:lookStore.read(earnedAchievementIds(progress)),onWorkshop:showWorkshop,cannonLook:cannonStore.read(earnedAchievementIds(progress)),onCannonWorkshop:showCannonWorkshop,reducedMotion:reducedOverride});addAudioCleanup();
+ cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay,{progress,persisted:progressStore.persisted(),onOpen:showFlightLog,look:lookStore.read(earnedAchievementIds(progress)),onWorkshop:showWorkshop,cannonLook:cannonStore.read(earnedAchievementIds(progress)),onCannonWorkshop:showCannonWorkshop,onLevelWorkshop:showCustomWorkshop,reducedMotion:reducedOverride});addAudioCleanup();
 }
 function showWorkshop(){cleanup();audio.setTheme('menu');cleanup=mountCreatureWorkshop(app,earnedAchievementIds(progressStore.read()),lookStore,()=>{showHome();app.querySelector<HTMLButtonElement>('#home-workshop')?.focus();});addMenuAudio();}
 function showCannonWorkshop(){cleanup();audio.setTheme('menu');cleanup=mountCannonWorkshop(app,earnedAchievementIds(progressStore.read()),cannonStore,()=>{showHome();app.querySelector<HTMLButtonElement>('#home-cannon-workshop')?.focus();},()=>audio.play('fire'),()=>reducedOverride);addAudioCleanup();}
+function showCustomWorkshop(){cleanup();audio.setTheme('menu');cleanup=mountCustomWorkshop(app,customStore,()=>showHome(true),test=>{mountLevel(test.level,'cadet',undefined,test);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();});}
 function showFlightLog(){cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountFlightLog(app,progress,progressStore.persisted(),()=>showHome(true));addMenuAudio();}
 function showSelection(openCurrentWorld=false){
  cleanup();audio.setTheme('menu');cleanup=mountLevelSelection(app,{bindAudio:audioDialog.bind,progress:progressStore.read(),preferredId:lastLevel?.id,preferredMode:lastMode,openCurrentWorld,onHome:()=>showHome(true),onPlay:(level,mode)=>startLevel(level,mode)});
@@ -61,14 +64,15 @@ function startLevel(level:Level,mode:LearningMode,forceTutorial=false){
   mountLevel(firstFlightTutorial,'cadet',{level,mode});app.querySelector<HTMLButtonElement>('#tutorial-continue')?.focus();
  }else{mountLevel(level,mode);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();}
 }
-function mountLevel(level:Level,mode:LearningMode,tutorialReturn?:TutorialReturn){
- cleanup();audio.setTheme(level.world as MusicTheme);lastLevel=tutorialReturn?.level??level;lastMode=tutorialReturn?.mode??mode;
+function mountLevel(level:Level,mode:LearningMode,tutorialReturn?:TutorialReturn,customRun?:ReturnType<CustomWorkshopStore['beginTest']>){
+ cleanup();audio.setTheme(level.world as MusicTheme);if(!customRun){lastLevel=tutorialReturn?.level??level;lastMode=tutorialReturn?.mode??mode;}
  const policy=modePolicy(mode),budget=modeBudget(mode,level),look=lookStore.read(earnedAchievementIds(progressStore.read())),cannonLook=cannonStore.read(earnedAchievementIds(progressStore.read()));
 app.innerHTML=`<main class="game-screen"><header><div class="brand"><button class="brand-mark home-return" id="home-return" type="button" aria-label="Return to home" title="Return to home (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><button class="game-level-menu" id="level-menu" type="button" title="Choose levels (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.4" fill="currentColor"/></svg><span>Levels</span></button><button class="sound-settings game-sound-settings" id="sound-settings" type="button" aria-label="Sound settings">♪ Off</button></header><div class="toolbar"><div id="inspect-info" role="status">Click a cannon to program it. Hover or focus an object to inspect it.</div><button type="button" id="graph-preview" class="graph-preview-toggle" aria-pressed="false" hidden>Show graph</button><span id="gem-readout" class="gem-readout" role="status" hidden></span><button id="tutorial-help" class="motion-mode" type="button" hidden>Flight school</button><button id="motion-mode" class="motion-mode" type="button">Motion</button><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" role="region" aria-labelledby="resolution-heading" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><p id="resolution-gems" class="resolution-gems" hidden></p><p id="resolution-record" class="resolution-record" hidden></p><p id="resolution-achievements" class="resolution-achievements" hidden></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><section id="cannon-popup" class="cannon-popup" role="dialog" aria-modal="false" aria-labelledby="popup-title" hidden><div class="popup-heading"><h2 id="popup-title"></h2><button type="button" id="popup-close" aria-label="Close cannon editor">×</button></div><div id="popup-editor"></div><div class="popup-nav"><button type="button" id="previous-cannon">← Previous cannon</button><button type="button" id="next-cannon">Next cannon →</button><button type="button" id="popup-done">Done ✓</button></div></section><footer class="planning-footer"><div class="planning-editor"><div class="program-summary"><button type="button" id="edit-cannons">Edit cannons</button><span id="plan-ready" role="status"></span><div class="halo-legend" aria-label="Cannon programming status"><span data-status="empty">Unprogrammed</span><span data-status="ready">Programmed</span><span data-status="revise">Failed</span><span data-status="tested">Successful</span></div></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label" aria-live="off">Planning</small></div></footer></main>`;
-const world=worldForLevel(lastLevel.id)!,position=levelPosition(lastLevel.id)!,following=tutorialReturn?.level??nextLevel(level.id);
+const world=customRun?worlds[level.world-1]:worldForLevel(lastLevel!.id)!,position=customRun?{index:0,total:0}:levelPosition(lastLevel!.id)!,following=customRun?undefined:tutorialReturn?.level??nextLevel(level.id);
 app.querySelector('main')!.dataset.world=String(world.number);app.querySelector('main')!.dataset.mode=mode;
-app.querySelector<HTMLElement>('#world-label')!.textContent=tutorialReturn?'Flight school · Free practice':world.name+' · '+position.index+' / '+position.total+' · '+policy.name;
+app.querySelector<HTMLElement>('#world-label')!.textContent=customRun?'Playtest · '+level.title+' · Free practice':tutorialReturn?'Flight school · Free practice':world.name+' · '+position.index+' / '+position.total+' · '+policy.name;
 if(tutorialReturn)app.querySelector('main')!.dataset.tutorial='true';
+if(customRun)app.querySelector('main')!.dataset.customTest='true';
 app.querySelector<HTMLElement>('#level-objective')!.textContent=modeObjective(mode,level);
 const button=(id:string)=>document.querySelector<HTMLButtonElement>('#'+id)!;
 const reducedMotion=()=>reducedOverride,motionButton=button('motion-mode');
@@ -77,7 +81,7 @@ paintMotion();
 let repositionPopup=()=>{},refreshCoach=()=>{};
 const scene=mountScene(app.querySelector<HTMLElement>('.stage')!,level,{in:button('zoom-in'),out:button('zoom-out'),reset:button('zoom-reset'),left:button('pan-left'),right:button('pan-right'),up:button('pan-up'),down:button('pan-down'),readout:document.querySelector('#zoom-readout')!,info:document.querySelector('#inspect-info')!,onCannonSelect:chooseCannon,mode,look,cannonLook,onSound:audio.play,budget,reducedMotion,onViewChange:()=>{repositionPopup();refreshCoach();}});
 
-const levelMenu=button('level-menu');levelMenu.setAttribute('aria-label','Choose levels; current level '+position.index+' of '+world.name+'. Leaves this run.');
+const levelMenu=button('level-menu');levelMenu.setAttribute('aria-label',customRun?'Return to Level Workshop':'Choose levels; current level '+position.index+' of '+world.name+'. Leaves this run.');if(customRun){levelMenu.querySelector('span')!.textContent='Workshop';levelMenu.title='Return to Level Workshop';}
 const editorRoot=app.querySelector<HTMLElement>('#popup-editor')!,popup=app.querySelector<HTMLElement>('#cannon-popup')!,popupTitle=app.querySelector<HTMLElement>('#popup-title')!;
 const previousCannon=button('previous-cannon'),nextCannon=button('next-cannon'),editCannons=button('edit-cannons'),planReady=app.querySelector<HTMLElement>('#plan-ready')!;
 const ids=level.cannons.map(c=>c.id),memory=new Map<string,EditorMemory>();
@@ -130,7 +134,7 @@ const status=app.querySelector<HTMLElement>('#flight-result')!,phaseLabel=app.qu
 const resolution=app.querySelector<HTMLElement>('#level-resolution')!,heading=app.querySelector<HTMLElement>('#resolution-heading')!,detail=app.querySelector<HTMLElement>('#resolution-detail')!,icon=app.querySelector<HTMLElement>('#resolution-icon')!;
 const stars=app.querySelector<HTMLElement>('#resolution-stars')!;
 let state=createLevelState(budget,1,policy.unlimited),feedbackHistory=createFeedbackHistory(),liveGemCount=0;
-let completion:ProgressUpdate|undefined;
+let completion:ProgressUpdate|undefined,customSubmitted=false,customPassed=false;
 let tutorialIntro:TutorialIntro='aim';
 function leaveTutorial(){if(!tutorialReturn||state.phase==='launching'||state.phase==='celebrating')return;tutorialStore.remember();mountLevel(tutorialReturn.level,tutorialReturn.mode);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();}
 const coach=tutorialReturn?mountFirstFlightTutorial(app.querySelector('main')!,()=>{tutorialIntro=tutorialIntro==='aim'?'coordinates':'practice';sync();if(tutorialIntro==='practice')scene.focusCannon('A');},leaveTutorial,scene.setTutorialGuides):undefined;
@@ -138,6 +142,7 @@ refreshCoach=()=>coach?.update({intro:tutorialIntro,state,plan,selected,popupOpe
 const tutorialHelp=button('tutorial-help');tutorialHelp.hidden=!!tutorialReturn||level.id!=='1-01';tutorialHelp.addEventListener('click',()=>{if(canPlan(state)||isTerminal(state))startLevel(level,mode,true);});
 const recordText=app.querySelector<HTMLElement>('#resolution-record')!,achievementText=app.querySelector<HTMLElement>('#resolution-achievements')!;
 function updateCompletion(){
+ if(customRun){recordText.hidden=true;achievementText.hidden=true;if(state.phase==='success'&&!customSubmitted){customSubmitted=true;customPassed=customStore.completeTest(customRun.key,state);}return;}
  if(tutorialReturn)return;
  if(state.phase==='success'&&!completion){completion=progressStore.complete(level,mode,state);audio.play(completion.unlocked.length?'achievement':'complete');}
  const update=state.phase==='success'?completion:undefined;
@@ -174,21 +179,22 @@ levelMenu.disabled=state.phase==='launching'||state.phase==='celebrating';homeBu
  queue.update(state);scene.setWaitingCrew(state.waiting);motionButton.disabled=state.phase==='launching'||state.phase==='celebrating';updateGemReadout();
  phaseLabel.textContent=({planning:'Planning',launching:'Launching…',retry:'Adjust and retry',celebrating:'Rapid fire!',success:'Level complete',gameOver:'No Pips left'} as const)[state.phase];
  resolution.hidden=!terminal;
- advance.hidden=!success||!following;
- advance.textContent=tutorialReturn?'Start level 1 →':following&&following.world!==level.world?'Next world →':'Next level →';
+ advance.hidden=!success||(!following&&!customRun);
+ advance.textContent=customRun?'Return to workshop →':tutorialReturn?'Start level 1 →':following&&following.world!==level.world?'Next world →':'Next level →';
  if(terminal){
   resolution.dataset.outcome=success?'success':'failure';
   icon.textContent=success?'✦':'↻';
   const rating=levelStars(state)??0;stars.hidden=policy.unlimited;
   stars.replaceChildren(...Array.from({length:3},(_,i)=>{const star=document.createElement('span');star.textContent='★';star.className=i<rating?'earned':'unearned';star.setAttribute('aria-hidden','true');return star;}));
   stars.setAttribute('aria-label',rating+' out of 3 stars');
-  heading.textContent=success?(tutorialReturn?'Tutorial complete!':'Level complete!'):'Out of Pips!';
+  heading.textContent=success?(customRun?'Playtest complete!':tutorialReturn?'Tutorial complete!':'Level complete!'):'Out of Pips!';
   detail.textContent=success&&policy.unlimited?'Practice complete! '+state.saved+' Pips reached the exit after '+(state.failed+1)+' test '+(state.failed===0?'flight.':'flights.') :success
    ?state.saved+' of '+state.total+' Pips reached the exit!'+(state.failed?' '+state.failed+' unsuccessful '+(state.failed===1?'attempt.':'attempts.'):' Perfect first flight!')
    :'All '+state.total+' Pips have used their attempts. Try the level again with a revised equation.';
   gemResult.hidden=!success||!gemTotal;
   gemResult.textContent=success&&gemTotal?'◆ '+bankedGems(state.lastResult).length+' / '+gemTotal+' optional gems collected':'';
   if(tutorialReturn&&success){detail.textContent='All '+state.saved+' practice Pips arrived. Start the real level with a fresh crew.';tutorialStore.remember();}
+  if(customRun&&success)detail.textContent=customPassed?'The current design has passed its playtest. Return to the workshop to confirm it.':'The flight finished, but the current design could not be verified. Return to the workshop and test again.';
   replay.textContent=tutorialReturn?'Practice again':success?'Play again':'Retry level';
  }
  refreshCoach();
@@ -230,11 +236,11 @@ previewButton.addEventListener('click',()=>{
  try{const paths=graphPreview(equation,level.bounds);scene.setGraphPreview(paths);if(!paths.length){previewButton.textContent='Graph outside view';return;}previewOn=true;previewButton.textContent='Hide graph';previewButton.setAttribute('aria-pressed','true');}catch{clearPreview();}
 });
 motionButton.addEventListener('click',()=>{if(motionButton.disabled)return;reducedOverride=!reducedMotion();paintMotion();});
-levelMenu.addEventListener('click',()=>{if(!levelMenu.disabled)showSelection(true);});
+levelMenu.addEventListener('click',()=>{if(!levelMenu.disabled){if(customRun)showCustomWorkshop();else showSelection(true);}});
 homeButton.addEventListener('click',()=>{if(!homeButton.disabled)showHome(true);});
 restartButton.addEventListener('click',()=>reset(false));
 replay.addEventListener('click',()=>reset(!tutorialReturn));
-advance.addEventListener('click',()=>{if(state.phase==='success'&&following){if(tutorialReturn)leaveTutorial();else startLevel(following,mode);}});
+advance.addEventListener('click',()=>{if(state.phase!=='success')return;if(customRun){showCustomWorkshop();return;}if(following){if(tutorialReturn)leaveTutorial();else startLevel(following,mode);}});
 launchButton.addEventListener('click',()=>{
  if(!canLaunch(state))return;
  const equations=snapshotPlan(plan);if(!equations)return;
