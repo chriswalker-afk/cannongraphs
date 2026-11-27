@@ -466,6 +466,24 @@ main.home-screen{height:auto;min-height:100dvh;grid-template-rows:auto minmax(15
 }
 @media(forced-colors:active){.level-tier{border:1px solid CanvasText;border-left-width:3px}.level-tier[data-selected=true]{border-color:Highlight}.level-tier .level-number[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-3px}}
 
+/* Flight school uses the real scene and editor, without covering the grid. */
+main.game-screen[data-tutorial=true]{grid-template-rows:auto auto auto minmax(230px,1fr) auto}
+.tutorial-coach{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fffaf0;border:1px solid #d4ba7d;border-left:5px solid #ce9538;border-radius:11px;padding:8px 12px;min-width:0}
+.tutorial-coach-copy{display:grid;gap:3px;min-width:0;flex:1}
+.tutorial-kicker{font-size:10px;font-weight:850;letter-spacing:.08em;color:#896027}
+.tutorial-coach h2{font-size:clamp(15px,1.8vw,19px);color:#234d78;margin:0;line-height:1.15}
+.tutorial-coach p{font-size:12px;line-height:1.38;color:#344f62}
+.tutorial-maths{display:flex;gap:5px 15px;flex-wrap:wrap;align-items:center;background:#f1e7ce;border-radius:6px;padding:5px 8px;color:#294961;font:600 15px Cambria,Georgia,serif}
+.tutorial-actions{display:grid;gap:6px;flex-shrink:0}
+.tutorial-actions button{font-size:12px;padding:8px 12px}
+#tutorial-skip{background:#e4edf2;color:#315779;border:1px solid #b8cdd8}
+.tutorial-popup-tip{font-size:12px;font-weight:750;line-height:1.35;background:#f9eac6;color:#78521c;padding:6px 8px;border-radius:7px}
+[data-tutorial-target=true]:not(g){outline:2px solid #c88c2d;outline-offset:3px}
+.cannon-target[data-tutorial-target=true]{filter:drop-shadow(0 0 3px #fff5b4) drop-shadow(0 0 3px #d18f27)}
+.tutorial-coach[hidden],.tutorial-coach [hidden],#tutorial-popup-tip[hidden],#tutorial-help[hidden]{display:none!important}
+@media(max-width:650px){.tutorial-coach{padding:6px 8px;gap:6px;flex-wrap:wrap}.tutorial-coach-copy{flex:1 1 100%}.tutorial-coach p{font-size:11px}.tutorial-maths{font-size:13px;gap:3px 8px}.tutorial-actions{display:flex;flex-wrap:wrap;width:100%;justify-content:flex-end}.tutorial-actions button{font-size:11px;padding:6px 9px}}
+@media(max-height:480px){main.game-screen[data-tutorial=true]{grid-template-rows:auto auto auto minmax(210px,1fr) auto}.tutorial-coach{padding:5px 8px}.tutorial-coach p{font-size:11px}.tutorial-maths{font-size:13px;padding:4px 6px}}
+
 /* Inspection content must not resize the graph on hover. A mobile redraw
    otherwise clears/re-enters the hovered SVG target and can oscillate
    between two toolbar heights, even making zoom buttons unclickable. */

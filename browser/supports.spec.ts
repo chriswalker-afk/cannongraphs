@@ -1,4 +1,5 @@
 import {test,expect,type Page,type TestInfo} from '@playwright/test';
+import {bypassTutorial} from './helpers/tutorial';
 import {worlds} from '../src/levels/catalog';
 import {levelSupports} from '../src/levels/supports';
 import {enterFree} from './helpers/programming';
@@ -12,6 +13,7 @@ const scenarios=[
  {w:6,l:12,width:844,height:390,name:'four-family-finale'}
 ] as const;
 async function enter(page:Page,w:number,l:number){
+ await bypassTutorial(page);
  await page.goto('/');await page.locator('#home-play').click();await page.locator('.world-card').nth(w-1).click();
  await page.locator('.mode-card').nth(1).click();await page.locator('.level-number').nth(l-1).click();await page.locator('.selection-play').click();
  await expect(page.locator('main.game-screen')).toBeVisible();

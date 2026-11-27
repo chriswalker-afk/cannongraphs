@@ -43,3 +43,5 @@ Phases 1–3 complete: all seven cannon families and 72 levels across six worlds
 | 37 | Level-selection tiers and whole-catalogue progression audit |
 
 PR37 concludes the catalogue revision with four labelled cannon-count bands in every world. The regular catalogue is guarded at runtime and audited in CI. Optional bonus finales and further classroom-calibrated difficulty adjustments remain separate future work.
+
+PR38 adds Flight School: unscored interactive onboarding before the original first level, with explicit coordinate reading and worked gradient/intercept calculations, actual next-cannon navigation, failure/recovery and celebration.

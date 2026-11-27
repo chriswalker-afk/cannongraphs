@@ -1,9 +1,11 @@
 import {test,expect,type Page,type TestInfo} from '@playwright/test';
+import {bypassTutorial} from './helpers/tutorial';
 import {referenceSolutions} from '../tests/fixtures/referenceSolutions';
 import {openCannon,openFree,enterFree} from './helpers/programming';
 const modeIndex={cadet:0,pilot:1,ace:2};
 type Mode=keyof typeof modeIndex;
 async function start(page:Page){
+ await bypassTutorial(page);
  const errors:string[]=[];
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/');

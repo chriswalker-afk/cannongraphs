@@ -1,0 +1,53 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {firstFlightTutorial as lesson} from '../src/levels/firstFlightTutorial';
+import {tutorialStep,tutorialMessage,firstLine,exitLine,lineBetween,createTutorialStore,TUTORIAL_KEY,type TutorialContext} from '../src/game/firstFlightTutorial';
+import {createFlightPlan,editPlan,recordFlightEvidence,snapshotPlan,planStatus} from '../src/game/flightPlan';
+import {createLevelState,beginAttempt,finishAttempt,advanceCelebration,finishCelebration} from '../src/game/levelState';
+import {parseLinearEquation,evaluateLinear} from '../src/engine/equations/linear';
+import {simulateRoute} from '../src/engine/simulation/linearRoute';
+import {auditSolution} from '../src/levels/qa';
+import {levelSupports} from '../src/levels/supports';
+import {waitingCrewSlots} from '../src/animations/waitingCrew';
+import {levels} from '../src/levels/catalog';
+import {emptyProgress,recordCompletion} from '../src/game/progress';
+const draft=(s:string)=>({text:s,equation:parseLinearEquation(s)});
+test('practice geometry has a safe two-leg solution and the intentionally wrong line really splats',()=>{
+ assert.equal(levels.length,72);assert.ok(!levels.includes(lesson));
+ assert.deepEqual(firstLine,{dx:3,dy:3,m:1,c:2});assert.deepEqual(exitLine,{dx:4,dy:-4,m:-1,c:10});
+ assert.throws(()=>lineBetween({x:2,y:1},{x:2,y:3}),/nonvertical/);
+ const good=auditSolution(lesson,{A:'x+2',B:'10-x'},['A','B']);assert.ok(good.minimumClearance>0);
+ assert.equal(levelSupports(lesson).length,3);assert.equal(waitingCrewSlots(lesson,lesson.creatures).length,5);
+ const bad=simulateRoute(lesson,new Map([['A',parseLinearEquation('x+2')],['B',parseLinearEquation('-2x+14')]]));
+ assert.equal(evaluateLinear(parseLinearEquation('-2x+14'),4),6);
+ assert.equal(bad.legs[0].event.kind,'cannon');assert.equal(bad.terminalCannonId,'B');assert.equal(bad.event.kind,'obstacle');
+});
+test('lesson moves through coordinate reading, equation entry, next cannon, real splat, recovery and celebration',()=>{
+ let ctx:TutorialContext={intro:'aim',state:createLevelState(5,1,true),plan:createFlightPlan(['A','B']),selected:'A',popupOpen:false};
+ const check=(step:ReturnType<typeof tutorialStep>)=>{assert.equal(tutorialStep(ctx),step);return tutorialMessage(step,ctx);};
+ check('aim');ctx={...ctx,intro:'coordinates'};const coords=check('coordinates');assert.deepEqual(coords.guides.map(g=>g.point),[{x:1,y:3},{x:4,y:6},{x:8,y:2}]);
+ ctx={...ctx,intro:'practice',popupOpen:true};const worked=check('first');assert.match(worked.maths![0],/\(6 − 3\)\/\(4 − 1\) = 1/);assert.match(worked.maths![1],/c = 2/);
+ ctx={...ctx,plan:editPlan(ctx.plan,'A',draft('x+2'))};assert.equal(check('next').target,'#next-cannon');
+ ctx={...ctx,selected:'B'};check('splat');ctx={...ctx,plan:editPlan(ctx.plan,'B',draft('-2x+14'))};check('launch');
+ const launched=ctx.plan,bad=simulateRoute(lesson,snapshotPlan(launched)!);
+ ctx={...ctx,state:beginAttempt(ctx.state,bad),popupOpen:false};check('flying');
+ ctx={...ctx,state:finishAttempt(ctx.state,ctx.state.active!.id),plan:recordFlightEvidence(ctx.plan,launched,bad)};
+ assert.deepEqual(ctx.plan.map(planStatus),['tested','revise']);assert.equal(ctx.state.waiting,5);
+ const fix=check('recover');assert.match(fix.maths![0],/\(2 − 6\)\/\(8 − 4\) = -1/);assert.match(fix.maths![1],/c = 10/);
+ ctx={...ctx,plan:editPlan(ctx.plan,'B',draft('10-x'))};assert.deepEqual(ctx.plan.map(planStatus),['tested','ready']);check('retry');
+ const good=simulateRoute(lesson,snapshotPlan(ctx.plan)!);ctx={...ctx,state:beginAttempt(ctx.state,good)};
+ ctx={...ctx,state:finishAttempt(ctx.state,ctx.state.active!.id),plan:recordFlightEvidence(ctx.plan,ctx.plan,good)};check('celebrate');
+ assert.deepEqual(ctx.plan.map(planStatus),['tested','tested']);const batch=ctx.state.celebration!;
+ ctx={...ctx,state:finishCelebration(advanceCelebration(ctx.state,batch.id,batch.count,batch.count),batch.id)};check('finish');assert.equal(ctx.state.saved,5);
+ const progress=emptyProgress();assert.equal(recordCompletion(progress,lesson,'cadet',ctx.state),progress);
+});
+test('an independently correct equation is accepted without requiring a deliberate failed flight',()=>{
+ const ctx:TutorialContext={intro:'practice',state:createLevelState(5,1,true),plan:editPlan(editPlan(createFlightPlan(['A','B']),'A',draft('2+x')),'B',draft('-(x-4)+6')),selected:'B',popupOpen:true};
+ assert.equal(tutorialStep(ctx),'launch');assert.equal(simulateRoute(lesson,snapshotPlan(ctx.plan)!).event.kind,'exit');
+});
+test('tutorial memory is separate from progress and survives unavailable or blocked storage',()=>{
+ const map=new Map<string,string>(),storage={getItem:(k:string)=>map.get(k)??null,setItem:(k:string,v:string)=>{map.set(k,v);}};
+ const first=createTutorialStore(storage);assert.equal(first.seen(),false);first.remember();assert.equal(map.get(TUTORIAL_KEY),'seen');assert.ok(createTutorialStore(storage).seen());
+ const blocked=createTutorialStore({getItem:()=>{throw Error('blocked');},setItem:()=>{throw Error('blocked');}});
+ assert.equal(blocked.seen(),false);blocked.remember();assert.equal(blocked.seen(),true);
+});
