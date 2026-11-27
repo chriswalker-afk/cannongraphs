@@ -4,6 +4,8 @@ import {cannonTypes} from '../game/cannons';
 import {modePolicy,type LearningMode} from '../game/learningModes';
 import type {Level} from '../levels/schema';
 import {BARREL_ANGLE} from '../animations/launch';
+import {attemptSounds,rapidSounds,createSoundCursor} from '../audio/timeline';
+import type {SoundEffect} from '../audio/effects';
 import {routeDuration,sampleRouteAttempt} from '../animations/routeAttempt';
 import {routeLegs} from '../engine/simulation/linearRoute';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
@@ -34,7 +36,7 @@ function el(tag:string,attrs:Record<string,string|number>={},parent?:Element,con
 const fmt=(n:number)=>String(Number(n.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
-export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook}){
+export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void}){
  const policy=modePolicy(controls.mode??'pilot');
  const svg=el('svg',{role:'group','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
@@ -71,6 +73,8 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  let lastResult:AttemptResult|undefined,trace:SVGGElement|undefined,marker:SVGGElement|undefined;
  let rapid:{result:AttemptResult;schedule:RapidSchedule;started:number;elapsed:number;variantOffset:number;progress:(counts:RapidCounts)=>void;done:()=>void}|undefined;
  let rapidVisual:ReturnType<typeof createRapidVisual>|undefined,rapidParent:Element|undefined;
+ let attemptAudio:ReturnType<typeof createSoundCursor>|undefined,rapidAudio:ReturnType<typeof createSoundCursor>|undefined;
+ const emitSound=(sound:SoundEffect)=>controls.onSound?.(sound);
  function setBarrel(id:string,angle:number,recoil=0){barrels.get(id)?.setAttribute('transform','rotate('+(-angle)+') translate('+(-recoil)+' 0)');}
  function paintGems(){
   if(!gemTargets.size)return;
@@ -119,6 +123,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(!rapid)return;
   const current=rapid;
   current.elapsed=Math.max(0,now-current.started);
+  rapidAudio?.advance(current.elapsed,!document.hidden);
   const frame=sampleRapidFire(current.elapsed,current.result,current.schedule);
   current.progress({dispatched:frame.dispatched,arrived:frame.arrived});
   if(frame.done){
@@ -130,12 +135,14 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(active||rapid||!rapidParent||result!==lastResult)return false;
   const schedule=makeRapidSchedule(result,count,motion.matches);
   rapidParent.replaceChildren();rapidVisual=createRapidVisual(rapidParent,count,variantOffset,result,controls.look,controls.cannonLook);
+  rapidAudio=createSoundCursor(rapidSounds(result,schedule),emitSound);
   rapid={result,schedule,started:performance.now(),elapsed:0,variantOffset,progress,done};
   paintRapid();animationId=requestAnimationFrame(rapidStep);return true;
  }
  function step(now:number){
   if(!active)return;
   active.elapsed=Math.max(0,now-active.started)*(active.reduced?2:1);
+  attemptAudio?.advance(active.elapsed,!document.hidden);
   const ids=gemsAt(active.gemTimeline,active.elapsed);
   if(ids.length!==active.gemIds.length){active.gemIds=ids;active.onGems?.(ids);}
   if(active.elapsed>=routeDuration(active.result,active.reduced)){
@@ -146,7 +153,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function playFlight(result:AttemptResult,done:()=>void,onGems?:(ids:readonly string[])=>void):boolean{
   if(active||rapid)return false;
   lastResult=undefined;const reduced=motion.matches;
+  attemptAudio=createSoundCursor(attemptSounds(result,reduced),emitSound);
   active={result,started:performance.now(),elapsed:0,reduced,done,gemTimeline:gemTimeline(result,reduced),gemIds:[],onGems};
+  attemptAudio.advance(0,!document.hidden);
   paintAttempt();animationId=requestAnimationFrame(step);return true;
  }
  function clearFlight(){if(!active&&!rapid){lastResult=undefined;rapidVisual?.hide();rapidParent?.replaceChildren();rapidVisual=undefined;paintAttempt();}}
