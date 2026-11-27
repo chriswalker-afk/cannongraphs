@@ -8,8 +8,8 @@ const lift=(id:string,x:number,y:number,lockedShape:string,minY=1,maxY=7):Cannon
 const wall=(id:string,x1:number,x2:number,top:number):Obstacle=>({id,kind:'wall',bounds:{minX:x1,maxX:x2,minY:-1,maxY:top}});
 const ceiling=(id:string,x1:number,x2:number,bottom:number):Obstacle=>({id,kind:'ceiling',bounds:{minX:x1,maxX:x2,minY:bottom,maxY:9}});
 const make=(number:number,title:string,objective:string,cannons:Cannon[],exit:Level['exit'],obstacles:Obstacle[]):Level=>({
- id:'foundry-linear-'+number,world:7,title,objective,bounds:{minX:-1,maxX:12,minY:-2,maxY:9},creatures:5,startId:'A',cannons,exit,
- obstacles:[{id:'floor',kind:'floor',bounds:{minX:-1,maxX:12,minY:-2,maxY:-1}},...obstacles]
+ id:'foundry-linear-'+number,world:7,title,objective,bounds:{minX:-1,maxX:exit.x+1,minY:-2,maxY:9},creatures:5,startId:'A',cannons,exit,
+ obstacles:[{id:'floor',kind:'floor',bounds:{minX:-1,maxX:exit.x+1,minY:-2,maxY:-1}},...obstacles]
 });
 // Only starting layouts and intentionally supplied incoming equations are
 // shipped. Target heights and solved equations are in the tests, not here.

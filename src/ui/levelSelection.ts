@@ -110,7 +110,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   const {main,h1}=screen(w.name,(w.number===7?'Broken cannons':'World '+w.number)+' · '+policy.name+' · '+identity.focus,'← Modes',()=>{
    state=backToModes(state);renderModes();
   });
-  main.dataset.selection='levels';theme(main,w);
+  main.dataset.selection='levels';main.dataset.worldNumber=String(w.number);theme(main,w);
   const shell=element('div','level-selection-shell',main);
   const board=element('section','level-board',shell);
   const banner=element('div','level-world-banner',board);

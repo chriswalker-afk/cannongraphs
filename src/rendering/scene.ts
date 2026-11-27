@@ -24,6 +24,7 @@ import {renderFloatingScenery} from './floatingScenery';
 import {renderPeakScenery} from './peakScenery';
 import {renderRuinsScenery} from './ruinsScenery';
 import {renderFactoryScenery} from './factoryScenery';
+import {renderFoundryScenery,renderLiftRail,renderLiftDeck,renderBrokenDetails} from './foundryScenery';
 import {renderCosmicScenery} from './cosmicScenery';
 import {flightPath} from './flightPath';
 import {renderGem} from './gem';
@@ -245,13 +246,13 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
   svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();cannonTargets=new Map();gemTargets=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;crew=undefined;launchParent=undefined;flightTrail=undefined;tracePaths.clear();
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
-  const floating=level.world===2,peaks=level.world===3,ruins=level.world===4,factory=level.world===5||level.world===7,cosmic=level.world===6;
+  const floating=level.world===2,peaks=level.world===3,ruins=level.world===4,factory=level.world===5,cosmic=level.world===6,foundry=level.world===7;
   el('stop',{offset:'0%', 'stop-color':cosmic?'#a8b6df':level.world===7?'#aabbb9':factory?'#b9c7cb':ruins?'#b7c4ae':peaks?'#aebce8':floating?'#89c5ed':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':cosmic?'#efe0f4':level.world===7?'#f4e6be':factory?'#f4e2c4':ruins?'#f3e2bd':peaks?'#f2e6f6':floating?'#e7e7fa':'#e6f5e6'},sky);
   const portal=el('radialGradient',{id:'portal'},defs);el('stop',{offset:'0%','stop-color':'#fffbea'},portal);el('stop',{offset:'100%','stop-color':'#f8ba48'},portal);
   const clip=el('clipPath',{id:'plotClip'},defs);el('rect',{x:q.x,y:q.y,width:q.w,height:q.h,rx:5},clip);
   el('rect',{width:W,height:H,fill:'url(#sky)'},svg);
   // Decorative scenery stays behind the grid and has no collision geometry.
-  if(cosmic)renderCosmicScenery(svg,W,H);else if(factory)renderFactoryScenery(svg,W,H);else if(ruins)renderRuinsScenery(svg,W,H);else if(peaks)renderPeakScenery(svg,W,H);else if(floating)renderFloatingScenery(svg,W,H);else{
+  if(foundry){const index=Number(level.id.split('-').at(-1));renderFoundryScenery(svg,W,H,Number.isFinite(index)?Math.min(3,Math.max(0,Math.floor((index-1)/3))):0);}else if(cosmic)renderCosmicScenery(svg,W,H);else if(factory)renderFactoryScenery(svg,W,H);else if(ruins)renderRuinsScenery(svg,W,H);else if(peaks)renderPeakScenery(svg,W,H);else if(floating)renderFloatingScenery(svg,W,H);else{
   el('circle',{cx:W*.81,cy:H*.16,r:Math.min(W,H)*.08,fill:'#fff7c4',opacity:.65},svg);
   for(const [x,y,s] of [[.12,.18,1],[.47,.10,.7],[.74,.24,.85]]){
    const g=el('g',{transform:'translate('+W*x+' '+H*y+') scale('+Math.min(W,H)*.0015*s+')',fill:'#fff',opacity:.55},svg);
@@ -267,13 +268,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   el('rect',{x:tl.x,y:tl.y,width:br.x-tl.x,height:br.y-tl.y,fill:'#fff','fill-opacity':.13,stroke:'#527d92','stroke-opacity':.4},content);
   const supportLayer=el('g',{'data-layer':'anchor-supports','pointer-events':'none','aria-hidden':'true'},content);
   for(const support of supports)renderSupportArt(supportLayer,support,level.world,p,scale,controls.cannonLook);
-  for(const c of level.cannons){if(!c.lift)continue;
-   const x=c.position.x-c.direction*.5,a=p({x,y:c.lift.maxY}),z=p({x,y:c.lift.minY-CANNON_FOOTPRINT.drop});
-   const rail=el('g',{'data-layer':'lift-rail','pointer-events':'none','aria-hidden':'true'},supportLayer);
-   el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#46565c','stroke-width':Math.max(7,scale*.25),'stroke-linecap':'round'},rail);
-   el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#a9b9b9','stroke-width':Math.max(2,scale*.07)},rail);
-   for(let y=c.lift.minY;y<=c.lift.maxY&&y<c.lift.minY+100;y++){const mark=p({x,y});el('line',{x1:mark.x-5,y1:mark.y,x2:mark.x+5,y2:mark.y,stroke:'#d4a442','stroke-width':2},rail);}
-  }
+  for(const c of level.cannons)if(c.lift)renderLiftRail(supportLayer,c,level,p,scale);
   const xGrid=gridTicks(loX,hiX,scale),yGrid=gridTicks(loY,hiY,scale),xs=xGrid.labels,ys=yGrid.labels;
   for(const x of xGrid.units){const a=p({x,y:b.minY}),z=p({x,y:b.maxY});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':x%xGrid.step===0?.40:.23,'data-grid-x':x},content);}
   for(const y of yGrid.units){const a=p({x:b.minX,y}),z=p({x:b.maxX,y});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':y%yGrid.step===0?.40:.23,'data-grid-y':y},content);}
@@ -281,7 +276,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(b.minY<=0&&b.maxY>=0){const a=p({x:b.minX,y:0}),z=p({x:b.maxX,y:0});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315779','stroke-width':2},content);}
   // Artwork and collision both read the same world bounds.
   for(const o of level.obstacles){
-   const g=renderTerrain(content,o,p,scale,floating,peaks,ruins,factory,cosmic),info=terrainInspection(o,level.world);
+   const g=renderTerrain(content,o,p,scale,floating,peaks,ruins,factory,cosmic,foundry),info=terrainInspection(o,level.world);
    target(g,{id:o.id,...info,point:{x:(o.bounds.minX+o.bounds.maxX)/2,y:(o.bounds.minY+o.bounds.maxY)/2},bounds:o.bounds});
   }
   tutorialLayer=el('g',{'data-layer':'tutorial-coordinates','pointer-events':'none','aria-hidden':'true'},content);paintTutorialGuides();
@@ -293,18 +288,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    el('rect',{x:-.89,y:-.37,width:1.26,height:1.06,rx:.18,fill:'transparent','pointer-events':'all','data-cannon-hit':''},body);
    el('rect',{x:-.84,y:-.30,width:1.16,height:.93,rx:.18,class:'planning-halo','pointer-events':'none'},body);
    el('rect',{x:-.89,y:-.35,width:1.26,height:1.03,rx:.21,fill:'none',stroke:'#fff','stroke-width':.035,'stroke-dasharray':'.09 .045',class:'selected-halo','pointer-events':'none'},body);
-   if(c.lift){
-    const deck=el('g',{'pointer-events':'none','aria-hidden':'true'},body);
-    el('rect',{x:-.87,y:CANNON_FOOTPRINT.drop,width:1.02,height:.14,rx:.025,fill:'#eab64e',stroke:'#4c493e','stroke-width':.04},deck);
-    for(let i=0;i<4;i++)el('path',{d:'M'+(-.84+i*.24)+' .48 l.1 0 -.08 .12 -.1 0Z',fill:'#514a3e'},deck);
-   }
+   if(c.lift)renderLiftDeck(body);
    const barrel=renderCannonArt(body,c.type,BARREL_ANGLE,controls.cannonLook,c.direction);barrels.set(c.id,barrel);
-   if(c.lift){
-    el('path',{d:'M-.52 -.15 l.08 .07 -.07 .06 .09 .09',stroke:'#393d3b','stroke-width':.035,fill:'none','pointer-events':'none'},barrel);
-    const lock=el('g',{transform:'translate(-.63 -.4)','pointer-events':'none','aria-hidden':'true'},body);
-    el('rect',{x:-.1,y:-.02,width:.2,height:.15,rx:.03,fill:'#eab64e',stroke:'#56462d','stroke-width':.025},lock);
-    el('path',{d:'M-.055 -.02 V-.07 a.055 .055 0 0 1 .11 0 V-.02',stroke:'#56462d','stroke-width':.035,fill:'none'},lock);
-   }
+   if(c.lift)renderBrokenDetails(body,barrel);
    el('circle',{r:.12,fill:'white','fill-opacity':.2,stroke:'#fff','stroke-width':.028},g);
    el('circle',{r:.044,fill:'#fff',stroke:'#203d54','stroke-width':.022},g);
    el('text',{x:0,y:-.35,'text-anchor':'middle','font-size':.25,'font-weight':800,fill:'#203d54',stroke:'#eaf8f8','stroke-width':.05,'paint-order':'stroke'},g,c.id+(c.direction===-1?' ←':' →'));
