@@ -54,7 +54,7 @@ test('details are derived from each selected puzzle, including exact objectives 
  for(const w of worlds)for(const [i,l] of w.levels.entries()){
   const summary=summarizeLevel(l);
   assert.equal(summary.index,i+1);assert.equal(summary.title,l.title);assert.equal(summary.objective,l.objective);
-  assert.equal(summary.cannonCount,l.cannons.length);assert.equal(summary.pipCount,l.creatures);
+  assert.equal(summary.cannonCount,l.cannons.length);assert.equal(summary.tier.count,l.cannons.length);assert.equal(summary.pipCount,l.creatures);
   assert.equal(summary.gemCount,l.gems?.length??0);assert.equal(summary.families.reduce((n,f)=>n+f.count,0),l.cannons.length);
   for(const f of summary.families)assert.equal(f.count,l.cannons.filter(c=>c.type===f.type).length);
  }
