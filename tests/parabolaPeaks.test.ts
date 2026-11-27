@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {referenceSolutions} from './fixtures/referenceSolutions';
 import assert from 'node:assert/strict';
 import {parabolaPeaks} from '../src/levels/worlds/parabolaPeaks';
 import {floatingIsles} from '../src/levels/worlds/floatingIsles';
@@ -11,13 +12,7 @@ import {makeRapidSchedule,sampleRapidFire,rapidCounts} from '../src/animations/r
 import {createLevelState,beginAttempt,finishAttempt,advanceCelebration,finishCelebration} from '../src/game/levelState';
 import {levelStars} from '../src/game/scoring';
 // Deliberately test-only; the level data does not specify a unique accepted polynomial.
-const refs:readonly Readonly<Record<string,string>>[]=[
- {A:'x²'}, {A:'x²/2'}, {A:'-x²'}, {A:'x²+2'}, {A:'(x-3)²'},
- {A:'7-(x-4)²/2'}, {A:'(x-1)(x-5)'}, {A:'-(x+3)(x-3)/3'}, {A:'(x-2)²/2+1'},
- {A:'-(x-1)(x-7)/2+2',B:'x/2-3/2'},
- {A:'-(x-4)²/2+13/2',B:'(x-10)²/3-1'},
- {A:'-(x-4)²/2+13/2',B:'(x-10)²/3-1',C:'-(x-16)²/2+13/2',D:'2'}
-];
+const refs=referenceSolutions[2];
 const plan=(i:number)=>new Map<string,FlightEquation>(parabolaPeaks[i].cannons.map(c=>{
  if(c.type!=='quadratic'&&c.type!=='linear')throw new Error('Unexpected cannon');
  return [c.id,parseFlightEquation(refs[i][c.id],c.type)];

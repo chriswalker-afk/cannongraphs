@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {referenceSolutions} from './fixtures/referenceSolutions';
 import assert from 'node:assert/strict';
 import {floatingIsles} from '../src/levels/worlds/floatingIsles';
 import {meadowLaunchers} from '../src/levels/worlds/meadowLaunchers';
@@ -15,14 +16,7 @@ import {createLevelState,beginAttempt,finishAttempt,advanceCelebration,finishCel
 import {levelStars} from '../src/game/scoring';
 import {initialCamera,cameraTransform} from '../src/engine/camera';
 // Deliberately absent from the browser's runtime catalog.
-const refs:readonly Readonly<Record<string,string>>[]=[
- {A:'x/2'},{A:'2x/3'},{A:'7-x/2'},{A:'x/2+3/2'},
- {A:'x/3+3'},{A:'x/2'},{A:'-2x/3-1'},
- {A:'11/3-x/3'},{A:'2x/3+1'},
- {A:'2x/3+10/3',B:'8/5-x/5'},
- {A:'2x/3+16/3',B:'2-x',C:'x/2-4'},
- {A:'x/2',B:'4-x/2',C:'6',D:'22-2x'}
-];
+const refs=referenceSolutions[1];
 const plan=(i:number)=>new Map(Object.entries(refs[i]).map(([id,e])=>[id,parseLinearEquation(e)]));
 const near=(a:number,b:number)=>assert.ok(Math.abs(a-b)<1e-7,a+' != '+b);
 test('the first two complete unlocked worlds contain 24 unique levels and transition in order',()=>{

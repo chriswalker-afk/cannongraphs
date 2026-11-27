@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {referenceSolutions} from './fixtures/referenceSolutions';
 import assert from 'node:assert/strict';
 import {beyondGraphiverse} from '../src/levels/worlds/beyondGraphiverse';
 import {worlds,levels,nextLevel,levelPosition,worldForLevel} from '../src/levels/catalog';
@@ -13,13 +14,7 @@ import {bankedGems} from '../src/animations/gemTimeline';
 import {makeRapidSchedule,sampleRapidFire,rapidCounts} from '../src/animations/rapidFire';
 import {createLevelState,beginAttempt,finishAttempt,advanceCelebration,finishCelebration} from '../src/game/levelState';
 import {levelStars} from '../src/game/scoring';
-const refs:readonly Readonly<Record<string,string>>[]=[
- {A:'2^x'}, {A:'8(1/2)^x'}, {A:'6-exp(x-1)'}, {A:'log(x)'}, {A:'ln(x-1)+1'}, {A:'3-log(4-x)'},
- {A:'2sin(pi*x/2)+3'}, {A:'3cos(pi*x/3)+2'}, {A:'-2sin(pi(x-1)/3)+1'}, {A:'2tan(pi*x/4)+2'},
- {A:'2^x',B:'4-2log(3(x-2)+1)',C:'2sin(pi(x-5)/2)+2'},
- {A:'x/2',B:'-(x-7)^2/2+13/2',C:'(x-14)^3/4-3(x-14)+6',D:'16/(x-16)+2',
-  E:'2^((x-24)/2)+3',F:'7-log(3(x-28)+1)',G:'2sin(pi(x-31)/2)+6'}
-];
+const refs=referenceSolutions[5];
 const plan=(i:number)=>new Map<string,CannonEquation>(beyondGraphiverse[i].cannons.map(c=>[c.id,parseCannonEquation(refs[i][c.id],c.type)]));
 const near=(a:number,b:number,tol=1e-6)=>assert.ok(Math.abs(a-b)<=tol,a+' != '+b);
 const advanced=(i:number,id='A')=>{const e=plan(i).get(id)!;assert.ok(isAdvanced(e));return e;};

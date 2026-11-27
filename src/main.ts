@@ -181,7 +181,7 @@ launchButton.addEventListener('click',()=>{
  // If the Launch action is below the graph on a short screen, bring the
  // graph into view before animating. Focus and the editor remain intact.
  const stage=app.querySelector<HTMLElement>('.stage')!,rect=stage.getBoundingClientRect();
- if(rect.top<0||rect.bottom>window.innerHeight)stage.scrollIntoView({block:'nearest',behavior:'instant'});
+ if(rect.top<0||rect.bottom>window.innerHeight)stage.scrollIntoView({block:'nearest',behavior:'auto'});
  if(!scene.playFlight(result,()=>{
   const resolved=finishAttempt(state,id);if(resolved===state)return;
   state=resolved;if(state.phase==='gameOver')audio.play('gameover');plan=recordFlightEvidence(plan,launched,result);

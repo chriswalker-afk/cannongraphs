@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {referenceSolutions} from './fixtures/referenceSolutions';
 import assert from 'node:assert/strict';
 import {lostArches} from '../src/levels/worlds/lostArches';
 import {parabolaPeaks} from '../src/levels/worlds/parabolaPeaks';
@@ -16,13 +17,7 @@ import {FIRE_MS} from '../src/animations/launch';
 import {makeRapidSchedule,sampleRapidFire,rapidCounts} from '../src/animations/rapidFire';
 import {createLevelState,beginAttempt,finishAttempt,advanceCelebration,finishCelebration} from '../src/game/levelState';
 import {levelStars} from '../src/game/scoring';
-const refs:readonly Readonly<Record<string,string>>[]=[
- {A:'4-(x+3)^2/3'}, {A:'(x+2)^2/4-4'}, {A:'3(x-3)^2/4-2'}, {A:'6-2(x-4)^2/3'},
- {A:'-(x+5/2)(x-7/2)/2'}, {A:'(x+1)^2/2-3'}, {A:'3-(x-2)^2/4'}, {A:'2(x-2)^2/3-4'},
- {A:'(x-1)^2/4-13/4'}, {A:'x+6',B:'6-x²/4',C:'2'},
- {A:'-4-(x+8)(x-4)/12',B:'(x-4)^2/8-4',C:'4'},
- {A:'4-4(x+9)^2/9',B:'(x+3)^2/3-3',C:'0',D:'4-4(x-9)^2/9',E:'(x-15)^2/3-3'}
-];
+const refs=referenceSolutions[3];
 const plan=(i:number)=>new Map<string,FlightEquation>(lostArches[i].cannons.map(c=>{
  if(c.type!=='linear'&&c.type!=='quadratic')throw new Error('Unexpected cannon');
  return [c.id,parseFlightEquation(refs[i][c.id],c.type)];

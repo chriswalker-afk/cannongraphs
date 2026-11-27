@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {referenceSolutions} from './fixtures/referenceSolutions';
 import assert from 'node:assert/strict';
 import {meadowLaunchers} from '../src/levels/worlds/meadowLaunchers';
 import {worlds,levels,nextLevel,levelPosition,worldForLevel} from '../src/levels/catalog';
@@ -10,13 +11,7 @@ import {createLevelState,beginAttempt,finishAttempt,advanceCelebration,finishCel
 import {makeRapidSchedule,rapidCounts,sampleRapidFire} from '../src/animations/rapidFire';
 import {levelStars} from '../src/game/scoring';
 // Answer fixtures are test-only. The app imports only the authored coordinates.
-const references:readonly Readonly<Record<string,string>>[]=[
- {A:'x'},{A:'2x'},{A:'3x'},{A:'x+2'},{A:'2x+1'},{A:'3'},
- {A:'9-x'},{A:'2x-3'},{A:'15-2x'},
- {A:'x+1',B:'11-x'},
- {A:'2x',B:'12-x',C:'4'},
- {A:'2x',B:'12-x',C:'x-4',D:'20-x'}
-];
+const references=referenceSolutions[0];
 test('World 1 contains twelve accessible levels in deliberate curriculum order',()=>{
  assert.equal(worlds[0].levels,meadowLaunchers);assert.equal(meadowLaunchers.length,12);
  assert.deepEqual(meadowLaunchers.map(l=>l.id),Array.from({length:12},(_,i)=>'1-'+String(i+1).padStart(2,'0')));
