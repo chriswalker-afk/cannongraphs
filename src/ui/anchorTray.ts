@@ -27,12 +27,13 @@ export function mountAnchorTray(root:HTMLElement,stage:HTMLElement,options:TrayO
  function announce(text:string){message.textContent=text;}
  function paint(){
   const level=options.getLevel(),assignments=anchorAssignments(level),editable=options.editable();
-  counter.textContent=assignments.size+' / '+puzzle.inventory.length+' mounted';
+  counter.textContent=assignments.size+' / '+puzzle.inventory.length+' mounted';root.dataset.parts=String(puzzle.inventory.length);
   for(const [id,card] of items){
    const item=inventoryCannon(level,id)!,mount=assignments.get(id),c=level.cannons.find(c=>c.id===id),equation=c&&lockedAnchorEquation(level,c);
    card.button.disabled=!editable;card.button.dataset.mounted=String(!!mount);card.button.setAttribute('aria-pressed',String(selected===id));
    card.status.textContent=mount?'Mount '+mount:'In tray';
    card.equation.textContent=equation?lockedLiftText(equation):item.lockedShape!==undefined?'y = '+item.lockedShape+' + c':cannonTypes[item.type].label+' · programmable';
+   card.button.setAttribute('aria-label','Cannon '+id+(item.lockedShape!==undefined?' · Locked':'')+' · '+card.equation.textContent+' · '+card.status.textContent);
   }
   returnButton.disabled=!editable||!selected||!assignments.has(selected);
   cancel.disabled=!editable||!selected;
@@ -41,11 +42,11 @@ export function mountAnchorTray(root:HTMLElement,stage:HTMLElement,options:TrayO
  function choosePart(id:string){
   if(!options.editable()||!items.has(id))return;
   selected=id;hover=undefined;options.onSelect?.();
-  announce('Cannon '+id+' selected. Choose a free mount, or drag it.');
+  announce('Cannon '+id+' selected — choose or drag to a free mount.');
   paint();
  }
  function clearSelection(){
-  selected=hover=undefined;announce('Drag a cannon or select it, then choose a free mount.');paint();
+  selected=hover=undefined;announce('Drag a cannon, or select it then tap a mount.');paint();
  }
  function place(id:string,anchor:string|null){
   if(!options.editable())return false;
@@ -53,7 +54,7 @@ export function mountAnchorTray(root:HTMLElement,stage:HTMLElement,options:TrayO
   if(occupied){announce('Mount '+anchor+' is occupied. Choose another mount.');return false;}
   try{
    if(!options.move(id,anchor))return false;
-   selected=id;hover=undefined;announce(anchor?'Cannon '+id+' mounted at '+anchor+'. Choose another mount to move it.':'Cannon '+id+' returned to the tray.');paint();return true;
+   selected=id;hover=undefined;announce(anchor?'Cannon '+id+' mounted at '+anchor+'. Move again or edit its equation.':'Cannon '+id+' returned to the tray.');paint();return true;
   }catch(e){announce(e instanceof Error?e.message:'That placement is unavailable.');return false;}
  }
  function chooseMount(id:string){
@@ -67,7 +68,7 @@ export function mountAnchorTray(root:HTMLElement,stage:HTMLElement,options:TrayO
   const art=svgNode('svg',{viewBox:'-1 -.65 1.5 1.3','aria-hidden':'true',focusable:'false'},b);
   const body=svgNode('g',{transform:'scale('+part.direction+' 1)'},art);
   const barrel=renderCannonArt(body,part.type,22,undefined,part.direction);if(part.lockedShape!==undefined)renderBrokenDetails(body,barrel);
-  const copy=node('span',b,'anchor-part-copy');node('strong',copy,'','Cannon '+part.id+(part.lockedShape!==undefined?' · Locked':''));
+  const copy=node('span',b,'anchor-part-copy');node('strong',copy,'',part.id+(part.lockedShape!==undefined?' · Locked':' · Editable'));
   const equation=node('span',copy,'anchor-part-equation'),status=node('span',copy,'anchor-part-status');
   items.set(part.id,{button:b,status,equation});b.addEventListener('click',()=>choosePart(part.id));
  }

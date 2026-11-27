@@ -54,7 +54,7 @@ const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;onLiftMove?:(id:string,y:number)=>void;onAnchorSelect?:(id:string)=>void;onAnchorPartSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void;budget?:number;reducedMotion?:()=>boolean;onViewChange?:()=>void}){
  const policy=modePolicy(controls.mode??'pilot');let supports=levelSupports(level);
  const hasLifts=level.cannons.some(c=>c.lift),hasAnchors=!!level.anchorPuzzle;
- const guidance=()=>hasAnchors?'Select or drag a cannon from the tray onto a free mount. Click a mounted cannon to inspect its equation.':hasLifts?'Drag a striped platform to move it. Click a cannon to inspect its equation.':policy.coordinates?'Click a cannon to program it. Hover or focus an object to inspect it.':'Click a cannon to program it. Read coordinates from the axes.';
+ const guidance=()=>hasAnchors?'Choose a cannon, then a mount. Click cannons to edit.':hasLifts?'Drag a striped platform to move it. Click a cannon to inspect its equation.':policy.coordinates?'Click a cannon to program it. Hover or focus an object to inspect it.':'Click a cannon to program it. Read coordinates from the axes.';
  const svg=el('svg',{role:'group',tabindex:'-1','aria-label':(policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access.')+(hasAnchors?' Select a cannon in the tray, then choose an empty mount.':hasLifts?' Drag striped decks or use their arrow keys to move broken cannons.':'')+' Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:level.world===7||hasAnchors?foundryPadding(level.bounds,960,620):34},camera:Camera=initialCamera(level.bounds);
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
@@ -219,7 +219,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const item=inspections.get(hovered??focused??pinned??'');
   const infoText=item?((policy.coordinates?item.label+' · '+item.detail:item.label)+(statuses.has(item.id)?' · '+statusLabels[statuses.get(item.id)!]:'')):guidance();
   if(controls.info.textContent!==infoText)controls.info.textContent=infoText;
-  if(!item)return;
+  if(!item||hasAnchors)return; // Salvage inspection stays in the dedicated toolbar, not over the graph.
   const q=plot();let a=t.toScreen(item.point);
   if(item.bounds){
    const lo=t.toScreen({x:item.bounds.minX,y:item.bounds.maxY}),hi=t.toScreen({x:item.bounds.maxX,y:item.bounds.minY});
@@ -243,7 +243,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   g.addEventListener('focus',()=>{focused=item.id;inspect();});
   g.addEventListener('blur',()=>{if(focused===item.id)focused=undefined;inspect();});
   const toggle=()=>{
-   if(isMount&&planningEditable){controls.onAnchorSelect?.(item.id);return;}
+   if(isMount&&planningEditable){pinned=item.id;inspect();controls.onAnchorSelect?.(item.id);return;}
    if(isCannon&&planningEditable){controls.onCannonSelect?.(item.id);pinned=item.id;inspect();return;}
    pinned=pinned===item.id?undefined:item.id;inspect();
   };
@@ -353,9 +353,10 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   for(const y of ys){const s=p({x:0,y});el('text',{x:left-8,y:s.y+4,'text-anchor':'end','font-size':11,fill:'#23475e','font-weight':650},svg,fmt(y));}
   el('text',{x:Math.min(q.x+q.w,br.x),y:bottom+28,'text-anchor':'end','font-size':12,fill:'#23475e','font-weight':800},svg,'x');
   el('text',{x:left-8,y:Math.max(q.y,tl.y)-9,'text-anchor':'end','font-size':12,fill:'#23475e','font-weight':800},svg,'y');
-  tooltip=el('g',{'pointer-events':'none','aria-hidden':'true'},svg) as SVGGElement;
+  tooltip=el('g',{'pointer-events':'none','aria-hidden':'true','data-inspection-tooltip':''},svg) as SVGGElement;
   controls.readout.textContent=Math.round(camera.zoom*100)+'%';controls.out.disabled=camera.zoom<=MIN_ZOOM;controls.in.disabled=camera.zoom>=MAX_ZOOM;
   controls.reset.disabled=camera.zoom===MIN_ZOOM;for(const button of [controls.left,controls.right,controls.up,controls.down])button.disabled=camera.zoom===MIN_ZOOM;
+  if(hasAnchors)stage.closest('main')?.setAttribute('data-view-zoomed',String(camera.zoom>MIN_ZOOM));
   svg.classList.toggle('zoomed',camera.zoom>MIN_ZOOM);paintSelection();paintAnchorSelection();inspect();
   if(focusedId){const target=Array.from(svg.querySelectorAll<SVGElement>('[data-inspect]')).find(g=>g.getAttribute('data-inspect')===focusedId&&g.getAttribute('tabindex')==='0');(target??svg).focus({preventScroll:true});}
   if(focusedLift){const handle=Array.from(svg.querySelectorAll<SVGElement>('[data-lift-handle]')).find(g=>g.getAttribute('data-lift-handle')===focusedLift);handle?.focus({preventScroll:true});}
