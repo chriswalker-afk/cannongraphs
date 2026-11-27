@@ -9,7 +9,7 @@ export interface Obstacle {id:string;kind:'wall'|'floor'|'platform'|'ceiling';bo
 export type SupportKind='platform'|'suspended'|'wall';
 // Decorative mounting metadata only. It never adds a collision rectangle.
 export interface SupportSpec {readonly kind:SupportKind;readonly terrainId?:string}
-export interface Level {id:string;world:number;title:string;objective:string;bounds:Bounds;creatures:number;startId:string;cannons:Cannon[];exit:Point;obstacles:Obstacle[];gems?:readonly Gem[];supports?:Readonly<Record<string,SupportSpec>>}
+export interface Level {id:string;world:number;title:string;objective:string;bounds:Bounds;creatures:number;startId:string;cannons:Cannon[];exit:Point;obstacles:Obstacle[];gems?:readonly Gem[];exactCoordinateNote?:string;supports?:Readonly<Record<string,SupportSpec>>}
 export function validateLevel(l:Level):void{
  const validBounds=(b:Bounds)=>[b.minX,b.maxX,b.minY,b.maxY].every(Number.isFinite)&&b.minX<b.maxX&&b.minY<b.maxY;
  if(!validBounds(l.bounds)||!Number.isInteger(l.creatures)||l.creatures<1) throw new Error('Invalid bounds or creature count');

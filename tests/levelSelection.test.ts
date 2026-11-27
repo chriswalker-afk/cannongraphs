@@ -27,7 +27,7 @@ test('invalid worlds, unknown levels and cross-world IDs cannot start an uninten
  assert.equal(selectWorld(s,2),s);assert.equal(selectedLevel(s),undefined);
 });
 test('returning from gameplay opens the current world and highlights its actual level',()=>{
- const s=beginSelection('6-12',true);assert.equal(s.step,'levels');assert.equal(selectedWorld(s),worlds[5]);assert.equal(selectedLevel(s),levels[71]);
+ const s=beginSelection('6-r12',true);assert.equal(s.step,'levels');assert.equal(selectedWorld(s),worlds[5]);assert.equal(selectedLevel(s),levels[71]);
  const back=backToWorlds(s);assert.equal(back.step,'worlds');assert.equal(selectedLevel(back),undefined);
  assert.equal(selectedLevel(selectWorld(back,6)),levels[71]);
  assert.equal(selectedLevel(selectWorld(back,1)),undefined);
@@ -58,5 +58,5 @@ test('details are derived from each selected puzzle, including exact objectives 
   assert.equal(summary.gemCount,l.gems?.length??0);assert.equal(summary.families.reduce((n,f)=>n+f.count,0),l.cannons.length);
   for(const f of summary.families)assert.equal(f.count,l.cannons.filter(c=>c.type===f.type).length);
  }
- const finale=summarizeLevel(levels[71]);assert.equal(finale.families.length,7);assert.equal(finale.gemCount,11);
+ const finale=summarizeLevel(levels[71]);assert.equal(finale.families.length,4);assert.equal(finale.gemCount,7);
 });

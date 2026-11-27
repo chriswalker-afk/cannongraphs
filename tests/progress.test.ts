@@ -172,3 +172,14 @@ test('quadratic curriculum update retains completed unchanged puzzles and earned
  assert.ok(!getRecord(p,'3-r04','ace'));assert.ok(!getRecord(p,'4-r12','ace'));
  for(const id of ['ace-world','world-explorer','star-collector','gem-collector'])assert.ok(earnedAchievementIds(p).has(id));
 });
+
+test('advanced-world revision retains historical rewards without transferring old finale records',()=>{
+ const mem=memoryStorage();
+ const old=Object.fromEntries(originalCurriculum.filter(l=>l.world>=5).map(l=>[l.id,{ace:{bestAttempts:1,gems:(l.gems??[]).map(g=>g.id)}}]));
+ mem.data.set(PROGRESS_KEY,JSON.stringify({version:1,records:old,retainedAchievements:['ace-world','graphiverse-explorer','gem-explorer']}));
+ const p=createProgressStore(mem.storage).read();
+ assert.equal(summarizeProgress(p,worlds[4].levels).completed,5);assert.equal(summarizeProgress(p,worlds[5].levels).completed,4);
+ assert.ok(getRecord(p,'5-12','ace'));assert.ok(getRecord(p,'6-11','ace'));
+ assert.equal(getRecord(p,'6-12','ace'),undefined);assert.equal(getRecord(p,'6-r12','ace'),undefined);
+ for(const id of ['ace-world','graphiverse-explorer','gem-explorer'])assert.ok(earnedAchievementIds(p).has(id));
+});
