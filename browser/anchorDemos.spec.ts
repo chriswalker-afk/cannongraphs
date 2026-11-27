@@ -92,15 +92,22 @@ test('phone: real touch drag and tap placement, zoom, return and reset',async({b
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await expect(page.locator(mount('Q'))).toHaveAttribute('data-mount-occupied','B');
   const trayWidth=await page.locator('#anchor-tray').evaluate(el=>el.getBoundingClientRect().width);expect(trayWidth).toBeGreaterThan(300);
-  await page.locator('#zoom-in').tap({timeout:8000});await expect(page.locator('#zoom-readout')).toHaveText('125%');await page.locator('#zoom-reset').tap({timeout:8000});await expect(page.locator('#zoom-readout')).toHaveText('100%');
+  const tap=async(selector:string)=>{
+   await page.locator(selector).first().scrollIntoViewIfNeeded();
+   const p=await centre(page,selector);
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:p.x,y:p.y}]});
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  };
+  await tap('#zoom-in');await expect(page.locator('#zoom-readout')).toHaveText('125%');
+  await tap('#zoom-reset');await expect(page.locator('#zoom-readout')).toHaveText('100%');
   await expect(page.locator(mount('Q'))).toHaveAttribute('data-mount-occupied','B');
-  await page.locator(part).tap();
-  await page.getByRole('button',{name:'Return to tray',exact:true}).tap();
+  await tap(part);
+  await tap('.anchor-return');
   await expect(page.locator(mount('Q'))).toHaveAttribute('data-mount-occupied','');
-  await page.locator(part).tap();await page.locator(mount('P')+' rect[fill="transparent"]').tap();
+  await tap(part);await tap(mount('P')+' rect[fill="transparent"]');
   await expect(page.locator(mount('P'))).toHaveAttribute('data-mount-occupied','B');
   const metrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));expect(metrics.scroll).toBeLessThanOrEqual(metrics.width+2);
   await info.attach('salvage-phone',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
-  await page.locator('#restart-level').tap();await expect(page.locator('#launch')).toBeDisabled();
+  await tap('#restart-level');await expect(page.locator('#launch')).toBeDisabled();
  }finally{await context.close();}
 });
