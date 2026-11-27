@@ -1,5 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
-import {CUSTOM_KEY} from '../src/game/customLevels';
+import {CUSTOM_LIBRARY_KEY} from '../src/game/customLevels';
 import {PROGRESS_KEY} from '../src/game/progressStore';
 import {enterFree} from './helpers/programming';
 import type {Bounds,Point} from '../src/engine/coordinates';
@@ -54,7 +54,7 @@ test('drag, edit, fail and finish a real custom flight; confirm, download, reloa
  await open(page);await expect(page.locator('#custom-state')).toContainText('Confirmed');await expect(page.locator('#custom-title')).toHaveValue('My relay');
  await page.locator('[data-object-id="exit"]').click();await page.getByRole('spinbutton',{name:'x',exact:true}).fill('9');await page.getByRole('spinbutton',{name:'x',exact:true}).press('Tab');
  await expect(page.locator('#custom-state')).toContainText('Draft');await expect(page.locator('#custom-download')).toBeDisabled();
- page.once('dialog',dialog=>dialog.accept());await page.locator('#custom-file').setInputFiles(path!);
+ await page.locator('#custom-file').setInputFiles(path!);
  await expect(page.locator('[data-object-id="exit"]')).toContainText('(8, 2)');await expect(page.locator('#custom-test')).toBeEnabled();await expect(page.locator('#custom-confirm')).toBeDisabled();
  expect(errors).toEqual([]);
 });
@@ -70,5 +70,5 @@ test('phone placement, exact properties, leftward firing and keyboard placement 
  await expect(page.locator('#custom-test')).toBeEnabled();
  const metrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));expect(metrics.scroll).toBeLessThanOrEqual(metrics.width+2);
  await info.attach('phone-workshop',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
- const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)??'{}'),CUSTOM_KEY);expect(saved.design.cannons[0].direction).toBe(-1);
+ const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)??'{}'),CUSTOM_LIBRARY_KEY);expect(saved.entries.find((e:{id:string})=>e.id===saved.activeId).design.cannons[0].direction).toBe(-1);
 });

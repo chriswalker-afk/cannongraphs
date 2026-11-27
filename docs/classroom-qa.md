@@ -42,3 +42,7 @@ On a fresh browser, choose Meadow Launchers, any mode, and level 1. Inspect the 
 ### PR39: Level Workshop
 
 Create a two-cannon design using drag and drop, resize terrain and enter exact coordinates. Test it in the real game, try a splat, then complete the route. Confirm and download only after the completion; verify that any edit revokes confirmation. Upload the downloaded file on a fresh browser and check that its geometry, types and firing directions match without importing answers or proof. Check phone placement, scrolling and keyboard controls. No custom level earns official stars, gems or achievements.
+
+### PR40: Custom Level Library
+
+Verify that an existing confirmed PR39 design migrates with its proof and original file storage intact. Create two drafts, upload multiple files (including an invalid file), search/filter, duplicate and delete one entry. Play an imported design in Cadet, Pilot and Ace, checking each local record and gem count; normal play must not enable author confirmation. Edit and complete a designer playtest, confirm, download, then edit geometry and verify that only that entry's records and confirmation reset. Reload and check retained records, keyboard focus, phone layout, and session-only storage warning. Official campaign records and achievements must remain unchanged.

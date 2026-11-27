@@ -47,3 +47,5 @@ PR37 concludes the catalogue revision with four labelled cannon-count bands in e
 PR38 adds Flight School: unscored interactive onboarding before the original first level, with explicit coordinate reading and worked gradient/intercept calculations, actual next-cannon navigation, failure/recovery and celebration.
 
 PR39 adds a local custom-level workshop with pointer/touch/keyboard placement, exact coordinates, real playtests and confirmation-gated JSON sharing.
+
+PR40 adds the multi-level local library, with a non-destructive migration from PR39, saved designs, preview cards, search/filter, duplicate/delete, multi-file import, confirmed exports, and independent play records in each learning mode. Next: classroom sharing tools, including bulk level-pack export/import and a curated challenge queue, without needing accounts or a public listing.
