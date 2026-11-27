@@ -2,7 +2,7 @@ import {worlds} from '../levels/catalog';
 import {cannonTypes} from '../game/cannons';
 import {learningModes,modeBudgetLabel,type LearningMode} from '../game/learningModes';
 import {recordStars} from '../game/progress';
-import {buildCustomLevel,workshopTerrain,CUSTOM_FILE_LIMIT,MAX_CUSTOM_LEVELS,type CustomWorkshopStore,type CustomEntry,type CustomRun} from '../game/customLevels';
+import {buildCustomLevel,workshopTerrain,customCannonCount,customThemeName,CUSTOM_FILE_LIMIT,MAX_CUSTOM_LEVELS,type CustomWorkshopStore,type CustomEntry,type CustomRun} from '../game/customLevels';
 import {coordinateSystem} from '../engine/coordinates';
 import {svgNode as el} from '../rendering/pip';
 import {downloadCustomFile} from './customFile';
@@ -15,7 +15,7 @@ function node<K extends keyof HTMLElementTagNameMap>(tag:K,parent:Element,cls=''
 }
 function button(parent:Element,cls:string,label:string,click:()=>void){const b=node('button',parent,cls,label);b.type='button';b.addEventListener('click',click);return b;}
 const status=(e:CustomEntry)=>e.confirmed?'Confirmed':e.tested?'Test passed':'Draft';
-const palettes=['#e3f1df','#e1ecfa','#e9e5f3','#f2e9d2','#e7e9e7','#e1e7f4','#efe4c5'];
+const palettes=['#e3f1df','#e1ecfa','#e9e5f3','#f2e9d2','#e7e9e7','#e1e7f4','#efe4c5','#e7e8d7'];
 // Small actual geometry previews; never compute or display a solution.
 function thumbnail(parent:Element,e:CustomEntry){
  const d=e.design,svg=el('svg',{viewBox:'0 0 180 86','aria-hidden':'true',class:'custom-thumbnail'},parent);
@@ -24,6 +24,7 @@ function thumbnail(parent:Element,e:CustomEntry){
  for(let x=Math.ceil(b.minX);x<=b.maxX;x++){const q=p({x,y:0});el('line',{x1:q.x,y1:a.y,x2:q.x,y2:z.y,stroke:'#90a7af','stroke-width':.35,opacity:.65},svg);}
  for(let y=Math.ceil(b.minY);y<=b.maxY;y++){const q=p({x:0,y});el('line',{x1:a.x,y1:q.y,x2:z.x,y2:q.y,stroke:'#90a7af','stroke-width':.35,opacity:.65},svg);}
  for(const o of workshopTerrain(d)){const q=p({x:o.bounds.minX,y:o.bounds.maxY});el('rect',{x:q.x,y:q.y,width:(o.bounds.maxX-o.bounds.minX)*s,height:(o.bounds.maxY-o.bounds.minY)*s,fill:'#a28e72',stroke:'#776b5d','stroke-width':.5},svg);}
+ for(const a of d.anchorPuzzle?.anchors??[]){const q=p(a.position),g=el('g',{'data-library-anchor':a.id,transform:'translate('+q.x+' '+q.y+')'},svg);el('rect',{x:-4,y:3,width:8,height:2,rx:.5,fill:'#ad997a',stroke:'#7b7058','stroke-width':.5},g);el('circle',{r:3,fill:'#fff8df',stroke:'#9b7c43','stroke-width':1,'stroke-dasharray':'2 1'},g);}
  for(const c of d.cannons){if(!c.lift)continue;const x=c.position.x-c.direction*.5,a=p({x,y:c.lift.maxY}),z=p({x,y:c.lift.minY-.47});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#a87826','stroke-width':1.8,'stroke-dasharray':'2 1','data-library-lift-rail':c.id},svg);}
  for(const c of d.cannons){const q=p(c.position),g=el('g',{transform:'translate('+q.x+' '+q.y+')'},svg);
   el('rect',{x:c.direction===1?-9:0,y:-3,width:9,height:6,rx:1.5,fill:cannonTypes[c.type].color,stroke:'#254763','stroke-width':.6},g);
@@ -63,25 +64,26 @@ export function mountCustomLibrary(root:HTMLElement,store:CustomWorkshopStore,op
  });
  function renderList(){
   list.replaceChildren();const q=search.value.trim().toLowerCase(),f=filter.value;
-  const visible=snapshot.entries.filter(e=>(f==='all'||f==='confirmed'&&e.confirmed||f==='draft'&&!e.confirmed||f==='imported'&&e.source==='imported')&&(!q||[e.design.title,worlds[e.design.world-1].name,...e.design.cannons.map(c=>cannonTypes[c.type].label+(c.lift?' movable lift broken cannon':''))].join(' ').toLowerCase().includes(q)));
+  const visible=snapshot.entries.filter(e=>(f==='all'||f==='confirmed'&&e.confirmed||f==='draft'&&!e.confirmed||f==='imported'&&e.source==='imported')&&(!q||[e.design.title,customThemeName(e.design,worlds[e.design.world-1]?.name),...e.design.cannons.map(c=>cannonTypes[c.type].label+(c.lift?' movable lift broken cannon':'')),...(e.design.anchorPuzzle?['anchor placement salvage yard inventory mounts',...e.design.anchorPuzzle.inventory.map(c=>cannonTypes[c.type].label+(c.lockedShape!==undefined?' locked broken cannon':''))]:[])].join(' ').toLowerCase().includes(q)));
   if(!visible.some(e=>e.id===selected))selected=visible[0]?.id??'';
   get('library-count').textContent=visible.length+' / '+snapshot.entries.length+' levels';
   if(!visible.length){const empty=node('div',list,'library-empty');node('h2',empty,'',snapshot.entries.length?'No matching levels':'Your library is empty');node('p',empty,'',snapshot.entries.length?'Try a different search or filter.':'Create a level in the workshop, or upload a shared .cannon.json file.');return;}
   for(const e of visible){
    const b=button(list,'library-card','',()=>{selected=e.id;for(const card of Array.from(list.querySelectorAll<HTMLButtonElement>('.library-card')))card.setAttribute('aria-pressed',String(card.dataset.levelId===selected));renderDetail();});
-   b.dataset.levelId=e.id;b.setAttribute('aria-pressed',String(selected===e.id));b.setAttribute('aria-label',e.design.title+', '+status(e)+', '+e.design.cannons.length+' cannons');
+   b.dataset.levelId=e.id;b.setAttribute('aria-pressed',String(selected===e.id));b.setAttribute('aria-label',e.design.title+', '+status(e)+', '+customCannonCount(e.design)+' cannons');
    thumbnail(b,e);const copy=node('span',b,'library-card-copy');node('strong',copy,'',e.design.title);
    const meta=node('span',copy,'library-card-meta');node('span',meta,'library-state',status(e)).dataset.status=e.confirmed?'confirmed':e.tested?'tested':'draft';
-   node('span',meta,'',e.design.cannons.length+' cannon'+(e.design.cannons.length===1?'':'s'));node('span',meta,'',e.source==='imported'?'Imported':'Created');const lifts=e.design.cannons.filter(c=>c.lift).length;if(lifts)node('span',meta,'',lifts+' lift'+(lifts===1?'':'s'));
+   node('span',meta,'',customCannonCount(e.design)+' cannon'+(customCannonCount(e.design)===1?'':'s'));node('span',meta,'',e.source==='imported'?'Imported':'Created');const lifts=e.design.cannons.filter(c=>c.lift).length;if(lifts)node('span',meta,'',lifts+' lift'+(lifts===1?'':'s'));if(e.design.anchorPuzzle)node('span',meta,'',e.design.anchorPuzzle.anchors.length+' mounts · '+e.design.anchorPuzzle.inventory.length+' parts');
   }
  }
  function renderDetail(){
   detail.replaceChildren();const e=snapshot.entries.find(e=>e.id===selected);
   if(!e){node('p',detail,'library-empty','Select a saved level to play or edit.');return;}
-  const d=e.design;node('h2',detail,'',d.title);node('p',detail,'library-subtitle',worlds[d.world-1].name+' · '+d.cannons.length+' cannon'+(d.cannons.length===1?'':'s')+' · '+d.gems.length+' gems');
+  const d=e.design;node('h2',detail,'',d.title);node('p',detail,'library-subtitle',customThemeName(d,worlds[d.world-1]?.name)+' · '+customCannonCount(d)+' cannon'+(customCannonCount(d)===1?'':'s')+' · '+d.gems.length+' gems');
   node('span',detail,'library-state',status(e)+(e.source==='imported'?' · Imported':'')).dataset.status=e.confirmed?'confirmed':e.tested?'tested':'draft';
   const chips=node('div',detail,'library-families');const liftCount=d.cannons.filter(c=>c.lift).length;if(liftCount){const chip=node('span',chips,'library-family',liftCount+' movable '+(liftCount===1?'platform':'platforms'));chip.style.borderLeftColor='#a87826';}
-  for(const type of new Set(d.cannons.map(c=>c.type))){const chip=node('span',chips,'library-family',cannonTypes[type].label);chip.style.borderLeftColor=cannonTypes[type].color;}
+  if(d.anchorPuzzle){const chip=node('span',chips,'library-family',d.anchorPuzzle.anchors.length+' mounts · '+d.anchorPuzzle.inventory.length+' movable parts');chip.style.borderLeftColor='#9b7c43';}
+  for(const type of new Set([...d.cannons,...(d.anchorPuzzle?.inventory??[])].map(c=>c.type))){const chip=node('span',chips,'library-family',cannonTypes[type].label);chip.style.borderLeftColor=cannonTypes[type].color;}
   node('p',detail,'library-objective',d.objective);
   let invalid='';try{buildCustomLevel(d);}catch(err){invalid=err instanceof Error?err.message:'Design is incomplete.';}
   node('p',detail,'library-note',invalid||(!e.confirmed?'Playable draft. Complete a designer playtest in the workshop to confirm and download.':'Designer playtest passed; ready to share.'));

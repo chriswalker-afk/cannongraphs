@@ -5,18 +5,20 @@ import {gridTicks} from '../rendering/grid';
 import {svgNode as el} from '../rendering/pip';
 import {renderCannonArt} from '../rendering/cannonArt';
 import {renderLiftDeck,renderBrokenDetails} from '../rendering/foundryScenery';
+import {renderAnchorMount} from '../rendering/salvageArt';
+import {MAX_ANCHORS,MAX_INVENTORY} from '../levels/anchorSpec';
 import {BARREL_ANGLE} from '../animations/launch';
 import {lockedLiftEquation,lockedLiftText} from '../levels/liftSpec';
 import {isQuadratic} from '../engine/equations/linear';
 import {CANNON_FOOTPRINT} from '../game/anchorArtGeometry';
 import {renderGem} from '../rendering/gem';
-import {buildCustomLevel,workshopTerrain,placeObject,moveObject,deleteObject,objectPoint,snapPoint,setCustomLift,CUSTOM_FILE_LIMIT,MAX_CANNONS,MAX_TERRAIN,MAX_GEMS,type CustomDesign,type CustomWorkshopStore,type PlacementTool} from '../game/customLevels';
+import {buildCustomLevel,workshopTerrain,placeObject,moveObject,deleteObject,objectPoint,snapPoint,setCustomLift,setCustomAnchorMode,addCustomInventory,setCustomInventory,customCannonCount,CUSTOM_FILE_LIMIT,MAX_CANNONS,MAX_TERRAIN,MAX_GEMS,type CustomDesign,type CustomWorkshopStore,type PlacementTool} from '../game/customLevels';
 import {downloadCustomFile} from './customFile';
 type Tool='select'|PlacementTool;
 const fmt=(v:number)=>String(Number(v.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
-const labels:Record<PlacementTool,string>={linear:'Linear',quadratic:'Quadratic',cubic:'Cubic',reciprocal:'Reciprocal',exponential:'Exponential',logarithmic:'Logarithmic',wave:'Wave',exit:'Exit',platform:'Platform',wall:'Wall',ceiling:'Ceiling',gem:'Gem'};
-const symbols:Record<PlacementTool,string>={linear:'↗',quadratic:'∩',cubic:'S',reciprocal:'1/x',exponential:'↑',logarithmic:'log',wave:'~',exit:'▣',platform:'▬',wall:'▮',ceiling:'▀',gem:'◆'};
+const labels:Record<PlacementTool,string>={linear:'Linear',quadratic:'Quadratic',cubic:'Cubic',reciprocal:'Reciprocal',exponential:'Exponential',logarithmic:'Logarithmic',wave:'Wave',exit:'Exit',platform:'Platform',wall:'Wall',ceiling:'Ceiling',gem:'Gem',anchor:'Candidate mount'};
+const symbols:Record<PlacementTool,string>={linear:'↗',quadratic:'∩',cubic:'S',reciprocal:'1/x',exponential:'↑',logarithmic:'log',wave:'~',exit:'▣',platform:'▬',wall:'▮',ceiling:'▀',gem:'◆',anchor:'⊕'};
 function element<K extends keyof HTMLElementTagNameMap>(tag:K,parent:Element,cls='',text?:string):HTMLElementTagNameMap[K]{
  const e=document.createElement(tag);e.className=cls;if(text!==undefined)e.textContent=text;parent.append(e);return e;
 }
@@ -26,7 +28,7 @@ function action(parent:Element,text:string,cls:string,click:()=>void){
 function text(parent:Element,attrs:Record<string,number|string>,value:string){const t=el('text',attrs,parent);t.textContent=value;return t;}
 export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,onHome:()=>void,onTest:(test:ReturnType<CustomWorkshopStore['beginTest']>)=>void,onLibrary:()=>void){
  store.ensureActive();
- root.innerHTML='<main class="custom-workshop" aria-label="Level Workshop"><header class="custom-top"><div class="brand"><button id="custom-home" type="button" class="brand-mark home-return" aria-label="Return home" title="Return home"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Level Workshop</h1><p>Design · Test · Confirm · Share</p></div></div><div class="custom-file-actions"><button id="custom-library" type="button">Custom levels</button><button id="custom-new" type="button">New level</button><button id="custom-upload" type="button">Upload level</button><input id="custom-file" type="file" accept=".json,application/json" hidden><button id="custom-download" type="button" disabled>Download level</button></div></header><div class="custom-meta"><label>Level name <input id="custom-title" maxlength="80"></label><label>World theme <select id="custom-world"></select></label><label>Snap <select id="custom-snap"><option value="1">1 unit</option><option value="0.5">½ unit</option><option value="0.25">¼ unit</option></select></label><details class="custom-grid-settings"><summary>Grid limits</summary><div class="custom-grid-inputs"></div><button id="custom-apply-bounds" type="button">Apply</button></details><details class="custom-grid-settings custom-objective"><summary>Instructions</summary><label>Level instructions <input id="custom-objective" maxlength="240"></label></details></div><div class="custom-shell"><aside class="custom-palette" aria-label="Object palette"><h2>Build</h2><div id="custom-tools"></div><p class="custom-help">Drag a tool onto the grid, or select it and tap a point. Drag existing objects to move them. Draw terrain by dragging across the grid.</p></aside><section class="custom-board" aria-label="Level design grid"><div class="custom-board-heading"><strong id="custom-active-tool">Select / move</strong><output id="custom-coordinate" aria-live="off"></output></div><svg id="custom-grid" tabindex="0" role="application" aria-label="Design grid. Arrow keys move the cursor, Enter places the selected tool. Use the object inspector for exact coordinates."></svg><div class="custom-counts" id="custom-counts"></div></section><aside class="custom-inspector" aria-label="Object inspector"><h2>Selected object</h2><div id="custom-properties"></div><h3>Objects</h3><div id="custom-objects"></div></aside></div><footer class="custom-footer"><div class="custom-status"><strong id="custom-state"></strong><p id="custom-message" role="status"></p><small id="custom-storage"></small></div><div class="custom-confirm-actions"><button id="custom-test" type="button" disabled>▶ Playtest</button><button id="custom-confirm" type="button" disabled>✓ Confirm level</button></div></footer></main>';
+ root.innerHTML='<main class="custom-workshop" aria-label="Level Workshop"><header class="custom-top"><div class="brand"><button id="custom-home" type="button" class="brand-mark home-return" aria-label="Return home" title="Return home"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Level Workshop</h1><p>Design · Test · Confirm · Share</p></div></div><div class="custom-file-actions"><button id="custom-library" type="button">Custom levels</button><button id="custom-new" type="button">New level</button><button id="custom-upload" type="button">Upload level</button><input id="custom-file" type="file" accept=".json,application/json" hidden><button id="custom-download" type="button" disabled>Download level</button></div></header><div class="custom-meta"><label>Level name <input id="custom-title" maxlength="80"></label><label>World theme <select id="custom-world"></select></label><label>Snap <select id="custom-snap"><option value="1">1 unit</option><option value="0.5">½ unit</option><option value="0.25">¼ unit</option></select></label><details class="custom-grid-settings"><summary>Grid limits</summary><div class="custom-grid-inputs"></div><button id="custom-apply-bounds" type="button">Apply</button></details><details class="custom-grid-settings custom-objective"><summary>Instructions</summary><label>Level instructions <input id="custom-objective" maxlength="240"></label></details></div><div class="custom-shell"><aside class="custom-palette" aria-label="Object palette"><h2>Build</h2><label class="custom-anchor-mode"><input type="checkbox" id="custom-anchor-mode"> Anchor placement puzzle</label><div id="custom-tools"></div><section id="custom-inventory-tools" class="custom-inventory-tools" hidden></section><p class="custom-help">Drag a tool onto the grid, or select it and tap a point. Drag existing objects to move them. Draw terrain by dragging across the grid.</p></aside><section class="custom-board" aria-label="Level design grid"><div class="custom-board-heading"><strong id="custom-active-tool">Select / move</strong><output id="custom-coordinate" aria-live="off"></output></div><svg id="custom-grid" tabindex="0" role="application" aria-label="Design grid. Arrow keys move the cursor, Enter places the selected tool. Use the object inspector for exact coordinates."></svg><div class="custom-counts" id="custom-counts"></div></section><aside class="custom-inspector" aria-label="Object inspector"><h2>Selected object</h2><div id="custom-properties"></div><h3>Objects</h3><div id="custom-objects"></div></aside></div><footer class="custom-footer"><div class="custom-status"><strong id="custom-state"></strong><p id="custom-message" role="status"></p><small id="custom-storage"></small></div><div class="custom-confirm-actions"><button id="custom-test" type="button" disabled>▶ Playtest</button><button id="custom-confirm" type="button" disabled>✓ Confirm level</button></div></footer></main>';
  const get=<T extends HTMLElement=HTMLElement>(id:string)=>root.querySelector<T>('#'+id)!;
  const svg=root.querySelector<SVGSVGElement>('#custom-grid')!,tools=get('custom-tools'),properties=get('custom-properties'),objects=get('custom-objects');
  const title=get<HTMLInputElement>('custom-title'),objective=get<HTMLInputElement>('custom-objective'),world=get<HTMLSelectElement>('custom-world'),snap=get<HTMLSelectElement>('custom-snap'),file=get<HTMLInputElement>('custom-file');
@@ -36,6 +38,13 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
  let preview:CustomDesign|undefined,ghost:HTMLElement|undefined;
  const toolButtons=new Map<Tool,HTMLButtonElement>();
  for(const w of worlds){const o=element('option',world,'',w.name);o.value=String(w.number);}
+ if(!worlds.some(w=>w.number===8)){const o=element('option',world,'','The Salvage Yard');o.value='8';}
+ const anchorMode=get<HTMLInputElement>('custom-anchor-mode'),inventoryTools=get('custom-inventory-tools');
+ const inventoryHeading=element('strong',inventoryTools,'','Cannon inventory');
+ element('p',inventoryTools,'custom-help','Parts start in the tray. Place candidate mounts on the grid, then add movable parts here.');
+ const addPart=(type:'linear'|'quadratic')=>{try{const result=addCustomInventory(d,type);store.edit(result.design);d=store.read().design;selected=result.selected;tool='select';message='';refresh();}catch(e){notify(e instanceof Error?e.message:'Unable to add part.');}};
+ const linearPart=action(inventoryTools,'＋ Linear part','custom-secondary',()=>addPart('linear'));linearPart.id='custom-add-linear-part';
+ const quadraticPart=action(inventoryTools,'＋ Quadratic part','custom-secondary',()=>addPart('quadratic'));quadraticPart.id='custom-add-quadratic-part';
  const limitFields=new Map<keyof Bounds,HTMLInputElement>();
  for(const [key,label] of [['minX','x min'],['maxX','x max'],['minY','y min'],['maxY','y max']] as const){
   const l=element('label',root.querySelector('.custom-grid-inputs')!,'',label),i=element('input',l);i.type='number';i.min='-100';i.max='100';i.step='1';limitFields.set(key,i);
@@ -68,7 +77,7 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
  }
  addTool('select','Select / move','✥','#536d77');
  for(const t of Object.keys(cannonTypes) as CannonType[])addTool(t,labels[t],symbols[t],cannonTypes[t].color);
- for(const t of ['exit','platform','wall','ceiling','gem'] as const)addTool(t,labels[t],symbols[t],t==='exit'?'#b88737':t==='gem'?'#188e82':'#8d8170');
+ for(const t of ['exit','platform','wall','ceiling','gem','anchor'] as const)addTool(t,labels[t],symbols[t],t==='exit'?'#b88737':t==='gem'?'#188e82':t==='anchor'?'#ad8848':'#8d8170');
  function refreshStatus(){
   const status=store.read();let invalid='';try{buildCustomLevel(d);}catch(e){invalid=e instanceof Error?e.message:'Invalid design.';}
   const state=get('custom-state');state.textContent=status.confirmed?'Confirmed · ready to share':status.tested?'Playtest passed · ready to confirm':'Draft · needs a successful playtest';
@@ -78,8 +87,37 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
   test.disabled=!!invalid;confirm.disabled=!!invalid||!status.tested||status.confirmed;download.disabled=!!invalid||!status.confirmed;
  }
  function showProperties(){
-  properties.replaceChildren();const p=objectPoint(d,selected);if(!p){element('p',properties,'custom-help','Select an object to edit its exact position, direction or dimensions.');return;}
-  const cannon=d.cannons.find(c=>c.id===selected),terrain=d.obstacles.find(o=>o.id===selected),label=cannon?'Cannon '+cannon.id:terrain?labels[terrain.kind as PlacementTool]+' '+terrain.id:selected==='exit'?'Exit':'Gem '+selected;
+  properties.replaceChildren();
+  const part=d.anchorPuzzle?.inventory.find(c=>c.id===selected);
+  if(part){
+   element('strong',properties,'custom-object-title','Inventory cannon '+part.id);
+   element('p',properties,'custom-help','Starts in the tray; its muzzle is chosen by the player.');
+   const familyLabel=element('label',properties,'custom-property','Graph family'),family=element('select',familyLabel);
+   for(const type of ['linear','quadratic'] as const){const o=element('option',family,'',cannonTypes[type].label);o.value=type;}
+   family.value=part.type;family.disabled=part.lockedShape!==undefined;
+   family.addEventListener('change',()=>tryEdit(()=>setCustomInventory(d,part.id,{type:family.value as 'linear'|'quadratic',direction:part.direction})));
+   const directionLabel=element('label',properties,'custom-property','Firing direction'),direction=element('select',directionLabel);
+   for(const [v,n] of [[1,'Right →'],[-1,'← Left']] as const){const o=element('option',direction,'',n);o.value=String(v);}
+   direction.value=String(part.direction);direction.addEventListener('change',()=>tryEdit(()=>setCustomInventory(d,part.id,{...part,direction:Number(direction.value) as 1|-1})));
+   const panel=element('section',properties,'custom-lift-panel custom-part-panel');panel.setAttribute('aria-label','Inventory firing mechanism');
+   const toggleLabel=element('label',panel,'custom-lift-toggle'),toggle=element('input',toggleLabel);toggle.type='checkbox';toggle.checked=part.lockedShape!==undefined;
+   element('span',toggleLabel,'','Broken cannon · locked coefficients');
+   toggle.addEventListener('change',()=>{
+    tryEdit(()=>setCustomInventory(d,part.id,{type:part.type,direction:part.direction,...(toggle.checked?{lockedShape:part.type==='quadratic'?'-x^2/2+x':'x'}:{})}));
+    toggle.checked=d.anchorPuzzle?.inventory.find(c=>c.id===part.id)?.lockedShape!==undefined;
+   });
+   if(part.lockedShape!==undefined){
+    element('p',panel,'custom-help','Enter only the fixed x terms. The constant is calculated from the chosen mount. Unlock to change graph family.');
+    const l=element('label',panel,'custom-property','Locked shape (no constant)'),shape=element('input',l);
+    shape.type='text';shape.maxLength=180;shape.spellcheck=false;shape.value=part.lockedShape;shape.placeholder=part.type==='quadratic'?'-x^2/2+6x':'-x/2';
+    const apply=action(panel,'Apply locked shape','custom-secondary',()=>tryEdit(()=>setCustomInventory(d,part.id,{...part,lockedShape:shape.value})));apply.id='custom-apply-anchor-shape';
+    element('output',panel,'custom-lift-equation','y = '+part.lockedShape+' + c').setAttribute('aria-label','Fixed shape before placement');
+   }
+   action(properties,'Delete object','custom-danger',()=>{const id=selected;selected='';tryEdit(()=>deleteObject(d,id));});
+   return;
+  }
+  const p=objectPoint(d,selected);if(!p){element('p',properties,'custom-help','Select an object to edit its exact position, direction or dimensions.');return;}
+  const cannon=d.cannons.find(c=>c.id===selected),terrain=d.obstacles.find(o=>o.id===selected),label=d.anchorPuzzle?.anchors.some(a=>a.id===selected)?'Candidate mount '+selected:cannon?'Cannon '+cannon.id:terrain?labels[terrain.kind as PlacementTool]+' '+terrain.id:selected==='exit'?'Exit':'Gem '+selected;
   element('strong',properties,'custom-object-title',label+(cannon?.id===d.startId?' · START':''));
   const field=(name:string,value:number,change:(value:number)=>void)=>{
    const l=element('label',properties,'custom-property',name),i=element('input',l);i.type='number';i.step='any';i.value=String(value);i.setAttribute('aria-label',name);
@@ -93,7 +131,7 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
    const l2=element('label',properties,'custom-property','Firing direction'),direction=element('select',l2);
    for(const [v,n] of [[1,'Right →'],[-1,'← Left']] as const){const o=element('option',direction,'',n);o.value=String(v);}direction.value=String(cannon.direction);
    direction.addEventListener('change',()=>tryEdit(()=>({...d,cannons:d.cannons.map(c=>c.id===selected?{...c,direction:Number(direction.value) as 1|-1}:c)})));
-   if(cannon.type==='linear'||cannon.type==='quadratic'){
+   if(!d.anchorPuzzle&&(cannon.type==='linear'||cannon.type==='quadratic')){
     const panel=element('section',properties,'custom-lift-panel');panel.setAttribute('aria-label','Movable platform');
     const toggleLabel=element('label',panel,'custom-lift-toggle'),toggle=element('input',toggleLabel);toggle.type='checkbox';toggle.checked=!!cannon.lift;
     element('span',toggleLabel,'','Broken cannon · movable platform');
@@ -125,6 +163,8 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
  function listObjects(){
   objects.replaceChildren();const add=(id:string,label:string)=>{const b=action(objects,label,'custom-object-button',()=>{selected=id;tool='select';refresh();});b.dataset.objectId=id;b.setAttribute('aria-pressed',String(id===selected));};
   for(const c of d.cannons)add(c.id,c.id+' · '+cannonTypes[c.type].label+(c.lift?' · Lift':'')+(c.id===d.startId?' · START':'')+' '+coord(c.position));
+  for(const a of d.anchorPuzzle?.anchors??[])add(a.id,'Mount '+a.id+' '+coord(a.position));
+  for(const c of d.anchorPuzzle?.inventory??[])add(c.id,c.id+' · '+cannonTypes[c.type].label+' · '+(c.lockedShape!==undefined?'Locked':'Programmable')+' · Tray');
   if(d.exit)add('exit','Exit '+coord(d.exit));
   for(const o of d.obstacles)add(o.id,labels[o.kind as PlacementTool]+' '+o.id);
   for(const g of d.gems)add(g.id,'Gem '+coord(g.position));
@@ -135,7 +175,7 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
   view={width:Math.max(180,svg.clientWidth||800),height:Math.max(200,svg.clientHeight||500),padding:30};
   transform=coordinateSystem(b,view);svg.setAttribute('viewBox','0 0 '+view.width+' '+view.height);svg.replaceChildren();
   const p=transform.toScreen,s=transform.scale,a=p({x:b.minX,y:b.maxY}),z=p({x:b.maxX,y:b.minY});
-  const palettes=['#e3f1df','#e1ecfa','#e9e5f3','#f2e9d2','#e7e9e7','#e1e7f4','#efe4c5'];
+  const palettes=['#e3f1df','#e1ecfa','#e9e5f3','#f2e9d2','#e7e9e7','#e1e7f4','#efe4c5','#e7e8d7'];
   el('rect',{x:a.x,y:a.y,width:z.x-a.x,height:z.y-a.y,fill:palettes[level.world-1],stroke:'#7b929c','stroke-width':1},svg);
   const xt=gridTicks(b.minX,b.maxX,s),yt=gridTicks(b.minY,b.maxY,s);
   for(const x of xt.units){const q=p({x,y:0});el('line',{x1:q.x,y1:a.y,x2:q.x,y2:z.y,stroke:x===0?'#34556c':'#a6b8bf','stroke-width':x===0?1.8:.6},svg);}
@@ -148,6 +188,11 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
    const g=el('g',o.id==='base-floor'?{}:{'data-custom-object':o.id},svg);
    el('rect',{x:t.x,y:t.y,width:w,height:h,fill:o.kind==='ceiling'?'#84909b':'#a18c70',stroke:selected===o.id?'#d58a32':'#635b50','stroke-width':selected===o.id?3:1},g);
    el('rect',{x:t.x,y:t.y,width:w,height:Math.min(4,h*.3),fill:o.kind==='ceiling'?'#b5c2cb':'#73935b','pointer-events':'none'},g);
+  }
+  for(const a of level.anchorPuzzle?.anchors??[]){
+   const mount=renderAnchorMount(svg,a,p,s);mount.setAttribute('data-custom-object',a.id);mount.setAttribute('data-custom-anchor',a.id);
+   const ring=mount.querySelector('.mount-ring');if(selected===a.id){ring?.setAttribute('stroke','#d58a32');ring?.setAttribute('stroke-width','3');}
+   text(mount,{x:0,y:Math.max(24,s*.78),'font-size':10,'text-anchor':'middle',fill:'#71582e',stroke:'#fffaf0','stroke-width':3,'paint-order':'stroke','pointer-events':'none'},coord(a.position));
   }
   for(const c of level.cannons){if(!c.lift)continue;
    const x=c.position.x-c.direction*.5,a=p({x,y:c.lift.maxY}),z=p({x,y:c.lift.minY-CANNON_FOOTPRINT.drop});
@@ -178,13 +223,22 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
  }
  function refresh(){
   title.value=d.title;objective.value=d.objective;world.value=String(d.world);
+  anchorMode.checked=!!d.anchorPuzzle;world.disabled=!!d.anchorPuzzle;
+  const salvageOption=Array.from(world.options).find(o=>o.value==='8');if(salvageOption)salvageOption.disabled=!d.anchorPuzzle;
+  inventoryTools.hidden=!d.anchorPuzzle;toolButtons.get('anchor')!.hidden=!d.anchorPuzzle;
+  if(!d.anchorPuzzle&&tool==='anchor')tool='select';
+  const parts=d.anchorPuzzle?.inventory.length??0,mounts=d.anchorPuzzle?.anchors.length??0;
+  linearPart.disabled=quadraticPart.disabled=parts>=MAX_INVENTORY||customCannonCount(d)>=MAX_CANNONS;
+  toolButtons.get('anchor')!.disabled=mounts>=MAX_ANCHORS;
+  inventoryHeading.textContent='Cannon inventory · '+parts+'/'+MAX_INVENTORY;
   for(const [key,i] of limitFields)i.value=String(d.bounds[key]);
   for(const [t,b] of toolButtons)b.setAttribute('aria-pressed',String(t===tool));
   get('custom-active-tool').textContent=tool==='select'?'Select / move':'Place '+labels[tool];
   get('custom-coordinate').textContent=coord(cursor);
-  get('custom-counts').textContent=d.cannons.length+'/'+MAX_CANNONS+' cannons · '+d.obstacles.length+'/'+MAX_TERRAIN+' terrain · '+d.gems.length+'/'+MAX_GEMS+' gems · floor included';
+  get('custom-counts').textContent=customCannonCount(d)+'/'+MAX_CANNONS+' cannons · '+(d.anchorPuzzle?d.anchorPuzzle.anchors.length+'/'+MAX_ANCHORS+' mounts · '+d.anchorPuzzle.inventory.length+' tray parts · ':'')+d.obstacles.length+'/'+MAX_TERRAIN+' terrain · '+d.gems.length+'/'+MAX_GEMS+' gems · floor included';
   showProperties();listObjects();refreshStatus();draw();
  }
+ anchorMode.addEventListener('change',()=>{tryEdit(()=>setCustomAnchorMode(d,anchorMode.checked));anchorMode.checked=!!d.anchorPuzzle;});
  title.addEventListener('change',()=>tryEdit(()=>({...d,title:title.value})));
  objective.addEventListener('change',()=>tryEdit(()=>({...d,objective:objective.value})));
  world.addEventListener('change',()=>tryEdit(()=>({...d,world:Number(world.value)})));
