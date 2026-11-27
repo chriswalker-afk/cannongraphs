@@ -353,3 +353,16 @@ main.home-screen{height:auto;min-height:100dvh;grid-template-rows:auto minmax(15
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}.home-screen .pip-bob,.game-screen .pip-bob{animation:none!important}}
 @media(forced-colors:active){button:focus-visible,.inspectable:focus-visible{outline:2px solid Highlight;outline-offset:2px}.level-number[aria-pressed=true],.plan-card[aria-pressed=true],.workshop-option[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-2px}}
+
+/* The waiting crew uses the same bobbing sprite as the home animation.
+   The outer SVG group retains the mathematical position and world scale. */
+.motion-mode{flex:none;min-height:30px;padding:5px 8px;background:#e4edf2;color:#234d78;border:1px solid #b8cdd8;border-radius:8px;font-size:11px;font-weight:800;white-space:nowrap}
+.motion-mode:disabled{opacity:.6}
+.game-screen[data-motion="reduced"] .pip-bob,.game-screen[data-motion="reduced"] .gem-spark,.game-screen[data-motion="reduced"] .resolution-stars .earned{animation:none!important}
+.game-screen[data-motion="full"] .pip-bob{animation:pip-bounce 1.45s ease-in-out infinite!important;animation-delay:var(--pip-delay,0s)!important}
+.game-screen[data-motion="full"] .queue-pip[data-status=lost] .pip-bob,.game-screen[data-motion="full"] .queue-pip[data-status=active] .pip-bob{animation:none!important}
+.game-screen[data-motion="full"] .pip-queue.celebrating .queue-pip[data-status=waiting] .pip-bob{animation-duration:.52s!important}
+.game-screen[data-motion="full"] .pip-queue.celebrating .queue-pip[data-status=saved] .pip-bob{animation-duration:.8s!important}
+.game-screen[data-motion="full"] .trajectory-gem[data-gem-state=collected] .gem-spark{animation:gem-flash .42s ease-out both!important}
+.game-screen[data-motion="full"] .resolution-stars .earned{animation:star-pop .36s cubic-bezier(.2,.8,.3,1.35) both!important}
+@media(max-width:650px){.motion-mode{font-size:10px;padding:4px 6px;min-height:30px}}

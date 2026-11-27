@@ -11,6 +11,8 @@ import {routeDuration,sampleRouteAttempt} from '../animations/routeAttempt';
 import {routeLegs} from '../engine/simulation/linearRoute';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {createLaunchVisual} from './launchVisual';
+import {createWaitingCrew} from './waitingCrew';
+import {departingIndex} from '../animations/waitingCrew';
 import type {PipLook} from '../game/pipCosmetics';
 import type {CannonLook} from '../game/cannonCosmetics';
 import {makeRapidSchedule,sampleRapidFire,type RapidSchedule,type RapidCounts} from '../animations/rapidFire';
@@ -37,7 +39,7 @@ function el(tag:string,attrs:Record<string,string|number>={},parent?:Element,con
 const fmt=(n:number)=>String(Number(n.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
-export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void}){
+export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void;budget?:number;reducedMotion?:()=>boolean}){
  const policy=modePolicy(controls.mode??'pilot');
  const svg=el('svg',{role:'group',tabindex:'-1','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
@@ -67,9 +69,14 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(id!==selectedCannon||!editable){previewPaths=[];paintGraphPreview();}
   selectedCannon=id;planningEditable=editable;paintSelection();inspect();
  }
- const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
+ const motion=window.matchMedia('(prefers-reduced-motion: reduce)'),reducedMotion=()=>controls.reducedMotion?.()??motion.matches;
+ const crewTotal=controls.budget??level.creatures;
+ let crewWaiting=crewTotal,crew:ReturnType<typeof createWaitingCrew>|undefined,launchParent:Element|undefined,flightTrail:Element|undefined;
+ const tracePaths=new Map<string,{path:Element;to:Point;color:string;leg:AttemptResult}>();
+ let runReduced=false;
+ function setWaitingCrew(waiting:number){crewWaiting=waiting;crew?.update(waiting);}
  let barrels=new Map<string,Element>(),visual:ReturnType<typeof createLaunchVisual>|undefined;
- let active:{result:AttemptResult;started:number;elapsed:number;reduced:boolean;done:()=>void;gemTimeline:readonly TimedGemHit[];gemIds:readonly string[];onGems?:(ids:readonly string[])=>void}|undefined,animationId=0;
+ let active:{result:AttemptResult;started:number;elapsed:number;reduced:boolean;variant:number;boardingFrom?:Point;done:()=>void;gemTimeline:readonly TimedGemHit[];gemIds:readonly string[];onGems?:(ids:readonly string[])=>void}|undefined,animationId=0;
  let gemTargets=new Map<string,Element>();
  let lastResult:AttemptResult|undefined,trace:SVGGElement|undefined,marker:SVGGElement|undefined;
  let rapid:{result:AttemptResult;schedule:RapidSchedule;started:number;elapsed:number;variantOffset:number;progress:(counts:RapidCounts)=>void;done:()=>void}|undefined;
@@ -89,13 +96,18 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   paintGems();
   if(!visual||!trace||!marker)return;
   for(const id of barrels.keys())setBarrel(id,BARREL_ANGLE);
-  const result=active?.result??lastResult,cue=active?sampleRouteAttempt(active.elapsed,active.result,level,active.reduced):undefined;
-  trace.replaceChildren();marker.replaceChildren();marker.setAttribute('display','none');
+  const result=active?.result??lastResult,cue=active?sampleRouteAttempt(active.elapsed,active.result,level,active.reduced,active.boardingFrom):undefined;
+  marker.replaceChildren();marker.setAttribute('display','none');flightTrail?.setAttribute('display','none');
+  const used=new Set<string>();
   const drawLeg=(leg:AttemptResult,to:Point,color:string)=>{
-   el('path',{d:flightPath(leg,leg.start,to,t.toScreen),fill:'none',stroke:color,'stroke-width':2.6,'stroke-dasharray':'6 4','stroke-linecap':'round'},trace);
+   const id=leg.cannonId,existing=tracePaths.get(id);used.add(id);
+   if(existing&&existing.leg===leg&&existing.to.x===to.x&&existing.to.y===to.y&&existing.color===color)return;
+   const path=existing?.path??el('path',{fill:'none','stroke-width':2.6,'stroke-dasharray':'6 4','stroke-linecap':'round'},trace);
+   path.setAttribute('d',flightPath(leg,leg.start,to,t.toScreen));path.setAttribute('stroke',color);tracePaths.set(id,{path,to,color,leg});
   };
+  const removeUnused=()=>{for(const [id,v] of tracePaths)if(!used.has(id)){v.path.remove();tracePaths.delete(id);}};
   const angle=(leg:AttemptResult)=>leg.event.kind==='misfire'?BARREL_ANGLE:leg.angle;
-  if(!result){visual.hide();return;}
+  if(!result){visual.hide();removeUnused();return;}
   const completed=cue?cue.completed:routeLegs(result);
   for(const leg of completed){
    setBarrel(leg.cannonId,angle(leg));
@@ -106,6 +118,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    setBarrel(leg.cannonId,heading,frame.recoil);
    visual.paint(frame,leg.source,leg.direction,heading,t.toScreen,t.scale,frame.size);
    if(frame.trace)drawLeg(leg,frame.trace,frame.resolved?(leg.event.kind==='cannon'||leg.event.kind==='exit'?'#16874c':'#cf5148'):'#2583ca');
+   if(frame.trailStart&&frame.trace&&flightTrail){flightTrail.setAttribute('display','inline');flightTrail.setAttribute('d',flightPath(leg,frame.trailStart,frame.trace,t.toScreen));}
   }else{
    visual.hide();
    const p=t.toScreen(result.end),ok=result.event.kind==='exit',color=ok?'#16874c':'#cf5148';
@@ -113,6 +126,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    el('circle',{r:6,fill:'#fffaf0',stroke:color,'stroke-width':2},marker);
    el('path',{d:ok?'M-3 0 l2 2 4 -5':'M-2 -2 L2 2 M2 -2 L-2 2',stroke:color,'stroke-width':1.6,fill:'none','stroke-linecap':'round'},marker);
   }
+  removeUnused();
  }
  function paintRapid(){
   if(!rapid||!rapidVisual)return;
@@ -134,7 +148,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  }
  function playRapidFire(result:AttemptResult,count:number,variantOffset:number,progress:(counts:RapidCounts)=>void,done:()=>void):boolean{
   if(active||rapid||!rapidParent||result!==lastResult)return false;
-  const schedule=makeRapidSchedule(result,count,motion.matches);
+  const schedule=makeRapidSchedule(result,count,runReduced);
   rapidParent.replaceChildren();rapidVisual=createRapidVisual(rapidParent,count,variantOffset,result,controls.look,controls.cannonLook);
   rapidAudio=createSoundCursor(rapidSounds(result,schedule),emitSound);
   rapid={result,schedule,started:performance.now(),elapsed:0,variantOffset,progress,done};
@@ -153,9 +167,10 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  }
  function playFlight(result:AttemptResult,done:()=>void,onGems?:(ids:readonly string[])=>void):boolean{
   if(active||rapid)return false;
-  lastResult=undefined;const reduced=motion.matches;
+  lastResult=undefined;const reduced=runReduced=reducedMotion(),variant=departingIndex(crewTotal,crewWaiting),boardingFrom=crew?.positions[variant];
+  if(launchParent){launchParent.replaceChildren();visual=createLaunchVisual(launchParent,controls.look,controls.cannonLook,variant);}
   attemptAudio=createSoundCursor(attemptSounds(result,reduced),emitSound);
-  active={result,started:performance.now(),elapsed:0,reduced,done,gemTimeline:gemTimeline(result,reduced),gemIds:[],onGems};
+  active={result,started:performance.now(),elapsed:0,reduced,variant,boardingFrom,done,gemTimeline:gemTimeline(result,reduced),gemIds:[],onGems};
   attemptAudio.advance(0,!document.hidden);
   paintAttempt();animationId=requestAnimationFrame(step);return true;
  }
@@ -201,7 +216,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const {width:W,height:H}=viewport,q=plot();
   t=cameraTransform(level.bounds,viewport,camera);camera={zoom:t.zoom,center:t.center};
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();cannonTargets=new Map();gemTargets=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;
+  svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();cannonTargets=new Map();gemTargets=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;crew=undefined;launchParent=undefined;flightTrail=undefined;tracePaths.clear();
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
   const floating=level.world===2,peaks=level.world===3,ruins=level.world===4,factory=level.world===5,cosmic=level.world===6;
   el('stop',{offset:'0%', 'stop-color':cosmic?'#a8b6df':factory?'#b9c7cb':ruins?'#b7c4ae':peaks?'#aebce8':floating?'#89c5ed':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':cosmic?'#efe0f4':factory?'#f4e2c4':ruins?'#f3e2bd':peaks?'#f2e6f6':floating?'#e7e7fa':'#e6f5e6'},sky);
@@ -233,6 +248,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    const g=renderTerrain(content,o,p,scale,floating,peaks,ruins,factory,cosmic),info=terrainInspection(o,level.world);
    target(g,{id:o.id,...info,point:{x:(o.bounds.minX+o.bounds.maxX)/2,y:(o.bounds.minY+o.bounds.maxY)/2},bounds:o.bounds});
   }
+  crew=createWaitingCrew(content,level,crewTotal,p,scale,controls.look);crew.update(crewWaiting);
   for(const c of level.cannons){
    const a=p(c.position),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content),style=cannonTypes[c.type];
    g.classList.add('cannon-target');cannonTargets.set(c.id,g);
@@ -257,7 +273,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   }
   previewLayer=el('g',{'pointer-events':'none','aria-hidden':'true','data-layer':'cadet-graph-preview'},content);paintGraphPreview();
   trace=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;
-  visual=createLaunchVisual(content,controls.look,controls.cannonLook);
+  flightTrail=el('path',{fill:'none',stroke:'#f1b346','stroke-width':3,'stroke-linecap':'round',opacity:.95,'pointer-events':'none','aria-hidden':'true','data-flight-trail':'',display:'none'},content);
+  launchParent=el('g',{'pointer-events':'none','aria-hidden':'true'},content);
+  visual=createLaunchVisual(launchParent,controls.look,controls.cannonLook,active?.variant??0);
   rapidParent=el('g',{'pointer-events':'none','aria-hidden':'true'},content);
   if(rapid)rapidVisual=createRapidVisual(rapidParent,rapid.schedule.count,rapid.variantOffset,rapid.result,controls.look,controls.cannonLook);
   marker=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;paintAttempt();paintRapid();
@@ -285,5 +303,5 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100||width===viewport.width&&height===viewport.height)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
  observer.observe(stage);draw();
- return {playFlight,playRapidFire,clearFlight,setPlanningSelection,setGraphPreview,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
+ return {playFlight,playRapidFire,clearFlight,setPlanningSelection,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
 }
