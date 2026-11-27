@@ -2,9 +2,10 @@ import type {Bounds,Point} from '../engine/coordinates';
 import {cannonTypes,type CannonType} from '../game/cannons';
 import {PIP_RADIUS,pointRectangleDistance} from '../engine/collisions/clearance';
 import {GEOMETRY_EPS} from '../engine/collisions/sweep';
+import {validateLiftSpec,type LiftSpec} from './liftSpec';
 export const GEM_RADIUS=.14;
 export interface Gem {readonly id:string;readonly position:Point}
-export interface Cannon {id:string;type:CannonType;position:Point;direction:1|-1}
+export interface Cannon {id:string;type:CannonType;position:Point;direction:1|-1;lift?:LiftSpec}
 export interface Obstacle {id:string;kind:'wall'|'floor'|'platform'|'ceiling';bounds:Bounds}
 export type SupportKind='platform'|'suspended'|'wall';
 // Decorative mounting metadata only. It never adds a collision rectangle.
@@ -19,6 +20,7 @@ export function validateLevel(l:Level):void{
  if(l.cannons.some(c=>c.type!=='linear'&&c.type!=='quadratic')&&(Math.max(Math.abs(l.bounds.minX),Math.abs(l.bounds.maxX),Math.abs(l.bounds.minY),Math.abs(l.bounds.maxY))>1000||l.bounds.maxX-l.bounds.minX>128))throw new Error('Advanced levels must use bounded coordinates and x-span at most 128');
  if(!ids.has(l.startId)||!inside(l.exit))throw new Error('Invalid start or exit');
  for(const o of l.obstacles){if(!o.id||o.id==='exit'||ids.has(o.id)||!['floor','wall','platform','ceiling'].includes(o.kind)||!validBounds(o.bounds)||!inside({x:o.bounds.minX,y:o.bounds.minY})||!inside({x:o.bounds.maxX,y:o.bounds.maxY}))throw new Error('Invalid obstacle');ids.add(o.id);}
+ for(const c of l.cannons){if(c.lift!==undefined){validateLiftSpec(c,l.bounds);if(l.obstacles.some(o=>pointRectangleDistance(c.position,o.bounds)<=PIP_RADIUS+GEOMETRY_EPS))throw new Error('Lift cannon overlaps terrain: '+c.id);}}
  for(const [id,support] of Object.entries(l.supports??{})){
   if((id!=='exit'&&!l.cannons.some(c=>c.id===id))||!['platform','suspended','wall'].includes(support.kind)||
     support.terrainId!==undefined&&!l.obstacles.some(o=>o.id===support.terrainId)||
