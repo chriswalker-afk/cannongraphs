@@ -103,10 +103,9 @@ function paintScene(p:PaintedHome,frame:RapidFrame,ms:number,still:boolean){
  }
  visual.paint(frame,demo.result,project,scale,still);
 }
-export function mountHomeScene(host:HTMLElement,pauseButton:HTMLButtonElement,look?:PipLook,cannonLook?:CannonLook){
+export function mountHomeScene(host:HTMLElement,pauseButton:HTMLButtonElement,look?:PipLook,cannonLook?:CannonLook,startPaused=false){
  const svg=el('svg',{'aria-hidden':'true',focusable:'false'},host) as SVGSVGElement;
- const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
- let paused=motion.matches,forceStill=paused,painted:PaintedHome|undefined,disposed=false;
+ let paused=startPaused,forceStill=paused,painted:PaintedHome|undefined,disposed=false;
  const clock=createHomeClock({request:fn=>window.requestAnimationFrame(fn),cancel:id=>window.cancelAnimationFrame(id)},render);
  function render(ms:number){
   if(!painted||disposed)return;
@@ -130,12 +129,8 @@ export function mountHomeScene(host:HTMLElement,pauseButton:HTMLButtonElement,lo
   else if(clock.elapsed()===0){forceStill=true;render(0);}
   sync();
  }
- function preference(){
-  paused=motion.matches;forceStill=paused;render(clock.elapsed());sync();
- }
  pauseButton.addEventListener('click',toggle);
- motion.addEventListener('change',preference);
  document.addEventListener('visibilitychange',sync);
  const resize=new ResizeObserver(redraw);resize.observe(host);redraw();sync();
- return ()=>{disposed=true;clock.destroy();resize.disconnect();motion.removeEventListener('change',preference);document.removeEventListener('visibilitychange',sync);pauseButton.removeEventListener('click',toggle);};
+ return ()=>{disposed=true;clock.destroy();resize.disconnect();document.removeEventListener('visibilitychange',sync);pauseButton.removeEventListener('click',toggle);};
 }

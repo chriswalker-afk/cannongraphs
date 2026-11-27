@@ -26,7 +26,7 @@ function cannonPreview(host:Element,look:CannonLook,family:CannonType,direction:
  paint(showEffect?.35:null);
  return {paint};
 }
-export function mountCannonWorkshop(root:HTMLElement,earned:ReadonlySet<string>,store:ReturnType<typeof createCannonLookStore>,onHome:()=>void,onTestFire?:()=>void){
+export function mountCannonWorkshop(root:HTMLElement,earned:ReadonlySet<string>,store:ReturnType<typeof createCannonLookStore>,onHome:()=>void,onTestFire?:()=>void,reducedMotion:()=>boolean=()=>false){
  let equipped=store.read(earned),draft={...equipped},slot:CannonSlot='barrel',family:CannonType='linear',direction:1|-1=1,disposed=false,raf=0;
  root.replaceChildren();
  const main=node('main','selection-screen workshop-screen cannon-workshop',root),top=node('div','selection-top',main);
@@ -46,7 +46,7 @@ export function mountCannonWorkshop(root:HTMLElement,earned:ReadonlySet<string>,
  function stopPreview(){if(raf){cancelAnimationFrame(raf);raf=0;}}
  button(controls,'workshop-pose','Test fire',()=>{
   if(disposed||!previewArt)return;stopPreview();onTestFire?.();
-  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){previewArt.paint(.35);return;}
+  if(reducedMotion()){previewArt.paint(.35);return;}
   const art=previewArt,start=performance.now(),duration=CUE_END_MS-FIRE_MS;
   function tick(now:number){
    raf=0;if(disposed||art!==previewArt)return;

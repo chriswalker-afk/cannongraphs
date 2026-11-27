@@ -18,7 +18,12 @@ async function pick(page:Page,world:number,mode:Mode,level:number,launch=true){
  await expect(page.locator('.level-number')).toHaveCount(12);
  await page.locator('.level-number').nth(level-1).click();
  await expect(page.locator('.level-number').nth(level-1)).toHaveAttribute('aria-pressed','true');
- if(launch){await page.locator('.selection-play').click();await expect(page.locator('main.game-screen')).toBeVisible();}
+ if(launch){await page.locator('.selection-play').click();await expect(page.locator('main.game-screen')).toBeVisible();await chooseReduced(page);}
+}
+async function chooseReduced(page:Page){
+ const motion=page.locator('#motion-mode');
+ if(await motion.textContent()==='Motion: full')await motion.click();
+ await expect(motion).toHaveText('Motion: reduced');
 }
 async function capture(page:Page,info:TestInfo,name:string){
  const file=info.outputPath(name+'.png');
@@ -51,6 +56,7 @@ for(const viewport of [{width:1366,height:768},{width:768,height:1024},{width:39
   await page.locator('.world-card').nth(5).click();await expect(page.locator('.mode-card')).toHaveCount(3);await fits(page);await capture(page,info,'modes');
   await page.locator('.mode-card').nth(2).click();await expect(page.locator('.selection-play')).toBeDisabled();await page.locator('.level-number').nth(11).click();await fits(page);await capture(page,info,'levels');
   await page.locator('.selection-play').click();await expect(page.locator('main.game-screen')).toBeVisible();
+  await expect(page.locator('#motion-mode')).toHaveText('Motion: full');await chooseReduced(page);
   await expect.poll(async()=>Math.round((await page.locator('.stage').boundingBox())?.height??0)).toBeGreaterThanOrEqual(210);
   await fits(page);await expect(page.locator('.plan-card')).toHaveCount(7);
   await expect(page.locator('#equation-input')).toBeEditable();await expect(page.locator('#graph-preview')).toBeHidden();
@@ -68,7 +74,7 @@ test('keyboard navigation, invalid equation, misfire, retry and successful reloa
  await page.locator('.mode-card').nth(1).focus();await page.keyboard.press('Enter');
  await page.locator('.level-number').first().focus();await page.keyboard.press('Enter');
  await page.locator('.selection-play').focus();await page.keyboard.press('Enter');
- await expect(page.locator('main.game-screen')).toBeVisible();
+ await expect(page.locator('main.game-screen')).toBeVisible();await chooseReduced(page);
  const input=page.locator('#equation-input');await input.fill('x²');
  await expect(input).toHaveAttribute('aria-invalid','true');await expect(page.locator('#launch')).toBeDisabled();
  await input.fill('x+1');await expect(page.locator('#launch')).toBeEnabled();await page.locator('#launch').click();
