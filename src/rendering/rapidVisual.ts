@@ -22,7 +22,7 @@ export function createRapidVisual(parent:Element,count:number,variantOffset:numb
  const hide=()=>layer.setAttribute('display','none');hide();
  return {hide,paint(frame:RapidFrame,result:AttemptResult,project:(p:Point)=>Point,scale:number,reduced:boolean){
   layer.setAttribute('display','inline');
-  for(const {trail,pip} of slots){trail.setAttribute('display','none');pip.root.setAttribute('display','none');}
+  for(const {trail,pip} of slots){trail.setAttribute('display','none');pip.root.setAttribute('display','none');pip.root.setAttribute('data-pip-phase','hidden');}
   for(const f of frame.pips){
    const {trail,pip}=slots[f.index],p=project(f.point);
    pip.root.setAttribute('display','inline');pip.root.setAttribute('data-pip-phase',f.phase);pip.root.setAttribute('opacity',String(f.opacity));

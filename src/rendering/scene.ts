@@ -73,6 +73,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  const crewTotal=controls.budget??level.creatures;
  let crewWaiting=crewTotal,crew:ReturnType<typeof createWaitingCrew>|undefined,launchParent:Element|undefined,flightTrail:Element|undefined;
  const tracePaths=new Map<string,{path:Element;to:Point;color:string;leg:AttemptResult}>();
+ let runReduced=false;
  function setWaitingCrew(waiting:number){crewWaiting=waiting;crew?.update(waiting);}
  let barrels=new Map<string,Element>(),visual:ReturnType<typeof createLaunchVisual>|undefined;
  let active:{result:AttemptResult;started:number;elapsed:number;reduced:boolean;variant:number;boardingFrom?:Point;done:()=>void;gemTimeline:readonly TimedGemHit[];gemIds:readonly string[];onGems?:(ids:readonly string[])=>void}|undefined,animationId=0;
@@ -147,7 +148,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  }
  function playRapidFire(result:AttemptResult,count:number,variantOffset:number,progress:(counts:RapidCounts)=>void,done:()=>void):boolean{
   if(active||rapid||!rapidParent||result!==lastResult)return false;
-  const schedule=makeRapidSchedule(result,count,reducedMotion());
+  const schedule=makeRapidSchedule(result,count,runReduced);
   rapidParent.replaceChildren();rapidVisual=createRapidVisual(rapidParent,count,variantOffset,result,controls.look,controls.cannonLook);
   rapidAudio=createSoundCursor(rapidSounds(result,schedule),emitSound);
   rapid={result,schedule,started:performance.now(),elapsed:0,variantOffset,progress,done};
@@ -166,7 +167,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  }
  function playFlight(result:AttemptResult,done:()=>void,onGems?:(ids:readonly string[])=>void):boolean{
   if(active||rapid)return false;
-  lastResult=undefined;const reduced=reducedMotion(),variant=departingIndex(crewTotal,crewWaiting),boardingFrom=crew?.positions[variant];
+  lastResult=undefined;const reduced=runReduced=reducedMotion(),variant=departingIndex(crewTotal,crewWaiting),boardingFrom=crew?.positions[variant];
   if(launchParent){launchParent.replaceChildren();visual=createLaunchVisual(launchParent,controls.look,controls.cannonLook,variant);}
   attemptAudio=createSoundCursor(attemptSounds(result,reduced),emitSound);
   active={result,started:performance.now(),elapsed:0,reduced,variant,boardingFrom,done,gemTimeline:gemTimeline(result,reduced),gemIds:[],onGems};

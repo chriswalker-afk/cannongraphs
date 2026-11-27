@@ -1,6 +1,6 @@
 import type {Point} from '../engine/coordinates';
 import type {Level} from '../levels/schema';
-import {pointRectangleDistance,segmentRectangleDistance} from '../engine/collisions/clearance';
+import {segmentRectangleDistance} from '../engine/collisions/clearance';
 // Decorative boarding positions on existing terrain, not new platforms.
 // Keep hats, bodies and a small bounce away from solid terrain and anchors.
 const radius=.245,lift=.10,spacing=.57;
