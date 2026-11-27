@@ -19,3 +19,7 @@ Tests cover meaningful decoys, empty-mount pass-through, occupied mount rejectio
 - Integrate the level-aware plan into scene, editor, readiness, replay/restart, preview and feedback. Render locked coefficients before placement and the complete equation after placement; handle Ace exact-coordinate requirements.
 - Two separate unranked playable prototypes (linear and quadratic) under the Broken cannons chooser, not yet part of the curriculum. Keep normal and Foundry worlds unchanged.
 - Browser regression, screenshot review and mathematical audit. Subsequent PRs add the twelve puzzles, workshop, file format, official progress and world integration.
+
+## Inherited PR50 touchscreen correction
+
+PR50's browser CI passed mouse/layout checks but failed its real Chromium touch drag. Reproduced on the deployment build: the actual contact hits the transparent deck region, but Chromium adjusts the pointer target to a painted barrel. Resolve the deck using `elementFromPoint` at the touch contact before falling back to the event target; retain SVG pointer capture. Existing CDP touch regression must pass again.
