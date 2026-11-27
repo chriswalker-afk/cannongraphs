@@ -24,10 +24,11 @@ function thumbnail(parent:Element,e:CustomEntry){
  for(let x=Math.ceil(b.minX);x<=b.maxX;x++){const q=p({x,y:0});el('line',{x1:q.x,y1:a.y,x2:q.x,y2:z.y,stroke:'#90a7af','stroke-width':.35,opacity:.65},svg);}
  for(let y=Math.ceil(b.minY);y<=b.maxY;y++){const q=p({x:0,y});el('line',{x1:a.x,y1:q.y,x2:z.x,y2:q.y,stroke:'#90a7af','stroke-width':.35,opacity:.65},svg);}
  for(const o of workshopTerrain(d)){const q=p({x:o.bounds.minX,y:o.bounds.maxY});el('rect',{x:q.x,y:q.y,width:(o.bounds.maxX-o.bounds.minX)*s,height:(o.bounds.maxY-o.bounds.minY)*s,fill:'#a28e72',stroke:'#776b5d','stroke-width':.5},svg);}
+ for(const c of d.cannons){if(!c.lift)continue;const x=c.position.x-c.direction*.5,a=p({x,y:c.lift.maxY}),z=p({x,y:c.lift.minY-.47});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#a87826','stroke-width':1.8,'stroke-dasharray':'2 1','data-library-lift-rail':c.id},svg);}
  for(const c of d.cannons){const q=p(c.position),g=el('g',{transform:'translate('+q.x+' '+q.y+')'},svg);
   el('rect',{x:c.direction===1?-9:0,y:-3,width:9,height:6,rx:1.5,fill:cannonTypes[c.type].color,stroke:'#254763','stroke-width':.6},g);
   el('circle',{r:2,fill:'#fff',stroke:'#254763','stroke-width':.7},g);
-  const label=el('text',{x:0,y:-5,'text-anchor':'middle','font-size':6,fill:'#234d78','font-weight':800},g);label.textContent=c.id;
+  const label=el('text',{x:0,y:-5,'text-anchor':'middle','font-size':6,fill:'#234d78','font-weight':800},g);label.textContent=c.id+(c.lift?' ↑↓':'');
  }
  if(d.exit){const q=p(d.exit);el('rect',{x:q.x-4,y:q.y-4,width:8,height:8,rx:2,fill:'#efbd56',stroke:'#8b5a12','stroke-width':.8},svg);el('circle',{cx:q.x,cy:q.y,r:1.2,fill:'white'},svg);}
  for(const gem of d.gems){const q=p(gem.position);el('path',{d:'M'+q.x+' '+(q.y-2.4)+' l2.4 2.4 -2.4 2.4 -2.4 -2.4Z',fill:'#45c6bc',stroke:'#175e64','stroke-width':.45},svg);}
@@ -62,7 +63,7 @@ export function mountCustomLibrary(root:HTMLElement,store:CustomWorkshopStore,op
  });
  function renderList(){
   list.replaceChildren();const q=search.value.trim().toLowerCase(),f=filter.value;
-  const visible=snapshot.entries.filter(e=>(f==='all'||f==='confirmed'&&e.confirmed||f==='draft'&&!e.confirmed||f==='imported'&&e.source==='imported')&&(!q||[e.design.title,worlds[e.design.world-1].name,...e.design.cannons.map(c=>cannonTypes[c.type].label)].join(' ').toLowerCase().includes(q)));
+  const visible=snapshot.entries.filter(e=>(f==='all'||f==='confirmed'&&e.confirmed||f==='draft'&&!e.confirmed||f==='imported'&&e.source==='imported')&&(!q||[e.design.title,worlds[e.design.world-1].name,...e.design.cannons.map(c=>cannonTypes[c.type].label+(c.lift?' movable lift broken cannon':''))].join(' ').toLowerCase().includes(q)));
   if(!visible.some(e=>e.id===selected))selected=visible[0]?.id??'';
   get('library-count').textContent=visible.length+' / '+snapshot.entries.length+' levels';
   if(!visible.length){const empty=node('div',list,'library-empty');node('h2',empty,'',snapshot.entries.length?'No matching levels':'Your library is empty');node('p',empty,'',snapshot.entries.length?'Try a different search or filter.':'Create a level in the workshop, or upload a shared .cannon.json file.');return;}
@@ -71,7 +72,7 @@ export function mountCustomLibrary(root:HTMLElement,store:CustomWorkshopStore,op
    b.dataset.levelId=e.id;b.setAttribute('aria-pressed',String(selected===e.id));b.setAttribute('aria-label',e.design.title+', '+status(e)+', '+e.design.cannons.length+' cannons');
    thumbnail(b,e);const copy=node('span',b,'library-card-copy');node('strong',copy,'',e.design.title);
    const meta=node('span',copy,'library-card-meta');node('span',meta,'library-state',status(e)).dataset.status=e.confirmed?'confirmed':e.tested?'tested':'draft';
-   node('span',meta,'',e.design.cannons.length+' cannon'+(e.design.cannons.length===1?'':'s'));node('span',meta,'',e.source==='imported'?'Imported':'Created');
+   node('span',meta,'',e.design.cannons.length+' cannon'+(e.design.cannons.length===1?'':'s'));node('span',meta,'',e.source==='imported'?'Imported':'Created');const lifts=e.design.cannons.filter(c=>c.lift).length;if(lifts)node('span',meta,'',lifts+' lift'+(lifts===1?'':'s'));
   }
  }
  function renderDetail(){
@@ -79,7 +80,7 @@ export function mountCustomLibrary(root:HTMLElement,store:CustomWorkshopStore,op
   if(!e){node('p',detail,'library-empty','Select a saved level to play or edit.');return;}
   const d=e.design;node('h2',detail,'',d.title);node('p',detail,'library-subtitle',worlds[d.world-1].name+' · '+d.cannons.length+' cannon'+(d.cannons.length===1?'':'s')+' · '+d.gems.length+' gems');
   node('span',detail,'library-state',status(e)+(e.source==='imported'?' · Imported':'')).dataset.status=e.confirmed?'confirmed':e.tested?'tested':'draft';
-  const chips=node('div',detail,'library-families');
+  const chips=node('div',detail,'library-families');const liftCount=d.cannons.filter(c=>c.lift).length;if(liftCount){const chip=node('span',chips,'library-family',liftCount+' movable '+(liftCount===1?'platform':'platforms'));chip.style.borderLeftColor='#a87826';}
   for(const type of new Set(d.cannons.map(c=>c.type))){const chip=node('span',chips,'library-family',cannonTypes[type].label);chip.style.borderLeftColor=cannonTypes[type].color;}
   node('p',detail,'library-objective',d.objective);
   let invalid='';try{buildCustomLevel(d);}catch(err){invalid=err instanceof Error?err.message:'Design is incomplete.';}

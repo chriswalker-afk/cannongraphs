@@ -186,8 +186,8 @@ function updateCompletion(){
   achievementText.hidden=true;
   if(state.phase==='success'&&!customSubmitted){
    customSubmitted=true;
-   if(customRun.kind==='test')customPassed=customStore.completeTest(customRun,state);
-   else customResult=customStore.completePlay(customRun,state);
+   if(customRun.kind==='test')customPassed=customStore.completeTest(customRun,state,level);
+   else customResult=customStore.completePlay(customRun,state,level);
   }
   recordText.hidden=state.phase!=='success'||!customResult;
   if(customResult&&state.phase==='success'){
