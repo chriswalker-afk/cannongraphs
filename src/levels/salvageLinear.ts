@@ -35,8 +35,8 @@ export const salvageLinear:readonly Level[]=[
   [mount('P',3,2),mount('Q',3,5),mount('R',5,2),mount('S',8,4),mount('T',6,5),mount('U',4,8)],[part('B'),part('C','-x/2')],
   [wall('intake-stack',1.6,2.2,3.1),ceiling('intake-beam',1.6,2.2,4.5,9),ceiling('sorting-press',4.8,5.3,4.9,9)]),
  level(6,'Scrap maze','Use the locked descent and a programmable part to negotiate all three barriers. More than one mount lies on the descending line.',2,point(12,5),9,
-  [mount('P',3,2),mount('Q',3,6),mount('R',6,3),mount('S',8,1),mount('T',9,0),mount('U',4,8),mount('V',7,6)],[part('B','-x'),part('C')],
-  [wall('entry-stack',1.6,2.2,3.8),ceiling('entry-beam',1.6,2.2,5.25,9),ceiling('sorting-beam',6.6,7.1,3.1,9),wall('exit-stack',9.5,10,1.6)])
+  [mount('P',3,2),mount('Q',3,6),mount('R',6,3),mount('S',8,1),mount('T',9,0),mount('U',4,8),mount('V',8,6)],[part('B','-x'),part('C')],
+  [wall('entry-stack',1.6,2.2,3.7),ceiling('entry-beam',1.6,2.2,5.32,9),ceiling('sorting-beam',6.6,7.1,3.1,9),wall('exit-stack',9.5,10,1.6)])
 ];
 // Only the first two puzzles provide the incoming equation. No assignments
 // or solution equations for later levels are stored in the shipped catalogue.
