@@ -26,3 +26,7 @@ Automated test/build and browser jobs must pass before merging. Screenshot artif
 - Shared/student browser privacy and local-data clearing; verify HTTPS and Pages deployment in the school's network environment.
 
 Do not claim physical-device, human listening or assistive-technology testing from the automated suite alone. The final planned PR completes the initial roadmap; further polish should be based on classroom feedback.
+
+### PR33: Choosing standard forms
+
+Cannon pop-ups show the available algebraic forms as named formula buttons rather than a dropdown. Students can choose an expanded, factorised, completed-square or root-based quadratic. A selected form owns its own editable draft. Switching to another form with no draft does not infer parameters from the puzzle or the previous form. Free equation input is still available for all supported expressions. The same parser validates every form, and an incomplete/degenerate form cannot be launched. Existing collision, scoring and flight evidence rules still apply.

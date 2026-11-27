@@ -1,9 +1,9 @@
 import {mountEquationEditor} from './equationEditor';
-import {formsFor,parameterEquation,stepParameter,validParameter,polynomialParameters,type ParameterValues} from '../game/parameterForms';
+import {formsFor,formFormula,parameterEquation,stepParameter,validParameter,polynomialParameters,type ParameterValues,type FormDrafts} from '../game/parameterForms';
 import {cannonTypes} from '../game/cannons';
 import type {Cannon,Level} from '../levels/schema';
 import {modePolicy,type LearningMode} from '../game/learningModes';
-export interface EditorMemory {readonly form:string;readonly values:ParameterValues;readonly raw:boolean}
+export interface EditorMemory {readonly form:string;readonly values:ParameterValues;readonly raw:boolean;readonly drafts?:FormDrafts}
 function node<K extends keyof HTMLElementTagNameMap>(tag:K,cls:string,parent:Element,text?:string):HTMLElementTagNameMap[K]{
  const n=document.createElement(tag);n.className=cls;if(text!==undefined)n.textContent=text;parent.append(n);return n;
 }
@@ -11,11 +11,23 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
  root.replaceChildren();
  const forms=formsFor(cannon.type);
  let form=forms.find(f=>f.id===memory?.form)??forms[0],values={...memory?.values},rawMode=memory?.raw??!!text;
- const options=node('div','parameter-options',root),formLabel=node('label','parameter-form-label',options,'Form (changing resets boxes) ');
- const select=node('select','parameter-form',formLabel);select.setAttribute('aria-label','Equation form');
- for(const f of forms){const o=node('option','',select,f.name);o.value=f.id;}
- formLabel.hidden=forms.length===1;
+ // Each form has its own draft. Selecting a different form deliberately
+ // activates only that form's equation; never derive answers automatically.
+ const drafts:Record<string,ParameterValues>={...memory?.drafts};
+ const options=node('div','parameter-options',root);
+ const chooseLabel=node('span','parameter-choose-label',options,'Equation form');
  const toggle=node('button','parameter-toggle',options,'Free equation');toggle.type='button';
+ const formChoices=node('div','parameter-form-choices',root);
+ formChoices.setAttribute('role','group');formChoices.setAttribute('aria-label','Equation forms');
+ const choices=new Map<string,HTMLButtonElement>();
+ for(const choice of forms){
+  const b=node('button','parameter-form-choice',formChoices);b.type='button';b.dataset.formId=choice.id;
+  node('span','form-choice-name',b,choice.name);
+  node('span','form-choice-formula',b,formFormula(choice));
+  b.setAttribute('aria-label',choice.name+' — '+formFormula(choice));b.setAttribute('aria-pressed',String(choice.id===form.id));
+  choices.set(choice.id,b);
+  b.addEventListener('click',()=>{if(rawMode||choice===form)return;drafts[form.id]={...values};form=choice;values={...drafts[choice.id]};render();apply();first?.focus();});
+ }
  const boxes=node('div','parameter-boxes',root);boxes.id='parameter-boxes';
  const equation=node('div','parameter-equation',boxes);equation.setAttribute('role','group');equation.setAttribute('aria-label',cannonTypes[cannon.type].label+' equation parameters');
  node('p','parameter-help',boxes,'Enter signed numbers or fractions. ↑/↓ changes a number by 1 (Shift: 0.1).'+(['linear','quadratic','cubic'].includes(cannon.type)?'':' π and e are accepted; arrows step rational values. Angles in radians.'));
@@ -33,10 +45,11 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
   for(const [id,input] of inputs)input.setAttribute('aria-invalid',String(!!input.value.trim()&&!validParameter(input.value,cannon.type)));
  }
  rawRoot.addEventListener('equationchange',()=>{syncMessage();root.dispatchEvent(new CustomEvent('equationchange'));});
- function refresh(){rawRoot.hidden=!rawMode;boxes.hidden=rawMode;formLabel.hidden=rawMode||forms.length===1;toggle.textContent=rawMode?(polynomialParameters(raw.getDraft().text,cannon.type)||raw.getDraft().text===parameterEquation(form,values)||!raw.getDraft().text?'Use boxes':'New box equation'):'Free equation';}
+ function refresh(){rawRoot.hidden=!rawMode;boxes.hidden=rawMode;formChoices.hidden=rawMode||forms.length===1;chooseLabel.textContent=rawMode?'Free equation':'Choose a form';toggle.textContent=rawMode?(polynomialParameters(raw.getDraft().text,cannon.type)||raw.getDraft().text===parameterEquation(form,values)||!raw.getDraft().text?'Use boxes':'New box equation'):'Free equation';}
  function apply(){raw.setText(parameterEquation(form,values));syncMessage();}
  function render(){
-  equation.replaceChildren();inputs.clear();first=undefined;select.value=form.id;
+  equation.replaceChildren();inputs.clear();first=undefined;
+  for(const [id,b] of choices)b.setAttribute('aria-pressed',String(id===form.id));
   node('span','parameter-math',equation,'y = ');
   for(const part of form.parts){
    if(typeof part==='string'){node('span','parameter-math',equation,part);continue;}
@@ -50,12 +63,12 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
   }
   syncMessage();
  }
- select.addEventListener('change',()=>{const next=forms.find(f=>f.id===select.value);if(!next||next===form)return;form=next;values={};render();apply();first?.focus();});
  toggle.addEventListener('click',()=>{
   if(!rawMode){rawMode=true;refresh();root.dispatchEvent(new CustomEvent('equationchange'));raw.focus();return;}
   const current=raw.getDraft().text,parsed=polynomialParameters(current,cannon.type);
   if(current!==parameterEquation(form,values)){
    if(current.trim()&&!parsed&&!window.confirm('Start a new box equation? This replaces the current free equation.'))return;
+   drafts[form.id]={...values};
    if(parsed){form=forms[0];values={...parsed};}
    else {values={};}
   }
@@ -63,5 +76,5 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
  });
  rawRoot.addEventListener('equationchange',()=>{if(rawMode)refresh();});
  render();refresh();syncMessage();
- return {getDraft:raw.getDraft,getMemory:():EditorMemory=>({form:form.id,values:{...values},raw:rawMode}),focus:()=>rawMode?raw.focus():first?.focus()};
+ return {getDraft:raw.getDraft,getMemory:():EditorMemory=>({form:form.id,values:{...values},raw:rawMode,drafts:{...drafts,[form.id]:{...values}}}),focus:()=>rawMode?raw.focus():first?.focus()};
 }
