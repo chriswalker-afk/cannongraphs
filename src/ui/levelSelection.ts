@@ -112,13 +112,13 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   const tierList=element('div','level-tier-list',board);
   tierList.setAttribute('role','group');tierList.setAttribute('aria-label',w.name+' level tiers');
   const buttons=new Map<string,HTMLButtonElement>(),tierRows=new Map<number,HTMLElement>();
-  for(const {tier,entries} of levelTiers(w.levels)){
+  for(const {tier,entries,label:bandLabel} of levelTiers(w.levels)){
    const row=element('section','level-tier',tierList);row.dataset.cannons=String(tier.count);tierRows.set(tier.count,row);
    row.setAttribute('aria-labelledby','tier-'+tier.count+'-heading');
    row.style.setProperty('--tier-accent',tier.accent);row.style.setProperty('--tier-ink',tier.ink);row.style.setProperty('--tier-tint',tier.tint);
    const label=element('div','level-tier-heading',row);
    const title=element('h3','',label,tier.name);title.id='tier-'+tier.count+'-heading';
-   const count=element('span','level-tier-count',label,tier.count+' '+(tier.count===1?'cannon':'cannons'));count.id='tier-'+tier.count+'-count';
+   const count=element('span','level-tier-count',label,bandLabel);count.id='tier-'+tier.count+'-count';
    row.setAttribute('aria-describedby',count.id);
    const tiles=element('div','level-number-grid',row);tiles.setAttribute('role','group');tiles.setAttribute('aria-label',tier.name+' · '+count.textContent);
    for(const {level:l,number} of entries){
@@ -140,7 +140,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   refreshLevel=()=>{
    const level=selectedLevel(state);
    for(const [id,b] of buttons)b.setAttribute('aria-pressed',String(id===level?.id));
-   for(const [count,row] of tierRows)row.dataset.selected=String(level?.cannons.length===count);
+   for(const [count,row] of tierRows)row.dataset.selected=String(!!level&&summarizeLevel(level).tier.count===count);
    info.replaceChildren();
    play.disabled=!level;
    if(!level){
@@ -159,6 +159,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
    const types=element('div','selection-families',info);for(const f of s.families)familyChip(types,f.type,f.count);
    const facts=element('div','level-facts',info);
    element('span','level-fact',facts,s.cannonCount+' '+(s.cannonCount===1?'cannon':'cannons'));
+   if(s.liftCount)element('span','level-fact',facts,s.liftCount+' movable '+(s.liftCount===1?'platform':'platforms'));
    element('span','level-fact',facts,modeBudgetLabel(mode,level));
    if(s.gemCount)element('span','level-fact',facts,s.gemCount+' optional '+(s.gemCount===1?'gem':'gems'));
    const record=getRecord(progress,level.id,mode),rating=recordStars(record,level,mode);

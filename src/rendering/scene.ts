@@ -245,8 +245,8 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
   svg.replaceChildren();inspections=new Map();hovered=focused=undefined;barrels=new Map();cannonTargets=new Map();gemTargets=new Map();visual=undefined;trace=undefined;marker=undefined;rapidVisual=undefined;rapidParent=undefined;crew=undefined;launchParent=undefined;flightTrail=undefined;tracePaths.clear();
   const defs=el('defs',{},svg),sky=el('linearGradient',{id:'sky',x1:'0',x2:'0',y1:'0',y2:'1'},defs);
-  const floating=level.world===2,peaks=level.world===3,ruins=level.world===4,factory=level.world===5,cosmic=level.world===6;
-  el('stop',{offset:'0%', 'stop-color':cosmic?'#a8b6df':factory?'#b9c7cb':ruins?'#b7c4ae':peaks?'#aebce8':floating?'#89c5ed':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':cosmic?'#efe0f4':factory?'#f4e2c4':ruins?'#f3e2bd':peaks?'#f2e6f6':floating?'#e7e7fa':'#e6f5e6'},sky);
+  const floating=level.world===2,peaks=level.world===3,ruins=level.world===4,factory=level.world===5||level.world===7,cosmic=level.world===6;
+  el('stop',{offset:'0%', 'stop-color':cosmic?'#a8b6df':level.world===7?'#aabbb9':factory?'#b9c7cb':ruins?'#b7c4ae':peaks?'#aebce8':floating?'#89c5ed':'#80cbee'},sky);el('stop',{offset:'100%','stop-color':cosmic?'#efe0f4':level.world===7?'#f4e6be':factory?'#f4e2c4':ruins?'#f3e2bd':peaks?'#f2e6f6':floating?'#e7e7fa':'#e6f5e6'},sky);
   const portal=el('radialGradient',{id:'portal'},defs);el('stop',{offset:'0%','stop-color':'#fffbea'},portal);el('stop',{offset:'100%','stop-color':'#f8ba48'},portal);
   const clip=el('clipPath',{id:'plotClip'},defs);el('rect',{x:q.x,y:q.y,width:q.w,height:q.h,rx:5},clip);
   el('rect',{width:W,height:H,fill:'url(#sky)'},svg);

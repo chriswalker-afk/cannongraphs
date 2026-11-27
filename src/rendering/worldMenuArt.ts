@@ -21,7 +21,7 @@ export function renderWorldMenuArt(host:HTMLElement,number:number){
  }else if(number===2)renderFloatingScenery(svg,w,h);
  else if(number===3)renderPeakScenery(svg,w,h);
  else if(number===4)renderRuinsScenery(svg,w,h);
- else if(number===5)renderFactoryScenery(svg,w,h);
+ else if(number===5||number===7)renderFactoryScenery(svg,w,h);
  else renderCosmicScenery(svg,w,h);
  // Strong foreground landmark for each destination.
  const fg=el('g',{},svg);
@@ -57,6 +57,8 @@ export function renderWorldMenuArt(host:HTMLElement,number:number){
   for(let i=0;i<5;i++){const a=i*2*Math.PI/5;el('line',{x1:0,y1:0,x2:24*Math.cos(a),y2:24*Math.sin(a),stroke:'#8d8778','stroke-width':5,'stroke-linecap':'round'},g);}
   el('path',{d:'M25 15 V74 Q25 92 45 92 H76',fill:'none',stroke:'#71898f','stroke-width':16,'stroke-linecap':'round'},fg);
   el('path',{d:'M25 15 V74 Q25 92 45 92 H76',fill:'none',stroke:'#b79e72','stroke-width':8,'stroke-linecap':'round'},fg);
+ }else if(number===7){
+  for(const [x,y] of [[145,96],[270,56]]){el('rect',{x:x-7,y:14,width:14,height:125,rx:4,fill:'#596a6b'},fg);el('path',{d:'M'+x+' 18 V136',stroke:'#c3ccca','stroke-width':4},fg);el('rect',{x:x-36,y:y+21,width:72,height:12,rx:2,fill:'#e7b34b',stroke:'#504b39','stroke-width':2},fg);for(let i=0;i<5;i++)el('path',{d:'M'+(x-32+i*13)+' '+(y+21)+' l6 0 -5 12 -6 0Z',fill:'#504b39'},fg);}
  }else{
   const g=el('g',{transform:'translate(281 62) rotate(-16)'},fg);
   el('ellipse',{rx:64,ry:17,fill:'none',stroke:'#8c95c4','stroke-width':7},g);
@@ -72,7 +74,8 @@ export function renderWorldMenuArt(host:HTMLElement,number:number){
   3:{d:'M104 96 Q171 -32 238 96',type:'quadratic',angle:63},
   4:{d:'M104 49 Q161 144 218 49',type:'quadratic',angle:-59},
   5:{d:'M104 96 C141 -18 184 144 230 40',type:'cubic',angle:72},
-  6:{d:'M104 86 C122 35 150 35 168 86 S214 137 232 86',type:'wave',angle:70}
+  6:{d:'M104 86 C122 35 150 35 168 86 S214 137 232 86',type:'wave',angle:70},
+  7:{d:'M104 96 Q170 -13 238 56',type:'quadratic',angle:58}
  };
  const motif=motifs[number];
  el('path',{d:motif.d,stroke:'#fffef1','stroke-width':5,opacity:.8,fill:'none','stroke-linecap':'round'},fg);

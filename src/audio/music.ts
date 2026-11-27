@@ -1,6 +1,6 @@
 // Original short, looping compositions. No recordings, network requests or
 // third-party music. Eight-beat phrases have distinct instrumentation and rhythm.
-export type MusicTheme='menu'|1|2|3|4|5|6;
+export type MusicTheme='menu'|1|2|3|4|5|6|7;
 export interface Note {readonly midi:number;readonly length:number;readonly volume:number;readonly wave:OscillatorType;readonly endMidi?:number}
 export interface MusicScore {readonly name:string;readonly bpm:number;readonly melody:readonly (number|null)[];readonly bass:readonly number[];readonly wave:OscillatorType;readonly bassWave:OscillatorType;readonly chord:number}
 export const musicScores:Readonly<Record<MusicTheme,MusicScore>>={
@@ -10,7 +10,8 @@ export const musicScores:Readonly<Record<MusicTheme,MusicScore>>={
  3:{name:'Peak ascent',bpm:106,melody:[67,71,74,79,76,null,74,71,69,72,76,81,79,null,76,74],bass:[43,43,48,48,45,45,50,50],wave:'triangle',bassWave:'sine',chord:7},
  4:{name:'Temple echoes',bpm:84,melody:[69,null,72,76,77,null,76,72,67,null,70,74,72,70,67,null],bass:[45,45,41,41,43,43,40,40],wave:'sine',bassWave:'triangle',chord:7},
  5:{name:'Gear rhythm',bpm:120,melody:[64,64,67,71,69,null,67,64,62,65,69,72,71,67,65,null],bass:[40,40,45,45,38,38,43,43],wave:'triangle',bassWave:'square',chord:7},
- 6:{name:'Orbit drift',bpm:76,melody:[76,null,83,null,81,79,null,76,74,null,81,null,78,76,74,null],bass:[48,48,45,45,50,50,47,47],wave:'sine',bassWave:'sine',chord:12}
+ 6:{name:'Orbit drift',bpm:76,melody:[76,null,83,null,81,79,null,76,74,null,81,null,78,76,74,null],bass:[48,48,45,45,50,50,47,47],wave:'sine',bassWave:'sine',chord:12},
+ 7:{name:'Lift and lower',bpm:108,melody:[62,65,69,null,65,62,60,null,64,67,71,67,65,64,62,null],bass:[38,38,43,43,40,40,45,45],wave:'triangle',bassWave:'square',chord:7}
 };
 export const midiHz=(n:number)=>440*2**((n-69)/12);
 export function musicStep(theme:MusicTheme,step:number):{seconds:number;notes:readonly Note[]}{

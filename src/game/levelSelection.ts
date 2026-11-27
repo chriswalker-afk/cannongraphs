@@ -1,6 +1,6 @@
 import {levels,worlds,worldForLevel,levelPosition,type World} from '../levels/catalog';
 import type {Level} from '../levels/schema';
-import {tierForCount,type DifficultyTier} from '../levels/progression';
+import {levelTiers,type DifficultyTier} from '../levels/progression';
 import type {CannonType} from './cannons';
 import {isLearningMode,type LearningMode} from './learningModes';
 export type SelectionState=
@@ -41,11 +41,11 @@ export function selectedLevel(state:SelectionState):Level|undefined{
 export interface LevelSummary{
  readonly index:number;readonly title:string;readonly objective:string;
  readonly families:readonly {type:CannonType;count:number}[];
- readonly cannonCount:number;readonly pipCount:number;readonly gemCount:number;readonly tier:DifficultyTier;
+ readonly cannonCount:number;readonly liftCount:number;readonly pipCount:number;readonly gemCount:number;readonly tier:DifficultyTier;
 }
 export function summarizeLevel(level:Level):LevelSummary{
  const index=levelPosition(level.id)?.index;if(index===undefined||worldForLevel(level.id)?.number!==level.world)throw new Error('Not a catalog level');
  const counts=new Map<CannonType,number>();
  for(const c of level.cannons)counts.set(c.type,(counts.get(c.type)??0)+1);
- return {index,title:level.title,objective:level.objective,families:[...counts].map(([type,count])=>({type,count})),cannonCount:level.cannons.length,tier:tierForCount(level.cannons.length),pipCount:level.creatures,gemCount:level.gems?.length??0};
+ return {index,title:level.title,objective:level.objective,families:[...counts].map(([type,count])=>({type,count})),cannonCount:level.cannons.length,liftCount:level.cannons.filter(c=>c.lift).length,tier:levelTiers(worldForLevel(level.id)!.levels).find(g=>g.entries.some(e=>e.level.id===level.id))!.tier,pipCount:level.creatures,gemCount:level.gems?.length??0};
 }
