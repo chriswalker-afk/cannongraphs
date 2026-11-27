@@ -22,7 +22,7 @@ export function modeBudget(mode:LearningMode,level:Pick<Level,'creatures'>):numb
 export function modeBudgetLabel(mode:LearningMode,level?:Level):string{return mode==='cadet'?'Unlimited attempts':(mode==='ace'?3:level?.creatures??5)+' Pips';}
 export function modeObjective(mode:LearningMode,level:Level):string{
  if(mode!=='ace')return level.objective;
- if(level.anchorPuzzle){const points=level.anchorPuzzle.anchors.filter(a=>!Number.isInteger(a.position.x)||!Number.isInteger(a.position.y));return 'Mount and use every cannon in the relay. Reach the exit.'+(points.length?' Exact non-integer mounts: '+points.map(a=>a.id+' ('+fmt(a.position.x)+', '+fmt(a.position.y)+')').join('; ')+'.':'');}
+ if(level.anchorPuzzle){const points=[...level.anchorPuzzle.anchors.map(a=>({label:'Mount '+a.id,position:a.position})),...level.cannons.filter(c=>!level.anchorPuzzle!.inventory.some(i=>i.id===c.id)).map(c=>({label:'Cannon '+c.id,position:c.position})),{label:'Exit',position:level.exit}].filter(a=>!Number.isInteger(a.position.x)||!Number.isInteger(a.position.y));return 'Mount and use every cannon in the relay. Reach the exit.'+(level.exactCoordinateNote?' '+level.exactCoordinateNote:'')+(points.length?' Exact non-integer points: '+points.map(a=>a.label+' ('+fmt(a.position.x)+', '+fmt(a.position.y)+')').join('; ')+'.':'');}
  // These non-rational anchor values cannot be recovered exactly from tick
  // labels, so keep essential puzzle data available in every mode.
  if(level.exactCoordinateNote)return 'Plan a route to the exit. '+level.exactCoordinateNote;

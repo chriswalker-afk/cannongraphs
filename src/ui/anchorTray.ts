@@ -105,7 +105,7 @@ export function mountAnchorTray(root:HTMLElement,stage:HTMLElement,options:TrayO
   if(!drag||drag.pointer!==e.pointerId||!options.editable())return;
   if(!drag.moving&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;
   if(!drag.moving){
-   drag.moving=true;choosePart(drag.id);drag.capture.setPointerCapture(e.pointerId);
+   drag.moving=true;choosePart(drag.id);if(!drag.capture.hasPointerCapture(e.pointerId))drag.capture.setPointerCapture(e.pointerId);
    ghost=node('div',document.body,'anchor-drag-ghost','Cannon '+drag.id);
    ghost.setAttribute('aria-hidden','true');
    const card=items.get(drag.id)!.button.querySelector('svg')!.cloneNode(true);
@@ -131,11 +131,15 @@ export function mountAnchorTray(root:HTMLElement,stage:HTMLElement,options:TrayO
   paint();
  }
  const up=(e:PointerEvent)=>stop(e,true),cancelDrag=(e:PointerEvent)=>stop(e,false);
- function click(e:MouseEvent){if(suppressClick&&(root.contains(e.target as Node)||stage.contains(e.target as Node))){suppressClick=false;e.preventDefault();e.stopImmediatePropagation();}}
+ // Transferring implicit touch capture from the original button to the
+ // persistent tray/stage emits lostpointercapture on the original button.
+ // Only loss from our actual capture owner cancels an in-progress drag.
+ const lostCapture=(e:PointerEvent)=>{if(drag?.capture===e.target)stop(e,false);};
+ function click(e:MouseEvent){if(suppressClick&&e.detail!==0&&(root.contains(e.target as Node)||stage.contains(e.target as Node))){suppressClick=false;e.preventDefault();e.stopImmediatePropagation();}}
  function key(e:KeyboardEvent){if(e.key==='Escape'&&selected&&(root.contains(e.target as Node)||stage.contains(e.target as Node))){clearSelection();e.stopPropagation();}}
  document.addEventListener('pointerdown',down,true);document.addEventListener('pointermove',move,{capture:true,passive:false});
- document.addEventListener('pointerup',up,true);document.addEventListener('pointercancel',cancelDrag,true);document.addEventListener('lostpointercapture',cancelDrag,true);
+ document.addEventListener('pointerup',up,true);document.addEventListener('pointercancel',cancelDrag,true);document.addEventListener('lostpointercapture',lostCapture,true);
  document.addEventListener('click',click,true);document.addEventListener('keydown',key,true);
  clearSelection();
- return {choosePart,chooseMount,clearSelection,update:()=>{if(!options.editable()&&selected){selected=hover=undefined;}paint();},destroy:()=>{document.removeEventListener('pointerdown',down,true);document.removeEventListener('pointermove',move,true);document.removeEventListener('pointerup',up,true);document.removeEventListener('pointercancel',cancelDrag,true);document.removeEventListener('lostpointercapture',cancelDrag,true);document.removeEventListener('click',click,true);document.removeEventListener('keydown',key,true);ghost?.remove();}};
+ return {choosePart,chooseMount,clearSelection,update:()=>{if(!options.editable()&&selected){selected=hover=undefined;}paint();},destroy:()=>{document.removeEventListener('pointerdown',down,true);document.removeEventListener('pointermove',move,true);document.removeEventListener('pointerup',up,true);document.removeEventListener('pointercancel',cancelDrag,true);document.removeEventListener('lostpointercapture',lostCapture,true);document.removeEventListener('click',click,true);document.removeEventListener('keydown',key,true);ghost?.remove();}};
 }
