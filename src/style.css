@@ -823,3 +823,85 @@ main[data-world="8"] header,main[data-world="8"] footer,main[data-world="8"] .to
 main[data-world="8"] .stage{background:#cbd2c2}main[data-world="8"] .brand-mark{background:#d8c59a;color:#5f654b}
 @media(max-height:620px) and (min-width:801px){main.selection-screen[data-cannon-category=broken] .world-card-art{height:clamp(65px,23vh,145px)}}
 @media(max-width:480px){main.selection-screen[data-cannon-category=broken] .world-grid{align-content:start;gap:7px}main.selection-screen[data-cannon-category=broken] .world-card-art{height:clamp(68px,15vh,125px)}main.selection-screen[data-cannon-category=broken] .world-card-description{font-size:10px;line-height:1.25}main.selection-screen[data-cannon-category=broken] .world-card-copy{padding:7px;gap:3px}}
+
+/* PR57 — graph-first Salvage screens. Keep full equations, objectives and
+   exact coordinates available; only collapse secondary explanations. */
+main.selection-screen[data-cannon-category=broken]{grid-template-rows:auto auto minmax(0,1fr)}
+main.selection-screen[data-cannon-category=broken]:has(.broken-world-extras){grid-template-rows:auto auto minmax(0,1fr) auto}
+main.game-screen[data-has-anchors=true]{padding:5px;gap:4px;grid-template-rows:auto auto minmax(250px,1fr) auto}
+main.game-screen[data-has-anchors=true]>header,main.game-screen[data-has-anchors=true]>.toolbar,main.game-screen[data-has-anchors=true]>.planning-footer{padding:5px 8px;border-radius:10px;gap:4px 7px}
+main.game-screen[data-has-anchors=true] .brand h1{font-size:clamp(18px,2vw,24px)}
+main.game-screen[data-has-anchors=true] #world-label{font-weight:720}
+.salvage-objective,.salvage-status-key{min-width:0;color:#485c50;font-size:11px;line-height:1.25}
+.salvage-objective summary,.salvage-status-key summary{width:fit-content;max-width:100%;cursor:pointer;font-weight:750;color:#486758;padding:3px 0;list-style-position:inside}
+.salvage-objective summary:focus-visible,.salvage-status-key summary:focus-visible{outline:2px solid #8b672e;outline-offset:2px}
+.salvage-objective #level-objective{max-width:80ch;margin:2px 0 3px}
+main.game-screen[data-has-anchors=true] #inspect-info{block-size:2.5em;font-size:11px;line-height:1.25;flex:1 1 145px;color:#38594f}
+main.game-screen[data-has-anchors=true] .camera-tools button{width:30px;height:30px}
+main.game-screen[data-has-anchors=true][data-view-zoomed=false] .camera-tools #pan-left,
+main.game-screen[data-has-anchors=true][data-view-zoomed=false] .camera-tools #pan-up,
+main.game-screen[data-has-anchors=true][data-view-zoomed=false] .camera-tools #pan-down,
+main.game-screen[data-has-anchors=true][data-view-zoomed=false] .camera-tools #pan-right{display:none}
+main.game-screen[data-has-anchors=true] .program-summary{gap:3px 7px}
+main.game-screen[data-has-anchors=true] #edit-cannons,main.game-screen[data-has-anchors=true] .restart-level{padding:5px 7px;font-size:11px;min-height:31px}
+main.game-screen[data-has-anchors=true] .launch{padding:5px 12px;min-height:34px;font-size:15px}
+.anchor-tray{gap:3px 7px;padding:4px 6px}
+.anchor-tray-heading{font-size:11px;gap:0}
+.anchor-part{max-width:260px;padding:3px 5px;gap:4px;min-height:44px}
+.anchor-part svg{width:30px;height:29px}
+.anchor-part-copy{line-height:1.15;gap:1px}
+.anchor-tray-actions button{min-height:30px;padding:4px 7px}
+.anchor-instructions{font-size:11px;line-height:1.2;min-height:0;color:#485a4d}
+.salvage-mount[data-drop-ready=true] .mount-ring{stroke:#287077;fill:#e8f4ed;stroke-width:2.4;stroke-dasharray:none}
+.salvage-mount[data-drop-ready=true] .mount-cross{stroke:#287077}
+.salvage-mount[data-drop-hover=true] .mount-ring{stroke:#214e72;fill:#cce6f1;stroke-width:3.2}
+.salvage-mount[data-drop-hover=true] .mount-cross{stroke:#214e72;stroke-width:2}
+.salvage-mount:focus-visible .mount-ring{stroke:#214e72;stroke-width:3}
+@media(max-width:650px){
+ main.game-screen[data-has-anchors=true]{padding:4px;gap:4px;grid-template-rows:auto auto minmax(260px,1fr) auto}
+ main.game-screen[data-has-anchors=true]>.stage{min-height:260px}
+ main.game-screen[data-has-anchors=true]>header{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:3px 5px}
+ main.game-screen[data-has-anchors=true] .brand{grid-column:1;grid-row:1;gap:5px}
+ main.game-screen[data-has-anchors=true] .brand>div{display:block}
+ main.game-screen[data-has-anchors=true] .brand h1{position:absolute;width:1px;height:1px;clip-path:inset(50%);overflow:hidden;white-space:nowrap}
+ main.game-screen[data-has-anchors=true] .brand-mark{width:30px;height:30px;border-radius:8px}
+ main.game-screen[data-has-anchors=true] #world-label{font-size:11px;line-height:1.15}
+ main.game-screen[data-has-anchors=true] #level-menu{grid-column:2;grid-row:1}
+ main.game-screen[data-has-anchors=true] #sound-settings{grid-column:3;grid-row:1}
+ main.game-screen[data-has-anchors=true] .pip-queue{grid-column:1/-1;grid-row:2;display:flex;gap:5px;justify-content:center}
+ main.game-screen[data-has-anchors=true] .queue-pip{width:18px;height:19px}
+ main.game-screen[data-has-anchors=true] #level-objective{font-size:11px;line-height:1.25;max-width:none}
+ main.game-screen[data-has-anchors=true] .toolbar{gap:3px 5px}
+ main.game-screen[data-has-anchors=true] .toolbar #inspect-info{flex:1 1 100%;block-size:2.5em}
+ main.game-screen[data-has-anchors=true] .camera-tools{gap:2px}
+ main.game-screen[data-has-anchors=true] .camera-tools button{width:29px;height:29px}
+ main.game-screen[data-has-anchors=true] .camera-tools output{min-width:34px;font-size:11px}
+ main.game-screen[data-has-anchors=true] .motion-mode,main.game-screen[data-has-anchors=true] .graph-preview-toggle{font-size:10px;padding:5px 7px;min-height:29px}
+ main.game-screen[data-has-anchors=true] .planning-editor{gap:2px}
+ main.game-screen[data-has-anchors=true] .launch-panel{gap:4px;justify-content:center}
+ .anchor-tray{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'heading actions' 'parts parts' 'message message';gap:3px 5px;padding:4px}
+ .anchor-tray-heading{grid-area:heading;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 5px}
+ .anchor-tray-actions{grid-area:actions;gap:3px}
+ .anchor-tray-actions button{font-size:10px;min-height:28px;padding:4px 5px}
+ .anchor-parts,.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-parts{grid-area:parts;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ .anchor-tray[data-parts="1"] .anchor-parts{grid-template-columns:minmax(0,1fr)}
+ .anchor-tray[data-parts="2"] .anchor-parts,.anchor-tray[data-parts="4"] .anchor-parts{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .anchor-tray .anchor-part,.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part{min-width:0;max-width:none;padding:3px 4px;min-height:44px;display:grid;grid-template-columns:24px minmax(0,1fr);gap:1px 3px;align-content:center;align-items:center;text-align:left;justify-items:start}
+ .anchor-tray .anchor-part svg,.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part svg{width:23px;height:22px;grid-row:1;grid-column:1}
+ .anchor-tray .anchor-part-copy,.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part-copy{display:contents}
+ .anchor-part-copy strong{grid-row:1;grid-column:2;font-size:11px;line-height:1.12}
+ .anchor-part-equation{grid-column:1/-1;font-size:11px;line-height:1.15;overflow-wrap:anywhere}
+ .anchor-part-status{grid-column:1/-1;font-size:10px;line-height:1.1}
+ .anchor-tray[data-parts="1"] .anchor-part{grid-template-columns:26px auto minmax(0,1fr) auto;gap:5px}
+ .anchor-tray[data-parts="1"] .anchor-part-equation,.anchor-tray[data-parts="1"] .anchor-part-status{grid-column:auto;grid-row:1}
+ .anchor-instructions{grid-area:message;font-size:10px;line-height:1.2}
+ .salvage-status-key .halo-legend{padding-top:3px}
+}
+@media(max-width:360px){.anchor-tray-heading{display:grid;gap:0}.anchor-tray[data-parts="1"] .anchor-part{grid-template-columns:24px auto minmax(0,1fr)}.anchor-tray[data-parts="1"] .anchor-part-status{grid-column:2/-1;grid-row:2}}
+@media(max-height:620px) and (min-width:651px){
+ main.game-screen[data-has-anchors=true]{grid-template-rows:auto auto minmax(210px,1fr) auto}
+ main.game-screen[data-has-anchors=true]>.stage{min-height:210px}
+ main.game-screen[data-has-anchors=true] .brand h1{font-size:19px}
+ main.game-screen[data-has-anchors=true] .queue-pip{width:19px;height:20px}
+ .anchor-tray{padding:3px 5px}.anchor-part{min-height:40px}.anchor-instructions{font-size:10px}
+}

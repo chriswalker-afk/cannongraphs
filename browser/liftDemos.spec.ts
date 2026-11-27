@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 test('linear demo lift moves by keyboard, updates locked equation and resets',async({page})=>{
- await page.goto('./');
+ await page.goto('./?flight-tests=1');
  await page.locator('#home-play').click();await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.getByRole('button',{name:'Lift flight tests ↗'}).click();
  await page.locator('.lift-demo-choices section').first().getByRole('button',{name:'Cadet'}).click();
  const handle=page.locator('[data-lift-handle="B"]');
@@ -15,7 +15,7 @@ test('linear demo lift moves by keyboard, updates locked equation and resets',as
  await expect(page.locator('#launch')).toBeEnabled();
 });
 test('quadratic demo supports pointer movement and pilot has no preview',async({page})=>{
- await page.goto('./');await page.locator('#home-play').click();await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.getByRole('button',{name:'Lift flight tests ↗'}).click();
+ await page.goto('./?flight-tests=1');await page.locator('#home-play').click();await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.getByRole('button',{name:'Lift flight tests ↗'}).click();
  await page.locator('.lift-demo-choices section').nth(1).getByRole('button',{name:'Pilot'}).click();
  const handle=page.locator('[data-lift-handle="B"]');
  await expect(handle).toHaveAttribute('aria-valuenow','6');

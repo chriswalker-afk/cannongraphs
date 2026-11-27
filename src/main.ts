@@ -94,7 +94,7 @@ function showCustomLibrary(preferredId?:string,preferredMode?:LearningMode){
 }
 function showFlightLog(){cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountFlightLog(app,progress,progressStore.persisted(),()=>showHome(true));addMenuAudio();}
 function showSelection(openCurrentWorld=false,category:WorldCategory=worldCategory){
- cleanup();audio.setTheme('menu');cleanup=mountLevelSelection(app,{bindAudio:audioDialog.bind,progress:progressStore.read(),preferredId:lastLevel?.id,preferredMode:lastMode,openCurrentWorld,preferredCategory:category,onCategoryChange:value=>{worldCategory=value;},onLiftDemos:showLiftDemos,onAnchorDemos:showAnchorDemos,onHome:()=>showHome(true),onPlay:(level,mode)=>startLevel(level,mode)});
+ cleanup();audio.setTheme('menu');cleanup=mountLevelSelection(app,{bindAudio:audioDialog.bind,progress:progressStore.read(),preferredId:lastLevel?.id,preferredMode:lastMode,openCurrentWorld,preferredCategory:category,onCategoryChange:value=>{worldCategory=value;},...(new URLSearchParams(location.search).get('flight-tests')==='1'?{onLiftDemos:showLiftDemos,onAnchorDemos:showAnchorDemos}:{}),onHome:()=>showHome(true),onPlay:(level,mode)=>startLevel(level,mode)});
 }
 type TutorialReturn={level:Level;mode:LearningMode};
 function startLevel(level:Level,mode:LearningMode,forceTutorial=false){
@@ -118,6 +118,13 @@ app.querySelector<HTMLElement>('#world-label')!.textContent=anchorDemo?'The Salv
 if(tutorialReturn)app.querySelector('main')!.dataset.tutorial='true';
 if(customRun)app.querySelector('main')!.dataset.customTest=customRun.kind;
 app.querySelector<HTMLElement>('#level-objective')!.textContent=modeObjective(mode,level);
+ if(hasAnchors){
+  const objective=app.querySelector<HTMLElement>('#level-objective')!,legend=app.querySelector<HTMLElement>('.halo-legend')!;
+  const compact=matchMedia('(max-width:650px), (max-height:620px)').matches;
+  const disclosure=(node:HTMLElement,cls:string,label:string,open:boolean)=>{const d=document.createElement('details');d.className=cls;d.open=open;const s=document.createElement('summary');s.textContent=label;node.before(d);d.append(s,node);return d;};
+  disclosure(objective,'salvage-objective',mode==='ace'?'Objective & coordinates':'Objective',!compact);
+  disclosure(legend,'salvage-status-key','Status key',!compact);
+ }
 const button=(id:string)=>document.querySelector<HTMLButtonElement>('#'+id)!;
 const reducedMotion=()=>reducedOverride,motionButton=button('motion-mode');
 function paintMotion(){const reduced=reducedMotion();app.querySelector('main')!.dataset.motion=reduced?'reduced':'full';motionButton.textContent=reduced?'Motion: reduced':'Motion: full';motionButton.title=reduced?'Enable full flight animations':'Use reduced motion';motionButton.setAttribute('aria-label',motionButton.title);}

@@ -2,7 +2,7 @@ import {test,expect,type Page} from '@playwright/test';
 import {PROGRESS_KEY} from '../src/game/progressStore';
 
 async function enter(page:Page,id='anchor-demo-linear',mode='Cadet'){
- await page.goto('/');
+ await page.goto('/?flight-tests=1');
  await page.locator('#home-play').click();
  await page.getByRole('button',{name:'Broken cannons',exact:true}).click();
  await page.getByRole('button',{name:'Salvage Yard · flight tests ↗',exact:true}).click();
