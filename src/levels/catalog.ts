@@ -6,8 +6,9 @@ import {parabolaPeaks} from './worlds/parabolaPeaks';
 import {lostArches} from './worlds/lostArches';
 import {contraptionFactory} from './worlds/contraptionFactory';
 import {beyondGraphiverse} from './worlds/beyondGraphiverse';
+import {foundryLevels} from './foundry';
 export interface World {readonly number:number;readonly name:string;readonly levels:readonly Level[]}
-export const worlds:readonly World[]=[{number:1,name:'Meadow Launchers',levels:meadowLaunchers},{number:2,name:'The Floating Isles',levels:floatingIsles},{number:3,name:'Parabola Peaks',levels:parabolaPeaks},{number:4,name:'Lost Arches',levels:lostArches},{number:5,name:'Contraption Factory',levels:contraptionFactory},{number:6,name:'Beyond the Graphiverse',levels:beyondGraphiverse}];
+export const worlds:readonly World[]=[{number:1,name:'Meadow Launchers',levels:meadowLaunchers},{number:2,name:'The Floating Isles',levels:floatingIsles},{number:3,name:'Parabola Peaks',levels:parabolaPeaks},{number:4,name:'Lost Arches',levels:lostArches},{number:5,name:'Contraption Factory',levels:contraptionFactory},{number:6,name:'Beyond the Graphiverse',levels:beyondGraphiverse},{number:7,name:'Broken Foundry',levels:foundryLevels}];
 export const levels:readonly Level[]=worlds.flatMap(w=>w.levels);
 const ids=new Set<string>();
 for(const world of worlds){

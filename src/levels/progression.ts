@@ -12,6 +12,7 @@ export type DifficultyTier=(typeof difficultyTiers)[number];
 export const LEVELS_PER_TIER=3;
 export const LEVELS_PER_WORLD=difficultyTiers.length*LEVELS_PER_TIER;
 export interface LevelTier {
+ readonly label:string;
  readonly tier:DifficultyTier;
  readonly entries:readonly {readonly level:Level;readonly number:number}[];
 }
@@ -22,14 +23,17 @@ export function tierForCount(count:number):DifficultyTier{
 }
 // Do not sort a broken catalogue silently: displayed numbers and Next Level
 // must agree with the authored progression and the stable puzzle identities.
+const foundryLabels=['Single lifts','Connected lines','Locked arcs','Mixed relays'] as const;
 export function levelTiers(levels:readonly Level[]):readonly LevelTier[]{
  if(levels.length!==LEVELS_PER_WORLD)throw Error('Expected '+LEVELS_PER_WORLD+' regular levels per world');
+ const foundry=levels.every(l=>l.world===7);
  return difficultyTiers.map((tier,i)=>{
   const entries=levels.slice(i*LEVELS_PER_TIER,(i+1)*LEVELS_PER_TIER).map((level,j)=>{
    const number=i*LEVELS_PER_TIER+j+1;
-   if(level.cannons.length!==tier.count)throw Error(level.id+': level '+number+' must have '+tier.count+' cannon(s)');
+   if(foundry){if(!level.cannons.some(c=>c.lift))throw Error(level.id+': Foundry level requires a lift');}
+   else if(level.cannons.length!==tier.count)throw Error(level.id+': level '+number+' must have '+tier.count+' cannon(s)');
    return {level,number};
   });
-  return {tier,entries};
+  return {tier,entries,label:foundry?foundryLabels[i]:tier.count+' '+(tier.count===1?'cannon':'cannons')};
  });
 }

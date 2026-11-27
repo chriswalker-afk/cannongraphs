@@ -6,6 +6,7 @@ import {validateLevel,type Level} from '../src/levels/schema';
 import {CANNON_FOOTPRINT,EXIT_FOOTPRINT} from '../src/game/anchorArtGeometry';
 import {auditSolution} from '../src/levels/qa';
 import {referenceSolutions} from './fixtures/referenceSolutions';
+import {referenceLayout} from './fixtures/referenceLayout';
 import {cannonCosmetics,defaultCannonLook,chooseCannonCosmetic} from '../src/game/cannonCosmetics';
 import {renderSupportArt,supportPalette} from '../src/rendering/supportArt';
 import {renderCannonArt} from '../src/rendering/cannonArt';
@@ -36,15 +37,15 @@ function audit(l:Level,s:SupportPlan){
  }
  assert.ok(Math.hypot(s.attachment[0].x-s.attachment[1].x,s.attachment[0].y-s.attachment[1].y)>.015,l.id+' attachment span');
 }
-test('all 72 levels have a connected support for every cannon and exit, without changing the level',()=>{
+test('all 84 levels have static supports or movable rails for every cannon and exit, without changing the level',()=>{
  const counts={platform:0,wall:0,suspended:0};let n=0;
  for(const l of levels){
   const before=JSON.stringify(l),plans=levelSupports(l);assert.deepEqual(plans,levelSupports(l));assert.equal(JSON.stringify(l),before);
-  assert.deepEqual(plans.map(s=>s.id),[...l.cannons.map(c=>c.id),'exit']);
+  assert.deepEqual(plans.map(s=>s.id),[...l.cannons.filter(c=>!c.lift).map(c=>c.id),'exit']);
   for(const s of plans){audit(l,s);counts[s.kind]++;n++;}
  }
- assert.equal(levels.length,72);assert.equal(n,levels.reduce((sum,l)=>sum+l.cannons.length+1,0));assert.ok(counts.platform>0&&counts.wall>0&&counts.suspended>0);
- console.log('Mounting audit: '+n+' objects across 72 levels '+JSON.stringify(counts));
+ assert.equal(levels.length,84);assert.equal(n,levels.reduce((sum,l)=>sum+l.cannons.filter(c=>!c.lift).length+1,0));assert.ok(counts.platform>0&&counts.wall>0&&counts.suspended>0);
+ console.log('Mounting audit: '+n+' static objects across 84 levels '+JSON.stringify(counts));
 });
 test('Skyward (the reported example) joins the actual launch and exit ledges and accounts for rearward footprint',()=>{
  const l=levels.find(l=>l.id==='1-03')!,[a,e]=levelSupports(l);
@@ -76,9 +77,9 @@ test('unknown support ids, missing walls and impossible attachments are rejected
 });
 test('all reference routes retain clearance, capture and the original authored collision rectangles after support resolution',()=>{
  for(const [wi,w] of worlds.entries())for(const [li,l] of w.levels.entries()){
-  const original=JSON.stringify(l.obstacles),first=auditSolution(l,referenceSolutions[wi][li],l.cannons.map(c=>c.id));
+  const layout=referenceLayout(l),original=JSON.stringify(l.obstacles),first=auditSolution(layout,referenceSolutions[wi][li],l.cannons.map(c=>c.id));
   levelSupports(l);assert.equal(JSON.stringify(l.obstacles),original);
-  const second=auditSolution(l,referenceSolutions[wi][li],l.cannons.map(c=>c.id));
+  const second=auditSolution(layout,referenceSolutions[wi][li],l.cannons.map(c=>c.id));
   near(first.minimumClearance,second.minimumClearance);assert.deepEqual(first.result.end,second.result.end);
  }
 });
@@ -94,8 +95,8 @@ function withSvg(fn:()=>void){
  Object.defineProperty(globalThis,'document',{configurable:true,value:{createElementNS:(_ns:string,tag:string)=>new SvgElement(tag)}});
  try{fn();}finally{if(previous)Object.defineProperty(globalThis,'document',previous);else Reflect.deleteProperty(globalThis,'document');}
 }
-test('all six world palettes and all six mount cosmetics render with fixed deck, muzzle and noninteractive geometry',()=>withSvg(()=>{
- assert.equal(new Set(worlds.map(w=>supportPalette(w.number).frame)).size,6);
+test('all seven world palettes and all six mount cosmetics render with fixed deck, muzzle and noninteractive geometry',()=>withSvg(()=>{
+ assert.equal(new Set(worlds.map(w=>supportPalette(w.number).frame)).size,7);
  for(const w of worlds){
   for(const l of [w.levels[0],w.levels[7],w.levels[11]]){
    const project=coordinateSystem(l.bounds,{width:900,height:500,padding:25});

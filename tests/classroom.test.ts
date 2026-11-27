@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {levels,worlds} from '../src/levels/catalog';
 import {referenceSolutions} from './fixtures/referenceSolutions';
+import {referenceLayout} from './fixtures/referenceLayout';
 import {parseCannonEquation,evaluateCannonEquation} from '../src/engine/equations/advanced';
 import {simulateRoute} from '../src/engine/simulation/linearRoute';
 import {CAPTURE_EPSILON} from '../src/engine/simulation/linearAttempt';
@@ -22,14 +23,14 @@ test('unit grid is independent from label density, including negative and zoomed
  }
  assert.deepEqual(integerTicks(-.9,.9),[0]);assert.deepEqual(integerTicks(2.1,2.9),[]);assert.equal(labelStep(NaN),1);
 });
-test('all 72 mathematical routes complete in all 216 level/mode combinations and persist valid records',()=>{
+test('all 84 mathematical routes complete in all 252 level/mode combinations and persist valid records',()=>{
  let progress=emptyProgress(),runs=0;
- assert.equal(referenceSolutions.length,6);
+ assert.equal(referenceSolutions.length,7);
  for(const [wi,w] of worlds.entries()){
   assert.equal(referenceSolutions[wi].length,12);
   for(const [li,l] of w.levels.entries()){
    const references=referenceSolutions[wi][li],equations=new Map(l.cannons.map(c=>[c.id,parseCannonEquation(references[c.id],c.type)]));
-   const route=simulateRoute(l,equations);
+   const layout=referenceLayout(l),route=simulateRoute(layout,equations);
    assert.equal(route.event.kind,'exit',l.id);
    assert.deepEqual(route.legs.map(leg=>leg.cannonId),l.cannons.map(c=>c.id),l.id);
    assert.ok(Math.abs(route.end.x-l.exit.x)<=CAPTURE_EPSILON&&Math.abs(route.end.y-l.exit.y)<=CAPTURE_EPSILON,l.id);
@@ -44,15 +45,15 @@ test('all 72 mathematical routes complete in all 216 level/mode combinations and
     if(s.celebration){const {id,count}=s.celebration;s=advanceCelebration(s,id,count,count);s=finishCelebration(s,id);}
     assert.equal(s.phase,'success',l.id+' '+mode.id);
     assert.equal(s.saved,budget);assert.equal(levelStars(s),mode.unlimited?null:3);
-    progress=recordCompletion(progress,l,mode.id,s);const record=getRecord(progress,l.id,mode.id);
+    progress=recordCompletion(progress,l,mode.id,s,layout);const record=getRecord(progress,l.id,mode.id);
     assert.equal(record?.bestAttempts,1,l.id);assert.deepEqual(new Set(record!.gems),new Set(bankedGems(route)));runs++;
    }
   }
  }
- assert.equal(runs,216);
+ assert.equal(runs,252);
  const restored=parseProgress(JSON.stringify(progress)),summary=summarizeProgress(restored);
  assert.deepEqual(restored,progress);assert.equal(summary.completed,levels.length);assert.equal(summary.gems,summary.gemTotal);
- for(const mode of learningModes){assert.equal(summary.modes[mode.id].completed,72);assert.equal(summary.modes[mode.id].stars,mode.unlimited?0:216);}
+ for(const mode of learningModes){assert.equal(summary.modes[mode.id].completed,84);assert.equal(summary.modes[mode.id].stars,mode.unlimited?0:252);}
  const earned=earnedAchievementIds(restored);assert.equal(earned.size,achievementDefinitions.length);
  assert.ok(pipCosmetics.every(c=>cosmeticUnlocked(c,earned)));assert.ok(cannonCosmetics.every(c=>cannonCosmeticUnlocked(c,earned)));
 });

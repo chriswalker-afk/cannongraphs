@@ -23,7 +23,9 @@ export const achievementDefinitions:readonly AchievementDefinition[]=[
  {id:'relay-runner',title:'Relay runner',description:'Complete a level featuring at least three cannons.',symbol:'⇢',target:1,count:(p,scope)=>scope.filter(l=>l.cannons.length>=3&&learningModes.some(m=>getRecord(p,l.id,m.id))).length},
  {id:'world-explorer',title:'World explorer',description:'Complete all twelve levels of a world in one mode.',symbol:'◎',target:1,count:(p,scope)=>learningModes.reduce((n,m)=>n+completeWorlds(p,m.id,scope),0)},
  {id:'ace-world',title:'Ace of a world',description:'Complete all twelve levels of a world in Ace.',symbol:'♜',target:1,count:(p,scope)=>completeWorlds(p,'ace',scope)},
- {id:'graphiverse-explorer',title:'Graphiverse explorer',description:'Complete all 72 different levels in any combination of modes.',symbol:'✺',target:levels.length,count:(p,scope)=>summarizeProgress(p,scope).completed}
+ {id:'graphiverse-explorer',title:'Graphiverse explorer',description:'Complete all 72 levels of the original six worlds in any combination of modes.',symbol:'✺',target:72,count:(p,scope)=>summarizeProgress(p,scope.filter(l=>l.world<=6)).completed},
+ {id:'foundry-explorer',title:'Foundry engineer',description:'Complete all twelve Broken Foundry levels in any combination of modes.',symbol:'⚙',target:12,count:(p,scope)=>summarizeProgress(p,scope.filter(l=>l.world===7)).completed},
+ {id:'all-worlds-explorer',title:'Master explorer',description:'Complete all '+levels.length+' current levels in any combination of modes.',symbol:'✷',target:levels.length,count:(p,scope)=>summarizeProgress(p,scope).completed}
 ];
 export function achievements(p:Progress,scope:readonly ProgressLevel[]=levels):readonly Achievement[]{
  return achievementDefinitions.map(a=>{const current=p.retainedAchievements?.includes(a.id)?a.target:Math.min(a.target,a.count(p,scope));return {id:a.id,title:a.title,description:a.description,symbol:a.symbol,current,target:a.target,earned:current>=a.target};});

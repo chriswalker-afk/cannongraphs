@@ -47,10 +47,10 @@ for(const [i,level] of foundryLinear.entries())test(level.title+' has one succes
  }
  assert.deepEqual([...winners],[ref.heights.join(',')]);
 });
-test('Foundry stays separate from existing curriculum and progression stops at the sixth linear puzzle',()=>{
- assert.equal(levels.length,72);
+test('Foundry linear sequence is the first half of official world seven',()=>{
+ assert.equal(levels.length,84);
  assert.equal(foundryLinear.length,6);
- assert.ok(foundryLinear.every(l=>!levels.some(other=>other.id===l.id)));
+ assert.ok(foundryLinear.every(l=>levels.includes(l)&&l.world===7));
  assert.equal(nextFoundryLinear(foundryLinear[0].id),foundryLinear[1]);
  assert.equal(nextFoundryLinear(foundryLinear[5].id),undefined);
  assert.equal(nextFoundryLinear('lift-demo-linear'),undefined);

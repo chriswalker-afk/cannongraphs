@@ -77,10 +77,10 @@ for(const [i,level] of foundryQuadratic.entries())test(level.title+' is solvable
  }
  assert.deepEqual([...winners],[ref.heights.join(',')]);
 });
-test('twelve Foundry puzzles advance across the linear/quadratic boundary without changing the 72 curriculum levels',()=>{
- assert.equal(foundryLevels.length,12);assert.equal(levels.length,72);
+test('twelve Foundry puzzles advance across the linear/quadratic boundary as the final twelve official levels',()=>{
+ assert.equal(foundryLevels.length,12);assert.equal(levels.length,84);
  assert.equal(new Set(foundryLevels.map(l=>l.id)).size,12);
- assert.ok(foundryLevels.every(l=>!levels.some(c=>c.id===l.id)));
+ assert.ok(foundryLevels.every(l=>levels.includes(l)&&l.world===7));
  for(let i=0;i<11;i++)assert.equal(nextFoundryLevel(foundryLevels[i].id),foundryLevels[i+1]);
  assert.equal(nextFoundryLevel(foundryLevels[11].id),undefined);
  assert.equal(nextFoundryLevel('lift-demo-arc'),undefined);

@@ -9,7 +9,8 @@ const palettes:Readonly<Record<number,SupportPalette>>={
  3:{frame:'#8e899d',edge:'#656579',light:'#c4c6d4',fastener:'#d3e8e4'},
  4:{frame:'#a58a62',edge:'#746044',light:'#d6bf93',fastener:'#c4a774'},
  5:{frame:'#809195',edge:'#475d65',light:'#c4d1d1',fastener:'#d7b36c'},
- 6:{frame:'#798bab',edge:'#465b83',light:'#bdcfe7',fastener:'#a2e0e1'}
+ 6:{frame:'#798bab',edge:'#465b83',light:'#bdcfe7',fastener:'#a2e0e1'},
+ 7:{frame:'#777e70',edge:'#514f3f',light:'#d4c6a2',fastener:'#e8b449'}
 };
 export function supportPalette(world:number):SupportPalette{return palettes[world]??palettes[1];}
 // Decorative open frames are deliberately thinner/lighter than collision

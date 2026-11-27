@@ -32,8 +32,8 @@ export function createProgressStore(storage?:ProgressStorage){
   return current;
  }
  read();
- function complete(level:Level,mode:LearningMode,state:LevelState):ProgressUpdate{
-  const before=read(),recorded=recordCompletion(before,level,mode,state),after=retainAchievements(recorded,earnedAchievementIds(recorded)),improved=before!==after;
+ function complete(level:Level,mode:LearningMode,state:LevelState,played:Level=level):ProgressUpdate{
+  const before=read(),recorded=recordCompletion(before,level,mode,state,played),after=retainAchievements(recorded,earnedAchievementIds(recorded)),improved=before!==after;
   current=after;
   if(improved)dirty=true;
   if(dirty&&storage){

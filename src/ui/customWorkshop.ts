@@ -134,7 +134,7 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
   view={width:Math.max(180,svg.clientWidth||800),height:Math.max(200,svg.clientHeight||500),padding:30};
   transform=coordinateSystem(b,view);svg.setAttribute('viewBox','0 0 '+view.width+' '+view.height);svg.replaceChildren();
   const p=transform.toScreen,s=transform.scale,a=p({x:b.minX,y:b.maxY}),z=p({x:b.maxX,y:b.minY});
-  const palettes=['#e3f1df','#e1ecfa','#e9e5f3','#f2e9d2','#e7e9e7','#e1e7f4'];
+  const palettes=['#e3f1df','#e1ecfa','#e9e5f3','#f2e9d2','#e7e9e7','#e1e7f4','#efe4c5'];
   el('rect',{x:a.x,y:a.y,width:z.x-a.x,height:z.y-a.y,fill:palettes[level.world-1],stroke:'#7b929c','stroke-width':1},svg);
   const xt=gridTicks(b.minX,b.maxX,s),yt=gridTicks(b.minY,b.maxY,s);
   for(const x of xt.units){const q=p({x,y:0});el('line',{x1:q.x,y1:a.y,x2:q.x,y2:z.y,stroke:x===0?'#34556c':'#a6b8bf','stroke-width':x===0?1.8:.6},svg);}

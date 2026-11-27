@@ -1,0 +1,13 @@
+# PR48 — Foundry curriculum integration
+
+Broken Foundry is official world seven, with 84 levels across seven worlds, 12 levels per world, and 252 level/mode combinations. Its twelve stable authored IDs and ordering are retained. The original six worlds keep their strict cannon-count bands; Foundry groups three levels each as Introduction (single lifts), Development (connected lines), Challenge (locked arcs) and Mastery (mixed relays). Individual puzzle details give actual cannon and movable-platform counts.
+
+Play → Broken Foundry → learning mode → level. Next level advances through all twelve, including the linear/quadratic boundary; completing the old world-six finale advances to Foundry. The two unranked lift flight tests remain accessible separately. Existing starter equations remain editable and follow the authored progression in every mode. Ordinary player equations, lock semantics, Cadet-only preview and budgets are unchanged.
+
+The progress store records the immutable official level identity with the validated played layout. Only integer y movements within each authored rail are accepted; reached leg anchors and transfers must match that layout. Original achievements remain permanent. Graphiverse explorer retains its original six-world target, Foundry engineer recognises all twelve new puzzles, and Master explorer recognises all 84 current levels. The two new badges do not change the existing cosmetic gates. No migration or reset of original saved progress is required.
+
+World seven has its own amber foundry palette, menu lift artwork and original looping music. The custom theme is also selectable; custom files with lifts or the seventh theme require v2, while ordinary legacy designs retain v1 compatibility. The 7-world grid uses four desktop columns to keep two rows and smaller viewports retain scrolling. Lift handles have larger touch targets; touch, keyboard, zoom and mode-specific navigation are covered by browser tests.
+
+The test-only solution fixtures include actual moved rail heights. The curriculum audit checks solved geometry, clearance, complete routes, crew staging, static supports and movable rails. Separate Foundry regression suites exhaustively enumerate allowed heights and all programmable straight-line destination combinations to rule out bypasses and nonunique winning layouts. The all-catalog classroom tests exercise every level in all three modes and verify saved records. Responsive/browser tests cover official selection, return, progression, persistence and touch dragging.
+
+CI verification and real classroom device review are required before treating the integration as fully validated. Foundry does not add optional gems or new cosmetics in this release.

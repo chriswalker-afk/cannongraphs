@@ -32,7 +32,7 @@ function forcedTurns(slices:readonly Slice[]):number{
 test('advanced relays force every nonadjacent forward shortcut beyond the function family turning-point limit',()=>{
  const maxTurns={linear:0,quadratic:1,cubic:2,reciprocal:0,exponential:0,logarithmic:0};
  let checked=0;
- for(const w of worlds.slice(4))for(const l of w.levels.slice(3)){
+ for(const w of worlds.slice(4,6))for(const l of w.levels.slice(3)){
   const slices=gateSlices(l),targets=[...l.cannons.map(c=>({id:c.id,position:c.position})),{id:'exit',position:l.exit}];
   for(const [i,c] of l.cannons.entries())for(let j=i+2;j<targets.length;j++){
    const t=targets[j].position,s=c.position;if((t.x-s.x)*c.direction<=0)continue;
@@ -45,9 +45,9 @@ test('advanced relays force every nonadjacent forward shortcut beyond the functi
  }
  assert.ok(checked>=60);
 });
-test('every world now has the exact 3-3-3-3 curriculum; all seven families appear in the final three levels',()=>{
- assert.equal(levels.length,72);assert.equal(levels.reduce((n,l)=>n+l.cannons.length,0),180);
- for(const w of worlds)assert.deepEqual(w.levels.map(l=>l.cannons.length),[1,1,1,2,2,2,3,3,3,4,4,4]);
+test('the original six worlds retain the exact 3-3-3-3 curriculum; all seven families appear in the final three levels',()=>{
+ assert.equal(levels.length,84);assert.equal(levels.filter(l=>l.world<=6).reduce((n,l)=>n+l.cannons.length,0),180);
+ for(const w of worlds.slice(0,6))assert.deepEqual(w.levels.map(l=>l.cannons.length),[1,1,1,2,2,2,3,3,3,4,4,4]);
  assert.deepEqual(worlds[4].levels.filter(l=>!l.id.includes('-r')).map(l=>l.id),['5-01','5-02','5-07','5-11','5-12']);
  assert.deepEqual(worlds[5].levels.filter(l=>!l.id.includes('-r')).map(l=>l.id),['6-01','6-04','6-07','6-11']);
  assert.deepEqual(new Set(worlds[5].levels.slice(9).flatMap(l=>l.cannons.map(c=>c.type))),new Set(Object.keys(cannonTypes)));

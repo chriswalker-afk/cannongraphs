@@ -1,18 +1,22 @@
 import {test,expect} from '@playwright/test';
+import {PROGRESS_KEY} from '../src/game/progressStore';
 test('linear progression starts with a ready incoming equation and later requires programming',async({page})=>{
- await page.goto('./');await page.locator('#home-lift-demos').click();
- await expect(page.locator('.foundry-linear-choices section')).toHaveCount(6);
- await page.locator('[data-foundry-level="foundry-linear-1"]').getByRole('button',{name:'Cadet'}).click();
+ await page.goto('./');await page.locator('#home-play').click();await page.locator('.world-card').nth(6).click();await page.locator('.mode-card').first().click();
+ await expect(page.locator('.level-number')).toHaveCount(12);
+ await page.locator('[data-level-id="foundry-linear-1"]').click();await page.locator('.selection-play').click();
  await expect(page.locator('#launch')).toBeEnabled();
  const handle=page.locator('[data-lift-handle="B"]');
  await handle.focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowDown');
  await expect(handle).toHaveAttribute('aria-valuenow','2');
  await page.locator('#launch').click();
  await expect(page.locator('#resolution-heading')).toHaveText('Level complete!',{timeout:30000});
+ await expect(page.locator('#resolution-record')).toContainText('Saved');
+ const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)??'{}'),PROGRESS_KEY);expect(saved.records['foundry-linear-1'].cadet.bestAttempts).toBe(1);
  await page.locator('#next-level').click();
  await expect(page.locator('#world-label')).toContainText('Downhill lift');
  await page.locator('#level-menu').click();
- await page.locator('[data-foundry-level="foundry-linear-5"]').getByRole('button',{name:'Pilot'}).click();
+ await expect(page.locator('[data-level-id="foundry-linear-2"]')).toHaveAttribute('aria-pressed','true');
+ await page.locator('.selection-back').click();await page.locator('.mode-card').nth(1).click();await page.locator('[data-level-id="foundry-linear-5"]').click();await page.locator('.selection-play').click();
  await expect(page.locator('#launch')).toBeDisabled();
  await expect(page.locator('#plan-ready')).toHaveText('1 / 2 programmed');
 });
