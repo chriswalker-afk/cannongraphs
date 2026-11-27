@@ -54,3 +54,15 @@ test('support remains fixed to the original coordinates during loading, flight a
  await verify(page,1,3);await expect(page.locator('#resolution-heading')).toHaveText('Level complete!',{timeout:15000});
  await verify(page,1,3);expect(errors).toEqual([]);
 });
+
+test('mobile coordinate inspection does not resize the toolbar or stage and zoom stays usable',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await enter(page,1,1);
+ const measure=()=>page.evaluate(()=>({toolbar:document.querySelector('.toolbar')!.getBoundingClientRect().height,stage:document.querySelector('.stage')!.getBoundingClientRect().height}));
+ const original=await measure();
+ for(const id of ['A','exit','floor','exit-ledge']){
+  await page.locator('.stage [data-inspect="'+id+'"]').focus();
+  await expect(page.locator('#inspect-info')).not.toContainText('Click a cannon to program it.');
+  await expect.poll(measure).toEqual(original);
+ }
+ await page.locator('#zoom-in').click({timeout:5000});await expect(page.locator('#zoom-readout')).toHaveText('125%');await verify(page,1,1);
+});

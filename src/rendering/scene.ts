@@ -188,7 +188,8 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(!tooltip)return;
   tooltip.replaceChildren();
   const item=inspections.get(hovered??focused??pinned??'');
-  controls.info.textContent=item?((policy.coordinates?item.label+' · '+item.detail:item.label)+(statuses.has(item.id)?' · '+statusLabels[statuses.get(item.id)!]:'')):(policy.coordinates?'Click a cannon to program it. Hover or focus an object to inspect it.':'Click a cannon to program it. Read coordinates from the axes.');
+  const infoText=item?((policy.coordinates?item.label+' · '+item.detail:item.label)+(statuses.has(item.id)?' · '+statusLabels[statuses.get(item.id)!]:'')):(policy.coordinates?'Click a cannon to program it. Hover or focus an object to inspect it.':'Click a cannon to program it. Read coordinates from the axes.');
+  if(controls.info.textContent!==infoText)controls.info.textContent=infoText;
   if(!item)return;
   const q=plot();let a=t.toScreen(item.point);
   if(item.bounds){

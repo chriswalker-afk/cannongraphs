@@ -465,3 +465,9 @@ main.home-screen{height:auto;min-height:100dvh;grid-template-rows:auto minmax(15
  .level-tier .level-number{height:37px;min-height:37px;font-size:19px}.level-tier-heading h3{font-size:12px}.level-tier-count{font-size:10px}
 }
 @media(forced-colors:active){.level-tier{border:1px solid CanvasText;border-left-width:3px}.level-tier[data-selected=true]{border-color:Highlight}.level-tier .level-number[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-3px}}
+
+/* Inspection content must not resize the graph on hover. A mobile redraw
+   otherwise clears/re-enters the hovered SVG target and can oscillate
+   between two toolbar heights, even making zoom buttons unclickable. */
+.game-screen #inspect-info{line-height:1.25;block-size:2.5em;overflow:auto;scrollbar-width:thin;min-width:0}
+@media(max-width:650px){.game-screen #inspect-info{block-size:3.75em}}
