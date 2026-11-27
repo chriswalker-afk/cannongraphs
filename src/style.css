@@ -582,3 +582,80 @@ main.custom-workshop,main.custom-library{gap:7px;min-width:0}
  .custom-top{padding:4px 9px}
  .custom-file-actions button{min-height:30px;padding:4px 8px;font-size:11px}
 }
+
+/* Gameplay only: available height, not the width of the monitor, determines
+   how much room the surrounding chrome may take. Keep the grid and equations
+   at their native scale; the scene's ResizeObserver fits the freed space. */
+@media(max-height:760px) and (min-width:651px){
+ main.game-screen{
+  --game-chrome-pad:clamp(3px,.7dvh,6px);
+  padding:clamp(4px,1dvh,8px);gap:clamp(4px,.7dvh,7px)
+ }
+ .game-screen>header,.game-screen>.planning-footer{
+  padding:var(--game-chrome-pad) 10px;gap:5px 8px
+ }
+ .game-screen>header .brand{gap:7px;flex-basis:200px}
+ .game-screen>header .brand-mark{width:32px;height:32px}
+ .game-screen>header h1{font-size:clamp(20px,3.8dvh,26px);line-height:1.1}
+ .game-screen #world-label{font-size:12px;line-height:1.2;overflow-wrap:anywhere}
+ .game-screen #level-objective{font-size:11px;line-height:1.2;max-width:none}
+ .game-screen .pip-queue{gap:2px}
+ .game-screen .queue-pip{width:clamp(23px,4.6dvh,30px);height:clamp(24px,4.8dvh,31px)}
+ .game-screen .pip-count{font-size:10px}
+ .game-screen .game-level-menu,.game-screen .game-sound-settings{
+  min-height:30px;font-size:12px;padding:4px 8px
+ }
+ .game-screen>.toolbar{padding:3px 8px;gap:4px}
+ .game-screen #inspect-info{font-size:11px;block-size:2.5em}
+ .game-screen .camera-tools{gap:2px}
+ .game-screen .camera-tools button{width:28px;height:28px}
+ .game-screen .motion-mode,.game-screen .graph-preview-toggle{
+  min-height:28px;padding:4px 7px
+ }
+ .game-screen .planning-editor{gap:2px}
+ .game-screen .program-summary{gap:4px 7px}
+ .game-screen .halo-legend{gap:3px 6px}
+ .game-screen #edit-cannons,.game-screen .restart-level{min-height:30px;padding:4px 8px;font-size:11px}
+ .game-screen .launch{min-height:32px;padding:5px 12px;font-size:14px}
+ .game-screen .launch-panel{gap:4px}
+ .game-screen .tutorial-coach{padding:5px 8px;gap:6px 10px}
+ .game-screen .tutorial-coach-copy{gap:2px}
+ .game-screen .tutorial-coach h2{font-size:16px;line-height:1.15}
+ .game-screen .tutorial-coach p{font-size:12px;line-height:1.25}
+ .game-screen .tutorial-maths{padding:3px 6px;gap:3px 12px;line-height:1.25}
+ .game-screen .tutorial-actions{gap:4px}
+ .game-screen .tutorial-actions button{min-height:30px;padding:4px 8px;font-size:11px}
+}
+/* On wide, short screens, spend horizontal space before vertical space. */
+@media(max-height:760px) and (min-width:960px){
+ .game-screen>header .brand>div{
+  display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:2px 9px
+ }
+ .game-screen #level-objective{grid-column:1/-1}
+ .game-screen .pip-queue{display:flex;align-items:center;gap:5px}
+ .game-screen .tutorial-coach-copy{
+  grid-template-columns:auto minmax(0,1fr);align-items:baseline;gap:2px 8px
+ }
+ .game-screen #tutorial-text,.game-screen .tutorial-maths{grid-column:1/-1}
+ .game-screen .tutorial-actions{display:flex;flex-wrap:wrap;justify-content:flex-end}
+ .game-screen .tutorial-actions button{white-space:nowrap}
+}
+/* Preserve a usable minimum plot and scrolling on very short viewports
+   rather than clipping important controls, feedback or tutorial maths. */
+@media(max-height:480px) and (min-width:651px){
+ .game-screen>header .brand-mark{width:28px;height:28px}
+ .game-screen>.planning-footer{flex-wrap:wrap}
+ .game-screen .launch-panel{margin-left:auto}
+ .game-screen .tutorial-coach{gap:5px}
+}
+/* Smaller portrait screens already reflow by width. Trim excess spacing
+   there too, but retain touch-sized controls and full instructional text. */
+@media(max-height:700px) and (max-width:650px){
+ main.game-screen{padding:4px;gap:4px}
+ .game-screen>header,.game-screen>.planning-footer{padding:5px 7px;gap:4px 6px}
+ .game-screen>.toolbar{padding:4px 6px;gap:4px}
+ .game-screen #inspect-info{block-size:2.5em}
+ .game-screen .tutorial-coach{padding:5px 7px;gap:4px}
+ .game-screen .tutorial-actions{gap:4px}
+ .game-screen .tutorial-actions button{min-height:36px}
+}

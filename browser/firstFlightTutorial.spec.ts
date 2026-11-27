@@ -59,3 +59,36 @@ test('mobile coordinate lesson and pop-up remain readable and usable when resize
  await expect(page.locator('#tutorial-popup-tip')).toContainText('intentionally NOT');await info.attach('landscape-tutorial-editor',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
  await page.locator('#popup-done').click();await page.locator('#tutorial-skip').click();await expect(coach(page)).toHaveCount(0);
 });
+
+test('short wide gameplay prioritises the graph without losing tutorial instructions or controls',async({page},info)=>{
+ await page.setViewportSize({width:1440,height:900});await selectFirst(page);
+ const header=page.locator('.game-screen>header'),stage=page.locator('.stage');
+ const fullHeader=(await header.boundingBox())!.height;
+ await page.setViewportSize({width:1256,height:542});
+ await expect.poll(async()=>Math.round((await stage.boundingBox())?.height??0)).toBeGreaterThanOrEqual(320);
+ expect((await header.boundingBox())!.height).toBeLessThan(fullHeader);
+ const fitsScreen=async()=>{
+  const metrics=await page.evaluate(()=>({w:innerWidth,h:innerHeight,scroll:document.documentElement.scrollWidth,bottom:document.querySelector('.planning-footer')!.getBoundingClientRect().bottom}));
+  expect(metrics.scroll).toBeLessThanOrEqual(metrics.w+2);expect(metrics.bottom).toBeLessThanOrEqual(metrics.h+2);
+ };
+ await fitsScreen();
+ await expect(page.locator('#tutorial-skip')).toBeVisible();
+ await info.attach('compact-aim',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
+ await page.locator('#tutorial-continue').click();await page.locator('#tutorial-continue').click();
+ await expect(page.locator('#tutorial-maths')).toContainText('c = 2');
+ await expect(page.locator('#tutorial-text')).toContainText('Find the gradient');
+ await expect.poll(async()=>Math.round((await stage.boundingBox())?.height??0)).toBeGreaterThanOrEqual(280);
+ await fitsScreen();
+ await info.attach('compact-worked-example',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
+ await activate(page,'A');await expect(field(page,'m')).toBeFocused();
+ await field(page,'m').fill('1');await field(page,'c').fill('2');await page.locator('#popup-done').click();
+ await page.locator('#tutorial-skip').click();
+ await expect(coach(page)).toHaveCount(0);
+ await expect.poll(async()=>Math.round((await stage.boundingBox())?.height??0)).toBeGreaterThanOrEqual(360);
+ await fitsScreen();
+ await page.locator('#zoom-in').click();await expect(page.locator('#zoom-readout')).toHaveText('125%');
+ await page.locator('#zoom-reset').click();await expect(page.locator('#zoom-readout')).toHaveText('100%');
+ await info.attach('compact-scored-level',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
+ await page.setViewportSize({width:1440,height:900});
+ await expect.poll(async()=>Math.round((await header.boundingBox())?.height??0)).toBeGreaterThan(50);
+});
