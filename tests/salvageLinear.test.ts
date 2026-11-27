@@ -12,11 +12,11 @@ import {levels,worlds} from '../src/levels/catalog';
 
 const reference=[
  {assignments:[['B','Q']],program:{A:'5-x'}},
- {assignments:[['B','Q']],program:{A:'x+1'}},
- {assignments:[['B','Q']],program:{A:'3x/4+2'}},
- {assignments:[['B','Q'],['C','S']],program:{A:'x+2'}},
- {assignments:[['B','Q'],['C','S']],program:{A:'x+2',B:'-x/5+28/5'}},
- {assignments:[['B','Q'],['C','S']],program:{A:'4x/3+2',C:'x-7'}}
+ {assignments:[['B','R']],program:{A:'x+1'}},
+ {assignments:[['B','T']],program:{A:'3x/4+2'}},
+ {assignments:[['B','P'],['C','T']],program:{A:'x+2'}},
+ {assignments:[['B','U'],['C','R']],program:{A:'x+2',B:'-x/5+28/5'}},
+ {assignments:[['B','R'],['C','V']],program:{A:'4x/3+2',C:'x-7'}}
 ] as const;
 for(const [i,l] of salvageLinear.entries()){
  test(l.title+' has exactly one complete assignment over all legal mounts and programmable straight-line destinations',()=>{
