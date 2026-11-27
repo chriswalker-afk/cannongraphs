@@ -1,4 +1,5 @@
 import {validateLevel,type Level} from './schema';
+import {levelTiers} from './progression';
 import {meadowLaunchers} from './worlds/meadowLaunchers';
 import {floatingIsles} from './worlds/floatingIsles';
 import {parabolaPeaks} from './worlds/parabolaPeaks';
@@ -10,6 +11,7 @@ export const worlds:readonly World[]=[{number:1,name:'Meadow Launchers',levels:m
 export const levels:readonly Level[]=worlds.flatMap(w=>w.levels);
 const ids=new Set<string>();
 for(const world of worlds){
+ levelTiers(world.levels);
  for(const level of world.levels){
   validateLevel(level);
   if(level.world!==world.number||ids.has(level.id))throw new Error('Invalid catalog level '+level.id);

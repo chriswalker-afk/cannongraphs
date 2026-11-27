@@ -30,3 +30,7 @@ Do not claim physical-device, human listening or assistive-technology testing fr
 ### PR33: Choosing standard forms
 
 Cannon pop-ups show the available algebraic forms as named formula buttons rather than a dropdown. Students can choose an expanded, factorised, completed-square or root-based quadratic. A selected form owns its own editable draft. Switching to another form with no draft does not infer parameters from the puzzle or the previous form. Free equation input is still available for all supported expressions. The same parser validates every form, and an incomplete/degenerate form cannot be launched. Existing collision, scoring and flight evidence rules still apply.
+
+### PR37: Tiered level selection
+
+All six worlds show four labelled rows of three numbered levels: Introduction (one cannon), Development (two), Challenge (three) and Mastery (four). The rows use the same tier colours across worlds, while the world identity remains in the banner and detail card. Every level remains unlocked; level selection and best results are mode-specific, with the selected number visually pressed. Tab through the twelve levels in order, Enter/Space selects, and the Play button opens the selected puzzle. The selected detail panel shows the actual cannon count, learning mode, objective, families and optional gems. At short landscape sizes the repeated banner description is omitted; at very small screen sizes normal vertical scrolling remains available. Check real classroom displays for readability, touch target usability, and actual student difficulty.

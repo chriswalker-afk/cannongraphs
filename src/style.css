@@ -429,3 +429,39 @@ main.home-screen{height:auto;min-height:100dvh;grid-template-rows:auto minmax(15
 @media(max-width:650px){.parameter-form-choices{grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:4px}.parameter-form-choice{min-height:44px;padding:5px 4px}.parameter-form-choice[aria-pressed=true]{padding:4px 3px}.form-choice-formula{font-size:13px}}
 @media(max-height:460px){.parameter-form-choice{min-height:40px;padding:4px}.parameter-form-choice[aria-pressed=true]{padding:3px}.form-choice-formula{font-size:13px}}
 @media(forced-colors:active){.parameter-form-choice[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-2px}}
+
+/* PR37: cannon-count bands, independent of world and learning-mode colours.
+   Keep the numbers in authored order and retain the selected/record states. */
+.level-tier-list{display:grid;gap:7px;min-width:0}
+.level-tier{display:grid;grid-template-columns:minmax(104px,.85fr) minmax(0,1.15fr);align-items:center;gap:clamp(6px,1.3vw,14px);padding:7px 9px 7px 11px;border:1px solid color-mix(in srgb,var(--tier-accent) 45%,#fff);border-left:4px solid var(--tier-accent);border-radius:11px;background:color-mix(in srgb,var(--tier-tint) 66%,#fff);min-width:0}
+.level-tier[data-selected=true]{border-color:var(--tier-accent);background:var(--tier-tint)}
+.level-tier-heading{min-width:0;display:grid;gap:2px;align-content:center}
+.level-tier-heading h3{margin:0;color:var(--tier-ink);font-size:clamp(12px,1.5vw,17px);font-weight:850;line-height:1.15}
+.level-tier-count{font-size:clamp(10px,1.2vw,12px);font-weight:750;line-height:1.15;color:var(--tier-ink)}
+.level-tier .level-number-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(5px,.8vw,9px)}
+.level-tier .level-number{aspect-ratio:auto;width:100%;height:clamp(43px,7.1vh,62px);max-height:none;min-height:40px;border-color:var(--tier-accent);background:var(--tier-tint);color:var(--tier-ink);box-shadow:0 2px 0 color-mix(in srgb,var(--tier-accent) 45%,#fff);font-size:clamp(19px,2.3vw,28px)}
+.level-tier .level-number:hover{background:#fff}
+.level-tier .level-number[aria-pressed=true]{background:var(--tier-ink);color:#fff;border-color:var(--tier-ink);box-shadow:0 2px 0 var(--tier-accent)}
+.level-tier .level-number:focus-visible{outline:3px solid var(--tier-ink);outline-offset:2px}
+.level-tier .level-progress-mark{color:var(--tier-ink)}
+.level-details[data-selected=true]{border-top-color:var(--detail-tier-accent,var(--world-accent))}
+.level-details-tier{color:var(--detail-tier-ink,var(--world-ink));font-weight:850}
+.level-board-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.level-board-heading small{font-size:11px;color:#536d77;font-weight:650}
+@media(max-width:800px){
+ .level-selection-shell{gap:9px}
+ .level-tier-list{gap:6px}.level-tier{padding:6px 8px;grid-template-columns:minmax(100px,.8fr) minmax(0,1.2fr)}
+ .level-tier .level-number{height:46px;font-size:21px}
+}
+@media(max-width:480px){
+ .level-tier-list{gap:5px}.level-tier{border-left-width:3px;border-radius:8px;padding:5px 6px;gap:7px;grid-template-columns:minmax(93px,.84fr) minmax(0,1.16fr)}
+ .level-tier-heading h3{font-size:12px}.level-tier-count{font-size:10px}
+ .level-tier .level-number-grid{gap:5px}.level-tier .level-number{height:43px;min-height:43px;font-size:20px;border-radius:8px}
+ .level-board-heading{font-size:14px}.level-board-heading small{font-size:10px}
+}
+@media(max-height:480px) and (min-width:801px){
+ .level-board{gap:5px}.level-world-banner{grid-template-columns:70px minmax(0,1fr);gap:9px}.level-world-art{min-height:35px;max-height:44px}.level-world-copy>p,.level-world-copy>.selection-families{display:none}
+ .level-world-copy{gap:3px}.level-tier-list{gap:4px}.level-tier{padding:3px 7px;gap:8px;border-radius:8px}
+ .level-tier .level-number{height:37px;min-height:37px;font-size:19px}.level-tier-heading h3{font-size:12px}.level-tier-count{font-size:10px}
+}
+@media(forced-colors:active){.level-tier{border:1px solid CanvasText;border-left-width:3px}.level-tier[data-selected=true]{border-color:Highlight}.level-tier .level-number[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-3px}}
