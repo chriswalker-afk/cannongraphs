@@ -72,3 +72,19 @@ test('phone placement, exact properties, leftward firing and keyboard placement 
  await info.attach('phone-workshop',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
  const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)??'{}'),CUSTOM_LIBRARY_KEY);expect(saved.entries.find((e:{id:string})=>e.id===saved.activeId).design.cannons[0].direction).toBe(-1);
 });
+
+test('workshop header matches the game controls and stays within the viewport',async({page})=>{
+ await page.setViewportSize({width:1366,height:768});await open(page);
+ await expect(page.locator('#custom-home svg')).toBeVisible();
+ const header=page.locator('.custom-top'),footer=page.locator('.custom-footer');
+ const h=(await header.boundingBox())!,f=(await footer.boundingBox())!;
+ expect(h.x).toBeGreaterThanOrEqual(0);expect(f.y+f.height).toBeLessThanOrEqual(769);
+ await page.locator('#custom-library').click();
+ await expect(page.locator('#library-home svg')).toBeVisible();
+ await page.locator('#library-home').click();
+ await expect(page.locator('#home-level-workshop')).toBeVisible();
+ await page.setViewportSize({width:390,height:844});await open(page);
+ await expect(page.locator('#custom-home svg')).toBeVisible();
+ const metrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+ expect(metrics.scroll).toBeLessThanOrEqual(metrics.width+2);
+});
