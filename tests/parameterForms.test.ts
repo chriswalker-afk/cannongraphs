@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parameterForms,formsFor,parameterEquation,validParameter,stepParameter,polynomialParameters,type ParameterValues} from '../src/game/parameterForms';
+import {parameterForms,formsFor,formFormula,parameterEquation,validParameter,stepParameter,polynomialParameters,type ParameterValues} from '../src/game/parameterForms';
 import {cannonTypes,type CannonType} from '../src/game/cannons';
 import {parseCannonEquation,cannonEquationKey,evaluateCannonEquation} from '../src/engine/equations/advanced';
 import {popupPosition} from '../src/ui/popupPosition';
@@ -18,14 +18,21 @@ test('signed and exact fractional coefficients compile to the same rational equa
  const cases:[string,ParameterValues,string][]=[
   ['linear',{m:'-2/3',c:'11/3'},'11/3-2x/3'],
   ['linear',{m:'0',c:'3'},'3'],
+  ['point-slope',{m:'-2/3',h:'2',k:'1'},'7/3-2x/3'],
   ['quadratic',{a:'1/2',b:'-2',c:'-3'},'x²/2-2x-3'],
   ['vertex',{a:'-1/2',h:'4',k:'13/2'},'-(x-4)²/2+13/2'],
+  ['factorised',{a:'2',b:'-3',c:'1/2',d:'4'},'(2x-3)(x/2+4)'],
+  ['factorised',{a:'-1/3',b:'-1',c:'2',d:'-6'},'(-x/3-1)(2x-6)'],
   ['roots',{a:'-1/3',r:'-3',s:'3'},'-(x+3)(x-3)/3'],
   ['cubic',{a:'1/4',b:'0',c:'-3',d:'0'},'x³/4-3x'],
   ['shifted-cubic',{a:'1/4',h:'2',k:'1'},'(x-2)³/4+1'],
+  ['cubic-roots',{a:'1/3',r:'0',s:'3',t:'-3'},'x(x-3)(x+3)/3'],
   ['reciprocal',{a:'16',h:'2',k:'-4'},'16/(x-2)-4'],
+  ['reciprocal-affine',{a:'16',b:'2',c:'-4',k:'-4'},'8/(x-2)-4'],
   ['exponential',{a:'8',b:'1/2',p:'1',q:'0',k:'0'},'8(1/2)^x'],
   ['natural-exponential',{a:'-1',p:'1',q:'-1',k:'6'},'6-exp(x-1)'],
+  ['simple-exponential',{a:'8',b:'1/2',k:'0'},'8(1/2)^x'],
+  ['simple-natural-exponential',{a:'-1',p:'1/2',k:'6'},'6-exp(x/2)'],
   ['log',{a:'-2',b:'3',c:'-5',k:'4'},'4-2log(3(x-2)+1)'],
   ['ln',{a:'1',b:'1',c:'-1',k:'1'},'ln(x-1)+1'],
   ['sin',{a:'2',b:'π/2',c:'-5*pi/2',k:'2'},'2sin(pi(x-5)/2)+2'],
@@ -88,4 +95,38 @@ test('popup uses clear space beside its anchor when available',()=>{
  const a={left:0,top:0,right:1000,bottom:600};
  assert.equal(popupPosition({left:840,right:890,top:180,bottom:230},a,400,200).left,430);
  assert.equal(popupPosition({left:100,right:150,top:180,bottom:230},a,400,200).left,160);
+});
+
+test('visible quadratic choices describe exactly the four parameterisations',()=>{
+ const fs=formsFor('quadratic');
+ assert.deepEqual(fs.map(f=>f.name),['Expanded','Factorised','Completed square','Root form']);
+ assert.deepEqual(fs.map(formFormula),['y = ax² + bx + c','y = (ax + b)(cx + d)','y = a(x − h)² + k','y = a(x − r)(x − s)']);
+ assert.deepEqual(fs[1].fields.map(p=>p.id),['a','b','c','d']);
+ for(const family of Object.keys(cannonTypes) as CannonType[]){
+  const choices=formsFor(family);
+  assert.ok(choices.length>=2);assert.equal(new Set(choices.map(formFormula)).size,choices.length);
+ }
+});
+test('general factorised coefficients must still produce a genuine quadratic',()=>{
+ const f=form('factorised');
+ for(const values of [{a:'0',b:'2',c:'1',d:'3'},{a:'1',b:'2',c:'0',d:'3'},{a:'1',b:'2',c:'1',d:''}]){
+  assert.throws(()=>parseCannonEquation(parameterEquation(f,values),'quadratic'));
+ }
+ const p=parseCannonEquation(parameterEquation(f,{a:'2',b:'-3',c:'1/2',d:'4'}),'quadratic');
+ assert.equal(cannonEquationKey(p),cannonEquationKey(parseCannonEquation('x²+13x/2-12','quadratic')));
+});
+test('the same authored route can be flown from equivalent expanded, general factorised and root forms',()=>{
+ const l=levels.find(l=>l.id==='3-07')!;
+ const cases:[string,ParameterValues][]=[
+  ['quadratic',{a:'1',b:'-6',c:'5'}],
+  ['factorised',{a:'2',b:'-2',c:'1/2',d:'-5/2'}],
+  ['vertex',{a:'1',h:'3',k:'-4'}],
+  ['roots',{a:'1',r:'1',s:'5'}]
+ ];
+ const keys=new Set<string>();
+ for(const [id,values] of cases){
+  const eq=parseCannonEquation(parameterEquation(form(id),values),'quadratic');
+  keys.add(cannonEquationKey(eq));assert.equal(simulateRoute(l,new Map([['A',eq]])).event.kind,'exit',id);
+ }
+ assert.equal(keys.size,1);
 });

@@ -15,14 +15,14 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
  // activates only that form's equation; never derive answers automatically.
  const drafts:Record<string,ParameterValues>={...memory?.drafts};
  const options=node('div','parameter-options',root);
- node('span','parameter-choose-label',options,'Equation form');
+ const chooseLabel=node('span','parameter-choose-label',options,'Equation form');
  const toggle=node('button','parameter-toggle',options,'Free equation');toggle.type='button';
  const formChoices=node('div','parameter-form-choices',root);
  formChoices.setAttribute('role','group');formChoices.setAttribute('aria-label','Equation forms');
  const choices=new Map<string,HTMLButtonElement>();
  for(const choice of forms){
   const b=node('button','parameter-form-choice',formChoices);b.type='button';b.dataset.formId=choice.id;
-  const name=node('span','form-choice-name',b,choice.name);
+  node('span','form-choice-name',b,choice.name);
   node('span','form-choice-formula',b,formFormula(choice));
   b.setAttribute('aria-label',choice.name+' — '+formFormula(choice));b.setAttribute('aria-pressed',String(choice.id===form.id));
   choices.set(choice.id,b);
@@ -45,7 +45,7 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
   for(const [id,input] of inputs)input.setAttribute('aria-invalid',String(!!input.value.trim()&&!validParameter(input.value,cannon.type)));
  }
  rawRoot.addEventListener('equationchange',()=>{syncMessage();root.dispatchEvent(new CustomEvent('equationchange'));});
- function refresh(){rawRoot.hidden=!rawMode;boxes.hidden=rawMode;formChoices.hidden=rawMode||forms.length===1;toggle.textContent=rawMode?(polynomialParameters(raw.getDraft().text,cannon.type)||raw.getDraft().text===parameterEquation(form,values)||!raw.getDraft().text?'Use boxes':'New box equation'):'Free equation';}
+ function refresh(){rawRoot.hidden=!rawMode;boxes.hidden=rawMode;formChoices.hidden=rawMode||forms.length===1;chooseLabel.textContent=rawMode?'Free equation':'Choose a form';toggle.textContent=rawMode?(polynomialParameters(raw.getDraft().text,cannon.type)||raw.getDraft().text===parameterEquation(form,values)||!raw.getDraft().text?'Use boxes':'New box equation'):'Free equation';}
  function apply(){raw.setText(parameterEquation(form,values));syncMessage();}
  function render(){
   equation.replaceChildren();inputs.clear();first=undefined;
