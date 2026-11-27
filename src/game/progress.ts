@@ -1,5 +1,7 @@
 import {levels} from '../levels/catalog';
 import type {Level} from '../levels/schema';
+import {validAchievementIds} from './achievementIds';
+export type ProgressLevel=Pick<Level,'id'|'world'|'creatures'>&{readonly cannons:readonly unknown[];readonly gems?:readonly {readonly id:string}[]};
 import {learningModes,modeBudget,type LearningMode} from './learningModes';
 import type {LevelState} from './levelState';
 import {scoreStars,type Stars} from './scoring';
@@ -7,24 +9,24 @@ import {bankedGems} from '../animations/gemTimeline';
 import {CAPTURE_EPSILON} from '../engine/simulation/linearAttempt';
 export interface LevelRecord {readonly bestAttempts:number;readonly gems:readonly string[]}
 export type ModeRecords=Readonly<Partial<Record<LearningMode,LevelRecord>>>;
-export interface Progress {readonly version:1;readonly records:Readonly<Partial<Record<string,ModeRecords>>>}
+export interface Progress {readonly version:1;readonly retainedAchievements?:readonly string[];readonly records:Readonly<Partial<Record<string,ModeRecords>>>}
 export const emptyProgress=():Progress=>({version:1,records:{}});
 export function getRecord(p:Progress,id:string,mode:LearningMode):LevelRecord|undefined{return p.records[id]?.[mode];}
-export function recordStars(record:LevelRecord|undefined,level:Level,mode:LearningMode):Stars|null{
+export function recordStars(record:LevelRecord|undefined,level:Pick<Level,'creatures'>,mode:LearningMode):Stars|null{
  if(!record||mode==='cadet')return null;
  const budget=modeBudget(mode,level);return scoreStars(budget-record.bestAttempts+1,budget);
 }
-function validGems(level:Level,ids:readonly unknown[]):string[]{
+function validGems(level:ProgressLevel,ids:readonly unknown[]):string[]{
  const seen=new Set(ids);return (level.gems??[]).filter(g=>seen.has(g.id)).map(g=>g.id);
 }
 function sameRecord(a:LevelRecord|undefined,b:LevelRecord){
  return !!a&&a.bestAttempts===b.bestAttempts&&a.gems.length===b.gems.length&&a.gems.every((id,i)=>id===b.gems[i]);
 }
-function addRecord(p:Progress,l:Level,mode:LearningMode,next:LevelRecord):Progress{
+function addRecord(p:Progress,l:ProgressLevel,mode:LearningMode,next:LevelRecord):Progress{
  const previous=getRecord(p,l.id,mode);
  const r:LevelRecord={bestAttempts:Math.min(previous?.bestAttempts??next.bestAttempts,next.bestAttempts),gems:validGems(l,[...(previous?.gems??[]),...next.gems])};
  if(sameRecord(previous,r))return p;
- return {version:1,records:{...p.records,[l.id]:{...p.records[l.id],[mode]:r}}};
+ return {...p,records:{...p.records,[l.id]:{...p.records[l.id],[mode]:r}}};
 }
 // A record is earned only at the end of a completed, successfully animated run.
 // There is no reward for a preview, provisional gem pickup or pending celebration.
@@ -39,11 +41,12 @@ export function recordCompletion(p:Progress,level:Level,mode:LearningMode,s:Leve
  return addRecord(p,level,mode,{bestAttempts:s.failed+1,gems:bankedGems(s.lastResult)});
 }
 const object=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
-export function decodeProgress(value:unknown):Progress{
+export function decodeProgress(value:unknown,scope:readonly ProgressLevel[]=levels):Progress{
  if(!object(value)||value.version!==1||!object(value.records))return emptyProgress();
- let p=emptyProgress();
+ const retainedAchievements=validAchievementIds(value.retainedAchievements);
+ let p:Progress=retainedAchievements.length?{...emptyProgress(),retainedAchievements}:emptyProgress();
  // Iterate only catalog keys and known mode IDs, never arbitrary object keys.
- for(const l of levels){
+ for(const l of scope){
   const row=value.records[l.id];if(!object(row))continue;
   for(const {id:mode} of learningModes){
    const r=row[mode];if(!object(r))continue;
@@ -54,11 +57,11 @@ export function decodeProgress(value:unknown):Progress{
  }
  return p;
 }
-export function parseProgress(raw:string|null):Progress{
- if(!raw)return emptyProgress();try{return decodeProgress(JSON.parse(raw));}catch{return emptyProgress();}
+export function parseProgress(raw:string|null,scope:readonly ProgressLevel[]=levels):Progress{
+ if(!raw)return emptyProgress();try{return decodeProgress(JSON.parse(raw),scope);}catch{return emptyProgress();}
 }
 export function mergeProgress(a:Progress,b:Progress):Progress{
- let p=a;for(const l of levels)for(const {id:mode} of learningModes){
+ let p=retainAchievements(a,b.retainedAchievements??[]);for(const l of levels)for(const {id:mode} of learningModes){
   const r=getRecord(b,l.id,mode);if(r)p=addRecord(p,l,mode,r);
  }return p;
 }
@@ -67,7 +70,7 @@ export interface ProgressSummary{
  total:number;completed:number;gems:number;gemTotal:number;
  modes:Record<LearningMode,ModeSummary>;
 }
-export function summarizeProgress(p:Progress,scope:readonly Level[]=levels):ProgressSummary{
+export function summarizeProgress(p:Progress,scope:readonly ProgressLevel[]=levels):ProgressSummary{
  const summary:ProgressSummary={total:scope.length,completed:0,gems:0,gemTotal:0,modes:{cadet:{completed:0,stars:0,gems:0},pilot:{completed:0,stars:0,gems:0},ace:{completed:0,stars:0,gems:0}}};
  for(const l of scope){
   const collected=new Set<string>();let completed=false;
@@ -81,4 +84,10 @@ export function summarizeProgress(p:Progress,scope:readonly Level[]=levels):Prog
   summary.gems+=collected.size;
  }
  return summary;
+}
+
+export function retainAchievements(p:Progress,ids:Iterable<string>):Progress{
+ const next=validAchievementIds([...(p.retainedAchievements??[]),...ids]);
+ if(next.length===(p.retainedAchievements?.length??0)&&next.every((id,i)=>id===p.retainedAchievements?.[i]))return p;
+ return next.length?{...p,retainedAchievements:next}:p;
 }
