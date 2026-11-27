@@ -37,11 +37,11 @@ export const lostArches:readonly Level[]=[
  level(9,'Broken symmetry','Use the unequal endpoint heights and both gates to control the turning point.',b9,
   [q('A',-4,3)],p(4,-1),[perch('launch-perch',-4,3),...gate('entry-slot',-2.1,-1.9,-1.85,-.15,b9),
    ...gate('deep-slot',.6,1.4,-3.95,-2.55,b9),perch('exit-perch',4,-1)]),
- level(10,'Temple relay','Combine straight lines and a quadratic arch through the ruined vault.',b10,
+ {...level(10,'Temple relay','Combine straight lines and a quadratic arch through the ruined vault.',b10,
   [line('A',-8,-2),q('B',-4,2),line('C',4,2)],p(8,2),[
    perch('launch-perch',-8,-2),wall('entry-wall',-6.2,-5.8,-4.6,-.9),perch('relay-perch',-4,2),
    wall('high-vault',-1.35,-.65,-4.6,4.8),perch('middle-perch',4,2),
-   ...gate('exit-slot',4.7,5.3,1.35,2.65,b10),perch('exit-perch',8,2)]),
+   ...gate('exit-slot',4.7,5.3,1.35,2.65,b10),perch('exit-perch',8,2)]),supports:{C:{kind:'wall' as const,terrainId:'exit-slot-lower'}}},
  level(11,'Labyrinth switchback','Reverse direction in a three-level corridor before the final straight flight.',b11,
   [q('A',-8,-4),q('B',4,-4,-1),line('C',-4,4)],p(10,4),[
    perch('launch-perch',-8,-4),...gate('entry-gate',-6.1,-5.9,-3.1,-1.6,b11),
