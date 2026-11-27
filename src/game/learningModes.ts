@@ -24,8 +24,7 @@ export function modeObjective(mode:LearningMode,level:Level):string{
  if(mode!=='ace')return level.objective;
  // These non-rational anchor values cannot be recovered exactly from tick
  // labels, so keep essential puzzle data available in every mode.
- if(level.id==='6-03')return 'Exact x: gem 1+ln(2), exit 1+ln(4).';
- if(level.id==='6-05')return 'Exact x: gem 1+e, exit 1+e².';
+ if(level.exactCoordinateNote)return 'Plan a route to the exit. '+level.exactCoordinateNote;
  const anchors=[...level.cannons.map(c=>({label:'Cannon '+c.id,point:c.position})),{label:'exit',point:level.exit}];
  const fractional=anchors.filter(a=>!Number.isInteger(a.point.x)||!Number.isInteger(a.point.y));
  return 'Plan a route to the exit.'+(fractional.length?' Exact non-integer anchors: '+fractional.map(a=>a.label+' ('+fmt(a.point.x)+', '+fmt(a.point.y)+')').join('; ')+'.':'');
