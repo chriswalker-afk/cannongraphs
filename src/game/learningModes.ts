@@ -12,7 +12,7 @@ export interface ModePolicy{
 export const learningModes:readonly ModePolicy[]=[
  {id:'cadet',name:'Cadet',tagline:'Explore with support',description:'Unlimited attempts, equation templates, guided checks and an optional graph preview.',unlimited:true,preview:true,templates:true,coordinates:true,hints:true,accent:'#357d68',tint:'#e3f2e9'},
  {id:'pilot',name:'Pilot',tagline:'The standard challenge',description:'Five Pips, coordinate inspection and progressive feedback after attempts. No preview.',unlimited:false,preview:false,templates:false,coordinates:true,hints:true,accent:'#3977ac',tint:'#e4eef9'},
- {id:'ace',name:'Ace',tagline:'Fly independently',description:'Three Pips. Read the axes yourself, with no equation scaffolds, mathematical hints or graph preview.',unlimited:false,preview:false,templates:false,coordinates:false,hints:false,accent:'#8c6335',tint:'#f9edd6'}
+ {id:'ace',name:'Ace',tagline:'Fly independently',description:'Three Pips. Read the axes yourself, with no mathematical hints or graph preview. Use the same equation controls.',unlimited:false,preview:false,templates:false,coordinates:false,hints:false,accent:'#8c6335',tint:'#f9edd6'}
 ];
 export function isLearningMode(value:unknown):value is LearningMode{return learningModes.some(m=>m.id===value);}
 export function modePolicy(mode:LearningMode):ModePolicy{

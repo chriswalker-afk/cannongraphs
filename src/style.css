@@ -367,3 +367,52 @@ main.home-screen{height:auto;min-height:100dvh;grid-template-rows:auto minmax(15
 .game-screen[data-motion="full"] .trajectory-gem[data-gem-state=collected] .gem-spark{animation:gem-flash .42s ease-out both!important}
 .game-screen[data-motion="full"] .resolution-stars .earned{animation:star-pop .36s cubic-bezier(.2,.8,.3,1.35) both!important}
 @media(max-width:650px){.motion-mode{font-size:10px;padding:4px 6px;min-height:30px}}
+
+/* Cannon programming lives next to the cannon, not in a bottom dock. */
+.cannon-target,.halo-legend span{--status-color:#d48a32;--status-fill:#ffcc7b}
+.cannon-target[data-status=ready],.halo-legend [data-status=ready]{--status-color:#65a961;--status-fill:#b9ec9c}
+.cannon-target[data-status=revise],.halo-legend [data-status=revise]{--status-color:#b83d38;--status-fill:#f6a19a}
+.cannon-target[data-status=tested],.halo-legend [data-status=tested]{--status-color:#16663c;--status-fill:#4caa72}
+.cannon-target .planning-halo{display:inline;fill:var(--status-fill);fill-opacity:.34;stroke:var(--status-color);stroke-width:.045;stroke-opacity:.95}
+.cannon-target[data-status=tested] .planning-halo{fill-opacity:.49;stroke-width:.055}
+.cannon-target[data-status=revise] .planning-halo{fill-opacity:.43;stroke-width:.055}
+.cannon-target .selected-halo{display:none}.cannon-target[data-selected=true] .selected-halo{display:inline}
+.program-summary{display:flex;align-items:center;flex-wrap:wrap;gap:5px 10px}
+#edit-cannons{background:#e2edf2;color:#234d78;border:1px solid #b1c8d4;font-size:12px;padding:6px 10px}
+#plan-ready{font-size:12px;font-weight:800;color:#315779;white-space:nowrap}
+.halo-legend{display:flex;gap:4px 10px;flex-wrap:wrap;font-size:10px;color:#536579}
+.halo-legend span{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.halo-legend span:before{content:'';width:10px;height:10px;border-radius:50%;background:var(--status-fill);border:1.5px solid var(--status-color)}
+.game-screen .launch-panel{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;max-width:none;gap:5px}
+.game-screen .launch-panel small{max-width:85px}
+.game-screen .cannon-popup[hidden],.cannon-popup [hidden]{display:none!important}
+.cannon-popup{position:fixed;z-index:12;display:grid;gap:10px;width:min(435px,calc(100vw - 16px));padding:12px;border:1px solid #a2b9c3;border-top:4px solid var(--popup-family,#2583ca);border-radius:13px;background:#fffdf5;color:#263f52;box-shadow:0 5px 25px #203b5260;overflow:auto;overscroll-behavior:contain}
+.popup-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.popup-heading h2{font-size:16px;color:#234d78;margin:0;line-height:1.25}
+#popup-close{background:#e4edf2;color:#315779;padding:3px 10px;font-size:21px;line-height:1.2}
+#popup-editor{display:grid;gap:7px;min-width:0}
+.parameter-options{display:flex;justify-content:space-between;align-items:center;gap:5px;flex-wrap:wrap}
+.parameter-form-label{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:750;color:#536579}
+.parameter-form{max-width:100%;font:inherit;background:#fff;color:#234d78;padding:5px;border:1px solid #b8cdd8;border-radius:6px}
+.parameter-toggle{background:#e4edf2;color:#315779;font-size:11px;padding:6px 9px;border:1px solid #b8cdd8;margin-left:auto}
+.parameter-boxes{display:grid;gap:7px}
+.parameter-equation{display:flex;flex-wrap:wrap;align-items:center;gap:3px 2px;padding:9px 6px;background:#f2f7f5;border:1px solid #c4d9d4;border-radius:9px;font-size:20px;font-family:Cambria,Georgia,serif;font-weight:600;line-height:1.4}
+.parameter-math{white-space:pre-wrap}
+.parameter-field{display:inline-flex;align-items:stretch;border:1.5px solid #8daeba;border-radius:6px;background:white;overflow:hidden;flex:none}
+.parameter-field:focus-within{outline:2px solid #2583ca;outline-offset:1px}
+.coefficient-input{font:600 17px Cambria,Georgia,serif;color:#234d78;text-align:center;min-width:0;width:50px;padding:4px 2px;border:0;background:#fff;outline:none}
+.coefficient-input::placeholder{color:#7b9aa5;opacity:1}.coefficient-input[aria-invalid=true]{background:#ffebe7}
+.parameter-steppers{display:grid;border-left:1px solid #b8cdd8}
+.parameter-step{border-radius:0;font-size:11px;line-height:1;padding:2px 5px;min-height:17px;background:#e4edf2;color:#234d78}
+.parameter-step+button{border-top:1px solid #b8cdd8}
+.parameter-help,.cannon-popup .equation-message,.cannon-popup .cadet-guide{font-size:11px;color:#536579;line-height:1.3}
+.parameter-boxes[data-state=ready] .equation-message{color:#287744}.parameter-boxes[data-state=invalid] .equation-message{color:#9d342e}
+.cannon-popup .equation-editor{grid-template-columns:minmax(0,1fr);gap:5px}
+.cannon-popup .editor-family{display:none}
+.cannon-popup .editor-entry input{font-size:16px}
+.popup-nav{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.popup-nav button{font-size:11px;padding:7px 9px;background:#e4edf2;color:#315779;border:1px solid #b8cdd8}
+.popup-nav #popup-done{background:#31894f;color:white;margin-left:auto;border-color:#31894f}
+@media(max-width:650px){.cannon-popup{padding:9px;gap:7px}.parameter-equation{font-size:18px;gap:3px 1px;padding:7px 5px}.coefficient-input{width:45px;font-size:16px}.parameter-step{padding:3px 5px}.halo-legend{font-size:9px;gap:3px 6px}.program-summary{gap:4px 6px}.game-screen .planning-footer{flex-wrap:wrap}.game-screen .launch-panel{flex:1 1 auto}}
+@media(max-height:460px){.cannon-popup{gap:6px;padding:8px}.parameter-equation{padding:5px}.parameter-help{font-size:10px}.popup-nav button{padding:5px 8px}}
+@media(forced-colors:active){.planning-halo{forced-color-adjust:none}.cannon-target:focus-visible{outline:2px solid Highlight}}

@@ -18,7 +18,7 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
  const toggle=node('button','parameter-toggle',options,'Free equation');toggle.type='button';
  const boxes=node('div','parameter-boxes',root);boxes.id='parameter-boxes';
  const equation=node('div','parameter-equation',boxes);equation.setAttribute('role','group');equation.setAttribute('aria-label',cannonTypes[cannon.type].label+' equation parameters');
- const help=node('p','parameter-help',boxes,'Enter signed numbers or fractions. ↑/↓ changes a number by 1 (Shift: 0.1).'+(['linear','quadratic','cubic'].includes(cannon.type)?'':' π and e are accepted; angles in radians.'));
+ node('p','parameter-help',boxes,'Enter signed numbers or fractions. ↑/↓ changes a number by 1 (Shift: 0.1).'+(['linear','quadratic','cubic'].includes(cannon.type)?'':' π and e are accepted; angles in radians.'));
  const message=node('p','equation-message',boxes);message.setAttribute('role','status');
  const guide=node('p','cadet-guide',boxes);guide.hidden=!modePolicy(mode).templates;
  const rawRoot=node('div','equation-editor popup-raw-editor',root);rawRoot.id='equation-editor';
@@ -27,7 +27,8 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
  const inputs=new Map<string,HTMLInputElement>();
  function syncMessage(){
   boxes.dataset.state=rawRoot.dataset.state??'empty';root.dataset.state=boxes.dataset.state;
-  message.textContent=rawRoot.querySelector('#equation-message')?.textContent??'';
+  const partial=form.fields.some(f=>!(values[f.id]??'').trim());
+  message.textContent=!rawMode&&partial?(form.fields.every(f=>!(values[f.id]??'').trim())?'Complete the boxes to program this cannon.':'Complete every box (use 0 where needed).'):rawRoot.querySelector('#equation-message')?.textContent??'';
   guide.textContent=rawRoot.querySelector('#cadet-guide')?.textContent??'';
   for(const [id,input] of inputs)input.setAttribute('aria-invalid',String(!!input.value.trim()&&!validParameter(input.value,cannon.type)));
  }
@@ -50,7 +51,7 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
  }
  select.addEventListener('change',()=>{const next=forms.find(f=>f.id===select.value);if(!next||next===form)return;form=next;values={};render();apply();first?.focus();});
  toggle.addEventListener('click',()=>{
-  if(!rawMode){rawMode=true;refresh();raw.focus();return;}
+  if(!rawMode){rawMode=true;refresh();rawRoot.dispatchEvent(new CustomEvent('equationchange',{bubbles:true}));raw.focus();return;}
   const current=raw.getDraft().text,parsed=polynomialParameters(current,cannon.type);
   if(current!==parameterEquation(form,values)){
    if(parsed){form=forms[0];values={...parsed};}
