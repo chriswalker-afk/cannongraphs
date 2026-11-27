@@ -336,7 +336,7 @@ levelMenu.addEventListener('click',()=>{if(!levelMenu.disabled){if(anchorDemo){s
 homeButton.addEventListener('click',()=>{if(!homeButton.disabled)showHome(true);});
 restartButton.addEventListener('click',()=>reset(false));
 replay.addEventListener('click',()=>reset(!tutorialReturn));
-advance.addEventListener('click',()=>{if(state.phase!=='success')return;if(anchorDemo){if(following)mountLevel(following,mode,undefined,undefined,false,true);else showAnchorDemos();return;}if(liftDemo){if(following)mountLevel(following,mode,undefined,undefined,true);else showLiftDemos();return;}if(customRun){if(customRun.kind==='test'){customStore.select(customRun.id);showCustomWorkshop();}else showCustomLibrary(customRun.id,mode);return;}if(following){if(tutorialReturn)leaveTutorial();else startLevel(following,mode);}});
+advance.addEventListener('click',()=>{if(state.phase!=='success')return;if(anchorDemo){showAnchorDemos();return;}if(liftDemo){if(following)mountLevel(following,mode,undefined,undefined,true);else showLiftDemos();return;}if(customRun){if(customRun.kind==='test'){customStore.select(customRun.id);showCustomWorkshop();}else showCustomLibrary(customRun.id,mode);return;}if(following){if(tutorialReturn)leaveTutorial();else startLevel(following,mode);}});
 launchButton.addEventListener('click',()=>{
  if(!canLaunch(state)||hasAnchors&&!canLaunchAnchorPuzzle(level,plan,state))return;
  const equations=snapshotPlan(plan);if(!equations)return;

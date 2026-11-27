@@ -5,7 +5,7 @@ import {PROGRESS_KEY} from '../src/game/progressStore';
 
 async function choose(page:Page,world:number,mode=1){
  await page.goto('/');await page.locator('#home-play').click();
- if(world===7)await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.locator('[data-world-number="'+world+'"]').click();await page.locator('.mode-card').nth(mode).click();
+ if(world>=7)await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.locator('[data-world-number="'+world+'"]').click();await page.locator('.mode-card').nth(mode).click();
  await expect(page.locator('.level-tier')).toHaveCount(4);
 }
 for(const w of worlds)test('all twelve '+w.name+' levels appear in the correct labelled tiers',async({page},info)=>{
@@ -25,7 +25,7 @@ for(const w of worlds)test('all twelve '+w.name+' levels appear in the correct l
    await expect(page.locator('.level-number[aria-pressed=true]')).toHaveCount(1);
    await expect(page.locator('.level-tier[data-selected=true]')).toHaveAttribute('data-cannons',String(tier.count));
    await expect(page.locator('.level-details-title')).toHaveText(l.title);await expect(page.locator('.level-details-tier')).toHaveText(tier.name.toUpperCase());
-   await expect(page.locator('.level-facts')).toContainText(l.cannons.length+' '+(l.cannons.length===1?'cannon':'cannons'));await expect(page.locator('.selection-play')).toBeEnabled();
+   const count=l.cannons.length+(l.anchorPuzzle?.inventory.length??0);await expect(page.locator('.level-facts')).toContainText(count+' '+(count===1?'cannon':'cannons'));if(l.anchorPuzzle)await expect(page.locator('.level-facts')).toContainText(l.anchorPuzzle.anchors.length+' candidate mounts');await expect(page.locator('.selection-play')).toBeEnabled();
   }
  }
  const metrics=await page.evaluate(()=>({viewport:innerWidth,scroll:document.documentElement.scrollWidth}));

@@ -15,7 +15,7 @@ async function start(page:Page){
 async function pick(page:Page,world:number,mode:Mode,level:number,launch=true){
  await page.locator('#home-play').click();
  await expect(page.locator('.world-card')).toHaveCount(6);
- if(world===7)await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.locator('[data-world-number="'+world+'"]').click();
+ if(world>=7)await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await page.locator('[data-world-number="'+world+'"]').click();
  await expect(page.locator('.mode-card')).toHaveCount(3);
  await page.locator('.mode-card').nth(modeIndex[mode]).click();
  await expect(page.locator('.level-number')).toHaveCount(12);
@@ -88,8 +88,8 @@ test('keyboard navigation, invalid equation, misfire, retry and successful reloa
  await expect(page.locator('#resolution-stars')).toHaveAttribute('aria-label','2 out of 3 stars');
  await expect(page.locator('#resolution-achievements')).toContainText('First flight');
  await capture(page,info,'completion');
- await page.reload();await expect(page.getByRole('button',{name:/Flight log: 1 of 84/})).toBeVisible();
- await page.getByRole('button',{name:/Flight log: 1 of 84/}).click();
+ await page.reload();await expect(page.getByRole('button',{name:/Flight log: 1 of 96/})).toBeVisible();
+ await page.getByRole('button',{name:/Flight log: 1 of 96/}).click();
  await expect(page.locator('.log-stat').nth(1)).toContainText('2');await expect(page.locator('.log-achievement[data-earned=true]')).not.toHaveCount(0);
  await capture(page,info,'flight-log');
  expect(errors).toEqual([]);

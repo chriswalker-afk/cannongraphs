@@ -1,9 +1,9 @@
 import {test,expect,type Page} from '@playwright/test';
 async function enter(page:Page,id:string,mode='Cadet'){
  await page.goto('/');await page.locator('#home-play').click();await page.getByRole('button',{name:'Broken cannons',exact:true}).click();
- await page.getByRole('button',{name:'Salvage Yard · flight tests ↗',exact:true}).click();
- await expect(page.locator('.salvage-linear-choices section')).toHaveCount(6);await expect(page.locator('.salvage-flight-tests section')).toHaveCount(2);
- await page.locator('[data-salvage-level="'+id+'"]').getByRole('button',{name:mode,exact:true}).click();
+ await page.locator('[data-world-number="8"]').click();await page.getByRole('button',{name:new RegExp('^'+mode+'\\.')} ).click();
+ await expect(page.locator('.level-number')).toHaveCount(12);
+ await page.locator('[data-level-id="'+id+'"]').click();await page.locator('.selection-play').click();
 }
 const mount=(id:string)=>'[data-mount-id="'+id+'"]';
 async function place(page:Page,part:string,anchor:string){
@@ -18,7 +18,7 @@ async function program(page:Page,id:string,text:string){
  await page.locator('#equation-input').fill(text);
  await page.locator('#popup-done').click();
 }
-test('six-level practice sequence provides first two incoming lines, advances and removes the scaffold',async({page},info)=>{
+test('six-level official sequence provides first two incoming lines, advances and removes the scaffold',async({page},info)=>{
  await page.setViewportSize({width:1366,height:768});await enter(page,'salvage-linear-1');
  await expect(page.locator('#plan-ready')).toHaveText('1 / 2 programmed');
  await place(page,'B','Q');
