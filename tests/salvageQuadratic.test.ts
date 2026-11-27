@@ -54,7 +54,7 @@ for(const [i,l] of salvageQuadratic.entries()){
   }
  });
 }
-test('all twelve puzzles form one practice sequence and preserve the existing official curriculum',()=>{
+test('all twelve puzzles form an official world and preserve the existing curriculum',()=>{
  assert.equal(salvageLevels.length,12);assert.equal(new Set(salvageLevels.map(l=>l.id)).size,12);
  assert.deepEqual(salvageQuadratic.map(l=>l.anchorPuzzle!.anchors.length),[5,6,7,8,9,10]);
  assert.deepEqual(salvageQuadratic.map(l=>l.anchorPuzzle!.inventory.length),[1,2,2,3,3,3]);
@@ -64,7 +64,7 @@ test('all twelve puzzles form one practice sequence and preserve the existing of
   assert.equal(countReady(initialSalvagePlan(l)),i<2?1:0);
  }
  assert.equal(nextSalvageLevel('anchor-demo-linear'),undefined);
- assert.equal(levels.length,84);assert.equal(worlds.length,7);
- assert.ok(salvageLevels.every(l=>!levels.some(x=>x.id===l.id)));
+ assert.equal(levels.length,96);assert.equal(worlds.length,8);
+ assert.ok(salvageLevels.every(l=>levels.includes(l)));
  assert.match(modeObjective('ace',salvageQuadratic[2]),/Mount P \(2.25, 2.21875\)/);
 });

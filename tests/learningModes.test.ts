@@ -14,7 +14,7 @@ import {graphPreview} from '../src/engine/trajectories/graphPreview';
 import {bankedGems} from '../src/animations/gemTimeline';
 const level=levels[0],plan=(s:string)=>new Map([['A',parseCannonEquation(s,'linear')]]),fail=simulateRoute(level,plan('x+1')),win=simulateRoute(level,plan('x'));
 const near=(a:number,b:number,tol=1e-7)=>assert.ok(Math.abs(a-b)<=tol,a+' != '+b);
-test('fresh selection requires world and explicit mode before any of the 84 levels can be played',()=>{
+test('fresh selection requires world and explicit mode before any of the 96 levels can be played',()=>{
  const ids=new Set<string>();
  for(const w of worlds){
   const modeChoice=selectWorld(beginSelection(undefined,false,'pilot',categoryForWorld(w)),w.number);
@@ -27,7 +27,7 @@ test('fresh selection requires world and explicit mode before any of the 84 leve
    for(const l of w.levels){const s=selectLevel(choice,l.id);assert.equal(selectedLevel(s),l);ids.add(mode.id+':'+l.id);}
   }
  }
- assert.equal(ids.size,252);
+ assert.equal(ids.size,288);
 });
 test('return from gameplay preserves mode and level, and changing mode is an explicit new selection',()=>{
  const s=beginSelection('6-r12',true,'ace');assert.equal(s.step,'levels');

@@ -33,7 +33,7 @@ test('24 parts in four categories have eight free choices and existing achieveme
  assert.equal(cannonCosmetics.filter(c=>cannonCosmeticUnlocked(c,all)).length,24);
  for(const slot of cannonSlots){assert.equal(cannonCosmetics.filter(c=>c.slot===slot).length,6);assert.ok(cannonCosmeticUnlocked(cannonCosmeticFor(slot,defaultCannonLook[slot])!,none));}
  for(const c of cannonCosmetics)if(c.achievement)assert.ok(all.has(c.achievement),c.name);
- for(const a of achievementDefinitions.filter(a=>!['foundry-explorer','all-worlds-explorer'].includes(a.id)))assert.ok(cannonRewardsForAchievement(a.id).length,a.id);
+ for(const a of achievementDefinitions.filter(a=>!['foundry-explorer','salvage-explorer','all-worlds-explorer'].includes(a.id)))assert.ok(cannonRewardsForAchievement(a.id).length,a.id);
 });
 test('actual Pilot completion unlocks corresponding parts; full progress unlocks all',()=>{
  let s=beginAttempt(createLevelState(5),win);s=finishAttempt(s,s.active!.id);

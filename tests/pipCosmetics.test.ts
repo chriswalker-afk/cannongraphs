@@ -26,7 +26,7 @@ test('catalog has four independent slots, 24 unique parts, eight free parts and 
  assert.equal(pipCosmetics.filter(c=>cosmeticUnlocked(c,none)).length,8);
  assert.equal(pipCosmetics.filter(c=>cosmeticUnlocked(c,all)).length,24);
  for(const c of pipCosmetics)if(c.achievement)assert.ok(all.has(c.achievement),c.name);
- for(const a of achievementDefinitions.filter(a=>!['foundry-explorer','all-worlds-explorer'].includes(a.id)))assert.ok(cosmeticsForAchievement(a.id).length,a.id);
+ for(const a of achievementDefinitions.filter(a=>!['foundry-explorer','salvage-explorer','all-worlds-explorer'].includes(a.id)))assert.ok(cosmeticsForAchievement(a.id).length,a.id);
  for(const slot of pipSlots)assert.ok(cosmeticUnlocked(cosmeticFor(slot,defaultPipLook[slot])!,none));
 });
 test('real successful Pilot flight unlocks exactly its actual achievement rewards, not every cosmetic',()=>{

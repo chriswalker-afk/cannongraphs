@@ -78,7 +78,7 @@ for(const [i,level] of foundryQuadratic.entries())test(level.title+' is solvable
  assert.deepEqual([...winners],[ref.heights.join(',')]);
 });
 test('twelve Foundry puzzles advance across the linear/quadratic boundary as the final twelve official levels',()=>{
- assert.equal(foundryLevels.length,12);assert.equal(levels.length,84);
+ assert.equal(foundryLevels.length,12);assert.equal(levels.length,96);
  assert.equal(new Set(foundryLevels.map(l=>l.id)).size,12);
  assert.ok(foundryLevels.every(l=>levels.includes(l)&&l.world===7));
  for(let i=0;i<11;i++)assert.equal(nextFoundryLevel(foundryLevels[i].id),foundryLevels[i+1]);

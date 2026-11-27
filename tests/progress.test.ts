@@ -1,3 +1,4 @@
+import {referenceLayout} from './fixtures/referenceLayout';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {levels,worlds} from '../src/levels/catalog';
@@ -28,9 +29,9 @@ const memoryStorage=()=>{
 };
 test('empty progress is genuinely empty and contains no earned achievements',()=>{
  const p=emptyProgress(),s=summarizeProgress(p);
- assert.equal(s.total,84);assert.equal(s.completed,0);assert.equal(s.gems,0);assert.ok(s.gemTotal>30);
- assert.equal(earnedAchievementIds(p).size,0);assert.equal(achievementDefinitions.length,17);
- assert.equal(new Set(achievementDefinitions.map(a=>a.id)).size,17);
+ assert.equal(s.total,96);assert.equal(s.completed,0);assert.equal(s.gems,0);assert.ok(s.gemTotal>30);
+ assert.equal(earnedAchievementIds(p).size,0);assert.equal(achievementDefinitions.length,18);
+ assert.equal(new Set(achievementDefinitions.map(a=>a.id)).size,18);
 });
 test('planning, launch, retry, game over, provisional gems and incomplete celebrations never award progress',()=>{
  const p=emptyProgress(),fresh=createLevelState(5);
@@ -95,8 +96,8 @@ test('world achievements require twelve distinct completions in a single mode, n
 test('all-catalog progress and thresholds use distinct levels and level-scoped unique gems',()=>{
  const p=fixture(Object.fromEntries(levels.map((level,i)=>[level.id,{[i%2?'pilot':'ace']:{bestAttempts:1,gems:(level.gems??[]).map(g=>g.id)}}])));
  const s=summarizeProgress(p),earned=earnedAchievementIds(p);
- assert.equal(s.completed,84);assert.equal(s.gems,s.gemTotal);assert.equal(s.modes.pilot.stars+s.modes.ace.stars,252);
- for(const id of ['first-flight','pilot-wings','ace-wings','star-collector','gem-collector','gem-explorer','relay-runner','graphiverse-explorer','foundry-explorer','all-worlds-explorer'])assert.ok(earned.has(id),id);
+ assert.equal(s.completed,96);assert.equal(s.gems,s.gemTotal);assert.equal(s.modes.pilot.stars+s.modes.ace.stars,288);
+ for(const id of ['first-flight','pilot-wings','ace-wings','star-collector','gem-collector','gem-explorer','relay-runner','graphiverse-explorer','foundry-explorer','salvage-explorer','all-worlds-explorer'])assert.ok(earned.has(id),id);
  assert.ok(!earned.has('cadet-wings'));assert.ok(!earned.has('world-explorer'));
 });
 test('storage decoding rejects malformed versions, unknown ids, invalid attempt counts and bogus gems',()=>{
@@ -198,4 +199,21 @@ test('Foundry progress validates moved anchors and preserves original six-world 
  const historic=fixture(Object.fromEntries(levels.slice(0,72).map(l=>[l.id,{pilot:{bestAttempts:1,gems:[]}}])));
  const earned=earnedAchievementIds(historic);
  assert.ok(earned.has('graphiverse-explorer'));assert.ok(!earned.has('foundry-explorer'));assert.ok(!earned.has('all-worlds-explorer'));
+});
+
+test('Salvage records require a complete canonical mounted relay; previous Master explorer remains earned',()=>{
+ const authored=worlds[7].levels[0],layout=referenceLayout(authored);
+ const result=simulateRoute(layout,new Map([['A',parseCannonEquation('5-x','linear')]]));
+ const state=completed('pilot',0,authored,result),p=emptyProgress();
+ assert.equal(recordCompletion(p,authored,'pilot',state),p);
+ const next=recordCompletion(p,authored,'pilot',state,layout);
+ assert.equal(getRecord(next,authored.id,'pilot')?.bestAttempts,1);
+ assert.equal(parseProgress(JSON.stringify(next)).records[authored.id]?.pilot?.bestAttempts,1);
+ assert.equal(authored.cannons.length,1);
+ const mem=memoryStorage(),old=Object.fromEntries(levels.slice(0,84).map(l=>[l.id,{pilot:{bestAttempts:1,gems:[]}}]));
+ mem.data.set(PROGRESS_KEY,JSON.stringify({version:1,records:old,retainedAchievements:['all-worlds-explorer']}));
+ const historic=createProgressStore(mem.storage).read();
+ assert.ok(earnedAchievementIds(historic).has('all-worlds-explorer'));
+ assert.ok(!earnedAchievementIds(historic).has('salvage-explorer'));
+ assert.equal(summarizeProgress(historic).completed,84);assert.equal(summarizeProgress(historic).total,96);
 });

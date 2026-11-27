@@ -48,7 +48,7 @@ for(const [i,level] of foundryLinear.entries())test(level.title+' has one succes
  assert.deepEqual([...winners],[ref.heights.join(',')]);
 });
 test('Foundry linear sequence is the first half of official world seven',()=>{
- assert.equal(levels.length,84);
+ assert.equal(levels.length,96);
  assert.equal(foundryLinear.length,6);
  assert.ok(foundryLinear.every(l=>levels.includes(l)&&l.world===7));
  assert.equal(nextFoundryLinear(foundryLinear[0].id),foundryLinear[1]);

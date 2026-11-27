@@ -47,6 +47,6 @@ test('Ace instructions retain the full relay requirement and exact noninteger co
  const text=modeObjective('ace',fractional);
  assert.match(text,/use every cannon/);assert.match(text,/Mount T \(3.5, 1.5\)/);assert.ok(!text.includes('Mount Q'));
 });
-test('placement demos stay outside the 84-level curriculum',()=>{
- assert.equal(worlds.length,7);assert.equal(levels.length,84);assert.ok(anchorDemos.every(l=>!levels.some(c=>c.id===l.id)));
+test('placement demos stay outside the 96-level curriculum',()=>{
+ assert.equal(worlds.length,8);assert.equal(levels.length,96);assert.ok(anchorDemos.every(l=>!levels.some(c=>c.id===l.id)));
 });

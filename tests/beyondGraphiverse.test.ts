@@ -18,10 +18,10 @@ const refs=referenceSolutions[5];
 const plan=(i:number)=>new Map<string,CannonEquation>(beyondGraphiverse[i].cannons.map(c=>[c.id,parseCannonEquation(refs[i][c.id],c.type)]));
 const near=(a:number,b:number,tol=1e-6)=>assert.ok(Math.abs(a-b)<=tol,a+' != '+b);
 const advanced=(i:number,id='A')=>{const e=plan(i).get(id)!;assert.ok(isAdvanced(e));return e;};
-test('seven complete worlds expose all 84 levels, with no remaining playable preview or finale wraparound',()=>{
- assert.equal(worlds.length,7);assert.equal(levels.length,84);
+test('eight complete worlds expose all 96 levels, with no remaining playable preview or finale wraparound',()=>{
+ assert.equal(worlds.length,8);assert.equal(levels.length,96);
  assert.ok(worlds.every(w=>w.levels.length===12&&!w.name.includes('preview')));
- assert.equal(new Set(levels.map(l=>l.id)).size,84);
+ assert.equal(new Set(levels.map(l=>l.id)).size,96);
  assert.equal(worlds[5].name,'Beyond the Graphiverse');assert.equal(nextLevel(worlds[4].levels.at(-1)!.id),beyondGraphiverse[0]);
  assert.equal(new Set(beyondGraphiverse.map(l=>l.id)).size,12);
  assert.deepEqual(beyondGraphiverse.map(l=>l.cannons.length),[1,1,1,2,2,2,3,3,3,4,4,4]);

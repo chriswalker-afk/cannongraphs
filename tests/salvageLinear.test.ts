@@ -45,6 +45,6 @@ test('six-level progression keeps stable IDs and steps up placement complexity w
  assert.ok(salvageLinear.every(l=>l.cannons.length===1&&l.anchorPuzzle!.inventory.some(i=>i.lockedShape!==undefined)));
  for(const [i,l] of salvageLinear.entries())assert.equal(nextSalvageLinear(l.id),salvageLinear[i+1]);
  assert.equal(nextSalvageLinear('anchor-demo-linear'),undefined);
- assert.equal(levels.length,84);assert.equal(worlds.length,7);
- assert.ok(salvageLinear.every(l=>!levels.some(x=>x.id===l.id)));
+ assert.equal(levels.length,96);assert.equal(worlds.length,8);
+ assert.ok(salvageLinear.every(l=>levels.includes(l)));
 });
