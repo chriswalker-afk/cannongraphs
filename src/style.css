@@ -787,3 +787,10 @@ main[data-has-anchors=true] .camera-tools button,main[data-has-anchors=true] .an
  .anchor-tray-heading{flex-basis:auto}.anchor-parts{flex:1 1 135px}.anchor-part{flex:1 1 132px;min-width:120px;max-width:100%}
  .anchor-tray-actions{flex:0 1 auto}.anchor-part-equation{overflow-wrap:normal;white-space:normal}.anchor-instructions{flex:1 0 100%;min-height:12px}
 }
+
+/* Six-puzzle development sequence; official tier selector follows in PR56. */
+.salvage-demo-menu{max-width:1040px}.salvage-linear-choices{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.salvage-linear-choices section{padding:9px 11px;border-top:4px solid #73926a}.salvage-linear-choices section[data-band=development]{border-top-color:#648ba2}
+.salvage-linear-choices .salvage-puzzle-facts{display:block;font-size:11px;line-height:1.3;color:#58664d;margin:5px 0}
+.salvage-linear-choices button{padding:6px 8px;font-size:12px;margin:2px}.salvage-demo-menu .salvage-linear-choices p{min-height:0;font-size:12px;line-height:1.35}
+@media(max-width:800px){.salvage-linear-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:450px){.salvage-linear-choices{grid-template-columns:1fr}}

@@ -4,8 +4,8 @@ import {svgNode as el} from './pip';
 import {CANNON_FOOTPRINT} from '../game/anchorArtGeometry';
 
 // Quiet reclaimed-machine yard. Decorative steel and cranes are not terrain.
-export function renderSalvageScenery(parent:Element,w:number,h:number){
- const layer=el('g',{'aria-hidden':'true','pointer-events':'none','data-scenery':'salvage-yard'},parent);
+export function renderSalvageScenery(parent:Element,w:number,h:number,variant=0){
+ const layer=el('g',{'aria-hidden':'true','pointer-events':'none','data-scenery':'salvage-yard','data-salvage-area':variant===0?'salvage-depot':'dismantling-yard'},parent);
  const k=Math.min(w/800,h/380),floor=h*.91;
  el('rect',{y:floor,width:w,height:h-floor,fill:'#829082',opacity:.30},layer);
  const distant=el('g',{opacity:.28},layer);
@@ -15,6 +15,7 @@ export function renderSalvageScenery(parent:Element,w:number,h:number){
   el('path',{d:'M'+x+' '+h*.13+' l'+w*.1+' '+h*.08+' l'+w*.09+' '+(-h*.08),fill:'none',stroke:'#84938a','stroke-width':Math.max(2,5*k)},distant);
   const hook=x+w*.18;el('path',{d:'M'+hook+' '+h*.13+' V'+h*.34+' q-12 0 -12 10 q0 12 12 8',fill:'none',stroke:'#77847c','stroke-width':Math.max(2,4*k),'stroke-linecap':'round'},distant);
  }
+ if(variant===1){const g=el('g',{opacity:.24},layer);for(const f of [.32,.67]){const x=w*f;el('path',{d:'M'+x+' '+floor+' V'+h*.25+' H'+(x+w*.11)+' V'+floor,fill:'none',stroke:'#657b72','stroke-width':Math.max(5,12*k),'stroke-linejoin':'round'},g);el('rect',{x:x+w*.025,y:h*.27,width:w*.06,height:h*.10,rx:4,fill:'#ae936d',stroke:'#667b70','stroke-width':Math.max(1,3*k)},g);el('path',{d:'M'+(x+w*.055)+' '+h*.37+' V'+h*.61,stroke:'#63786f','stroke-width':Math.max(3,7*k)},g);}}
  for(const [i,f] of [.09,.27,.59,.87].entries()){
   const g=el('g',{transform:'translate('+(w*f)+' '+floor+') scale('+k+')',opacity:.33},layer);
   for(const [x,y,angle] of [[-46,-22,12],[9,-19,-17],[-15,-53,6]]){
