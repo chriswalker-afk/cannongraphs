@@ -1,9 +1,9 @@
-import {BARREL_ANGLE,FIRE_MS,sampleLaunchCue,type DemoFrame} from './launch';
+import {BARREL_ANGLE,FIRE_MS,LOAD_MS,sampleLaunchCue,type DemoFrame} from './launch';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import type {Point} from '../engine/coordinates';
 import {MISFIRE_MS,MISFIRE_REDUCED_MS,sampleMisfire,type MisfireStaging} from './misfire';
 export interface AttemptFrame extends DemoFrame {
- trace:Point|null;resolved:boolean;size:number;
+ trace:Point|null;resolved:boolean;size:number;trailStart?:Point;
 }
 const clamp=(x:number)=>Math.max(0,Math.min(1,x));
 export function flightDuration(r:AttemptResult,reduced=false):number{
@@ -15,11 +15,11 @@ export function sampleAttempt(ms:number,r:AttemptResult,reduced=false,staging?:M
  const misfire=r.event.kind==='misfire';
  const cue=sampleLaunchCue(ms,r.source,r.direction,reduced,misfire?BARREL_ANGLE:r.angle),duration=flightDuration(r,reduced),since=ms-FIRE_MS;
  const base={...cue,opacity:1,stretch:1,tilt:0,size:1,trace:null,resolved:false};
- if(ms<FIRE_MS)return {...base,pip:cue.loadingPoint,pose:'excited'};
+ if(ms<FIRE_MS)return {...base,pip:cue.loadingPoint,pose:'excited',stretch:reduced?1:1+.12*Math.sin(Math.PI*clamp(ms/LOAD_MS))};
  if(misfire)return {...base,...sampleMisfire(since,r.source,r.direction,reduced,staging),burst:null,recoil:0,charge:0};
  if(since<duration){
   const progress=reduced?1:clamp(since/duration),p=r.pointAt(progress);
-  return {...base,pip:p,pose:'flying',tilt:reduced?0:-(r.angleAt?.(progress)??r.angle)*r.direction,stretch:reduced?1:1+.20*Math.exp(-since/160),trace:p};
+  return {...base,pip:p,pose:'flying',tilt:reduced?0:-(r.angleAt?.(progress)??r.angle)*r.direction,stretch:reduced?1:1+.20*Math.exp(-since/160),trace:p,trailStart:reduced?undefined:r.pointAt(Math.max(0,progress-.13))};
  }
  const time=Math.max(0,since-duration),p=clamp(time/(r.event.kind==='cannon'?(reduced?140:300):reduced?250:720)),success=r.event.kind==='exit'||r.event.kind==='cannon';
  const normal=r.event.kind==='obstacle'||r.event.kind==='boundary'?r.event.normal:{x:0,y:1};

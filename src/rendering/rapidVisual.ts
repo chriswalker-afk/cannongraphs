@@ -13,7 +13,7 @@ export function createRapidVisual(parent:Element,count:number,variantOffset:numb
  // Pool only the visible celebration's sprites; redraw restores the same sample.
  const slots=Array.from({length:count},(_,i)=>{
   const trail=svgNode('path',{fill:'none','stroke-width':2.5,'stroke-linecap':'round',stroke:'#f1b346',opacity:.8},trailLayer);
-  const pip=createPip(spritesLayer,variantOffset+i,look);return {trail,pip};
+  const pip=createPip(spritesLayer,variantOffset+i,look);pip.root.setAttribute('data-rapid-pip',String(i));return {trail,pip};
  });
  const smokeGroups=routeLegs(result).map(leg=>{const smoke=svgNode('g',{},layer);const particles=createBurstParticles(smoke,cannonLook?.effect,5);return {leg,smoke,particles};});
  const flare=svgNode('g',{},layer);
@@ -25,7 +25,7 @@ export function createRapidVisual(parent:Element,count:number,variantOffset:numb
   for(const {trail,pip} of slots){trail.setAttribute('display','none');pip.root.setAttribute('display','none');}
   for(const f of frame.pips){
    const {trail,pip}=slots[f.index],p=project(f.point);
-   pip.root.setAttribute('display','inline');pip.root.setAttribute('opacity',String(f.opacity));
+   pip.root.setAttribute('display','inline');pip.root.setAttribute('data-pip-phase',f.phase);pip.root.setAttribute('opacity',String(f.opacity));
    pip.root.setAttribute('transform','translate('+p.x+' '+p.y+') scale('+(scale*f.scale)+') rotate('+f.tilt+')');
    pip.setPose(f.phase==='flying'?'flying':'excited');pip.setStretch(f.stretch);
    if(f.trailStart){trail.setAttribute('display','inline');trail.setAttribute('d',flightPath(routeLegs(result)[f.legIndex],f.trailStart,f.point,project));}
