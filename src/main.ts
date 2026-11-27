@@ -27,28 +27,35 @@ import {mountCreatureWorkshop} from './ui/creatureWorkshop';
 import {browserCannonLookStore} from './game/cannonLookStore';
 import {cannonRewardsForAchievement} from './game/cannonCosmetics';
 import {mountCannonWorkshop} from './ui/cannonWorkshop';
+import {browserAudioPlayback} from './audio/webAudio';
+import {createAudioSettingsDialog} from './ui/audioSettings';
+import type {MusicTheme} from './audio/music';
 const app=document.querySelector<HTMLDivElement>('#app')!,progressStore=browserProgressStore(),lookStore=browserPipLookStore(),cannonStore=browserCannonLookStore();
+const audio=browserAudioPlayback(),audioDialog=createAudioSettingsDialog(audio);
 let cleanup:()=>void=()=>{};
+function bindAudioButton(){const b=app.querySelector<HTMLButtonElement>('#sound-settings');return b?audioDialog.bind(b):()=>{};}
+function addMenuAudio(){const top=app.querySelector<HTMLElement>('.selection-top'),end=top?.querySelector('.selection-top-end');if(!top||!end)return;const b=document.createElement('button');b.type='button';b.id='sound-settings';b.className='sound-settings workshop-sound-settings';b.textContent='♪ Off';end.replaceWith(b);top.classList.add('has-audio');addAudioCleanup();}
+function addAudioCleanup(){const prior=cleanup,unbind=bindAudioButton();cleanup=()=>{unbind();prior();};}
 let lastLevel:Level|undefined,lastMode:LearningMode='pilot';
 function showHome(focusPlay=false){
- cleanup();const progress=progressStore.read();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay,{progress,persisted:progressStore.persisted(),onOpen:showFlightLog,look:lookStore.read(earnedAchievementIds(progress)),onWorkshop:showWorkshop,cannonLook:cannonStore.read(earnedAchievementIds(progress)),onCannonWorkshop:showCannonWorkshop});
+ cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountHomeScreen(app,()=>showSelection(),focusPlay,{progress,persisted:progressStore.persisted(),onOpen:showFlightLog,look:lookStore.read(earnedAchievementIds(progress)),onWorkshop:showWorkshop,cannonLook:cannonStore.read(earnedAchievementIds(progress)),onCannonWorkshop:showCannonWorkshop});addAudioCleanup();
 }
-function showWorkshop(){cleanup();cleanup=mountCreatureWorkshop(app,earnedAchievementIds(progressStore.read()),lookStore,()=>{showHome();app.querySelector<HTMLButtonElement>('#home-workshop')?.focus();});}
-function showCannonWorkshop(){cleanup();cleanup=mountCannonWorkshop(app,earnedAchievementIds(progressStore.read()),cannonStore,()=>{showHome();app.querySelector<HTMLButtonElement>('#home-cannon-workshop')?.focus();});}
-function showFlightLog(){cleanup();const progress=progressStore.read();cleanup=mountFlightLog(app,progress,progressStore.persisted(),()=>showHome(true));}
+function showWorkshop(){cleanup();audio.setTheme('menu');cleanup=mountCreatureWorkshop(app,earnedAchievementIds(progressStore.read()),lookStore,()=>{showHome();app.querySelector<HTMLButtonElement>('#home-workshop')?.focus();});addMenuAudio();}
+function showCannonWorkshop(){cleanup();audio.setTheme('menu');cleanup=mountCannonWorkshop(app,earnedAchievementIds(progressStore.read()),cannonStore,()=>{showHome();app.querySelector<HTMLButtonElement>('#home-cannon-workshop')?.focus();},()=>audio.play('fire'));addAudioCleanup();}
+function showFlightLog(){cleanup();audio.setTheme('menu');const progress=progressStore.read();cleanup=mountFlightLog(app,progress,progressStore.persisted(),()=>showHome(true));addMenuAudio();}
 function showSelection(openCurrentWorld=false){
- cleanup();cleanup=mountLevelSelection(app,{progress:progressStore.read(),preferredId:lastLevel?.id,preferredMode:lastMode,openCurrentWorld,onHome:()=>showHome(true),onPlay:(level,mode)=>{mountLevel(level,mode);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();}});
+ cleanup();audio.setTheme('menu');cleanup=mountLevelSelection(app,{bindAudio:audioDialog.bind,progress:progressStore.read(),preferredId:lastLevel?.id,preferredMode:lastMode,openCurrentWorld,onHome:()=>showHome(true),onPlay:(level,mode)=>{mountLevel(level,mode);app.querySelector<HTMLButtonElement>('#level-menu')?.focus();}});
 }
 function mountLevel(level:Level,mode:LearningMode){
- cleanup();lastLevel=level;lastMode=mode;
+ cleanup();audio.setTheme(level.world as MusicTheme);lastLevel=level;lastMode=mode;
  const policy=modePolicy(mode),budget=modeBudget(mode,level),look=lookStore.read(earnedAchievementIds(progressStore.read())),cannonLook=cannonStore.read(earnedAchievementIds(progressStore.read()));
-app.innerHTML=`<main><header><div class="brand"><button class="brand-mark home-return" id="home-return" type="button" aria-label="Return to home" title="Return to home (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><button class="game-level-menu" id="level-menu" type="button" title="Choose levels (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.4" fill="currentColor"/></svg><span>Levels</span></button></header><div class="toolbar"><div id="inspect-info" role="status">Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.</div><button type="button" id="graph-preview" class="graph-preview-toggle" aria-pressed="false" hidden>Show graph</button><span id="gem-readout" class="gem-readout" role="status" hidden></span><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><p id="resolution-gems" class="resolution-gems" hidden></p><p id="resolution-record" class="resolution-record" hidden></p><p id="resolution-achievements" class="resolution-achievements" hidden></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><footer class="planning-footer"><div class="planning-editor"><div id="flight-plan"></div><div id="equation-editor" class="equation-editor"></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label">Planning</small></div></footer></main>`;
+app.innerHTML=`<main><header><div class="brand"><button class="brand-mark home-return" id="home-return" type="button" aria-label="Return to home" title="Return to home (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><button class="game-level-menu" id="level-menu" type="button" title="Choose levels (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.4" fill="currentColor"/></svg><span>Levels</span></button><button class="sound-settings game-sound-settings" id="sound-settings" type="button" aria-label="Sound settings">♪ Off</button></header><div class="toolbar"><div id="inspect-info" role="status">Hover, tap or focus a cannon, exit or terrain to inspect its coordinates.</div><button type="button" id="graph-preview" class="graph-preview-toggle" aria-pressed="false" hidden>Show graph</button><span id="gem-readout" class="gem-readout" role="status" hidden></span><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><p id="resolution-gems" class="resolution-gems" hidden></p><p id="resolution-record" class="resolution-record" hidden></p><p id="resolution-achievements" class="resolution-achievements" hidden></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><footer class="planning-footer"><div class="planning-editor"><div id="flight-plan"></div><div id="equation-editor" class="equation-editor"></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label">Planning</small></div></footer></main>`;
 const world=worldForLevel(level.id)!,position=levelPosition(level.id)!,following=nextLevel(level.id);
 app.querySelector('main')!.dataset.world=String(world.number);app.querySelector('main')!.dataset.mode=mode;
 app.querySelector<HTMLElement>('#world-label')!.textContent=world.name+' · '+position.index+' / '+position.total+' · '+policy.name;
 app.querySelector<HTMLElement>('#level-objective')!.textContent=modeObjective(mode,level);
 const button=(id:string)=>document.querySelector<HTMLButtonElement>('#'+id)!;
-const scene=mountScene(app.querySelector<HTMLElement>('.stage')!,level,{in:button('zoom-in'),out:button('zoom-out'),reset:button('zoom-reset'),left:button('pan-left'),right:button('pan-right'),up:button('pan-up'),down:button('pan-down'),readout:document.querySelector('#zoom-readout')!,info:document.querySelector('#inspect-info')!,onCannonSelect:chooseCannon,mode,look,cannonLook});
+const scene=mountScene(app.querySelector<HTMLElement>('.stage')!,level,{in:button('zoom-in'),out:button('zoom-out'),reset:button('zoom-reset'),left:button('pan-left'),right:button('pan-right'),up:button('pan-up'),down:button('pan-down'),readout:document.querySelector('#zoom-readout')!,info:document.querySelector('#inspect-info')!,onCannonSelect:chooseCannon,mode,look,cannonLook,onSound:audio.play});
 
 const levelMenu=button('level-menu');levelMenu.setAttribute('aria-label','Choose levels; current level '+position.index+' of '+world.name+'. Leaves this run.');
 const editorRoot=app.querySelector<HTMLElement>('#equation-editor')!;
@@ -76,7 +83,7 @@ let state=createLevelState(budget,1,policy.unlimited),feedbackHistory=createFeed
 let completion:ProgressUpdate|undefined;
 const recordText=app.querySelector<HTMLElement>('#resolution-record')!,achievementText=app.querySelector<HTMLElement>('#resolution-achievements')!;
 function updateCompletion(){
- if(state.phase==='success'&&!completion)completion=progressStore.complete(level,mode,state);
+ if(state.phase==='success'&&!completion){completion=progressStore.complete(level,mode,state);audio.play(completion.unlocked.length?'achievement':'complete');}
  const update=state.phase==='success'?completion:undefined;
  recordText.hidden=!update;achievementText.hidden=!update?.unlocked.length;
  if(!update)return;
@@ -144,7 +151,7 @@ function celebrate(){
 function hideStatus(){status.hidden=true;status.textContent='';delete status.dataset.outcome;hintView.update(null);}
 function reset(keepEquation:boolean){
  const next=restartLevel(state);if(next===state)return;
- state=next;completion=undefined;clearPreview();feedbackHistory=createFeedbackHistory();scene.clearFlight();hideStatus();
+ state=next;audio.setTheme(level.world as MusicTheme);completion=undefined;clearPreview();feedbackHistory=createFeedbackHistory();scene.clearFlight();hideStatus();
  plan=keepEquation?clearEvidence(plan):createFlightPlan(ids);selectCannon(level.startId,true);
  sync();editor.focus();
 }
@@ -172,7 +179,7 @@ launchButton.addEventListener('click',()=>{
  state=next;liveGemCount=0;hintView.update(null);status.hidden=false;status.dataset.outcome='flying';status.textContent='Here we go!';sync();
  if(!scene.playFlight(result,()=>{
   const resolved=finishAttempt(state,id);if(resolved===state)return;
-  state=resolved;plan=recordFlightEvidence(plan,launched,result);
+  state=resolved;if(state.phase==='gameOver')audio.play('gameover');plan=recordFlightEvidence(plan,launched,result);
   if(policy.hints)feedbackHistory=recordAttemptFeedback(feedbackHistory,id,level,result,equations,mode==='cadet'?2:1);hintView.update(policy.hints?feedbackHistory.latest:null);status.dataset.outcome=result.event.kind==='exit'?'success':'failure';
   status.textContent=modeAttemptFeedback(mode,result)+(state.phase==='retry'?(policy.unlimited?' Unlimited retries — adjust and try again.':' '+state.waiting+' left — try again.'):'')+(result.event.kind!=='exit'&&result.gemHits.length?' Gems reset.':'');
   sync();if(state.phase==='celebrating')celebrate();else if(isTerminal(state))heading.focus();else {selectCannon(result.terminalCannonId);sync();editor.focus();}
@@ -180,6 +187,6 @@ launchButton.addEventListener('click',()=>{
 });
 sync();
 
-cleanup=scene.destroy;
+cleanup=scene.destroy;addAudioCleanup();
 }
 showHome();

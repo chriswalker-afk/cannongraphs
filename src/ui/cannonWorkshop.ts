@@ -26,13 +26,13 @@ function cannonPreview(host:Element,look:CannonLook,family:CannonType,direction:
  paint(showEffect?.35:null);
  return {paint};
 }
-export function mountCannonWorkshop(root:HTMLElement,earned:ReadonlySet<string>,store:ReturnType<typeof createCannonLookStore>,onHome:()=>void){
+export function mountCannonWorkshop(root:HTMLElement,earned:ReadonlySet<string>,store:ReturnType<typeof createCannonLookStore>,onHome:()=>void,onTestFire?:()=>void){
  let equipped=store.read(earned),draft={...equipped},slot:CannonSlot='barrel',family:CannonType='linear',direction:1|-1=1,disposed=false,raf=0;
  root.replaceChildren();
  const main=node('main','selection-screen workshop-screen cannon-workshop',root),top=node('div','selection-top',main);
  button(top,'selection-back','← Home',()=>{if(!disposed)onHome();});
  const title=node('div','selection-heading',top),h1=node('h1','',title,'Cannon Workshop');h1.tabIndex=-1;
- node('p','',title,'Build your signature style');node('div','selection-top-end',top);
+ node('p','',title,'Build your signature style');const soundButton=node('button','sound-settings workshop-sound-settings',top,'♪ Off');soundButton.type='button';soundButton.id='sound-settings';
  const shell=node('div','workshop-shell',main),left=node('section','workshop-preview-panel',shell),right=node('section','workshop-options-panel',shell);
  const previewHeader=node('div','workshop-preview-heading',left);
  node('h2','',previewHeader,'Your cannon');const previewStatus=node('span','workshop-preview-status',previewHeader);
@@ -45,7 +45,7 @@ export function mountCannonWorkshop(root:HTMLElement,earned:ReadonlySet<string>,
  const flip=button(controls,'workshop-pose','Fires right →',()=>{if(disposed)return;direction=direction===1?-1:1;flip.textContent=direction===1?'Fires right →':'← Fires left';renderChoices();refresh();});
  function stopPreview(){if(raf){cancelAnimationFrame(raf);raf=0;}}
  button(controls,'workshop-pose','Test fire',()=>{
-  if(disposed||!previewArt)return;stopPreview();
+  if(disposed||!previewArt)return;stopPreview();onTestFire?.();
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){previewArt.paint(.35);return;}
   const art=previewArt,start=performance.now(),duration=CUE_END_MS-FIRE_MS;
   function tick(now:number){

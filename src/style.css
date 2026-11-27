@@ -277,3 +277,28 @@ main.workshop-screen{grid-template-rows:auto auto;align-content:center;backgroun
 .cannon-family-note{font-size:11px;color:#526875;line-height:1.3}
 @media(max-width:800px){.cannon-workshop .cannon-preview-controls{grid-column:2}.cannon-workshop .workshop-preview{grid-row:2/6}.cannon-workshop .cannon-family-note{grid-column:2}.cannon-workshop .cannon-preview-controls select{font-size:11px;min-height:28px}}
 @media(max-height:480px) and (min-width:801px){.cannon-workshop .cannon-preview-controls select{min-height:28px}.cannon-family-note{font-size:10px}}
+
+/* Compact, optional sound controls never hide mathematical information. */
+.home-utilities{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:5px;min-width:0}
+.sound-settings{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;flex:none;min-height:32px;padding:6px 9px;border-radius:8px;background:#e7edf0;color:#315779;border:1px solid #b8cdd8;font-size:12px;font-weight:800;cursor:pointer}
+.sound-settings:hover{background:#d8e5eb}
+.workshop-sound-settings{justify-self:end}
+.audio-dialog{width:min(370px,calc(100% - 20px));max-height:calc(100dvh - 20px);padding:18px;overflow:auto;border:1px solid #b6c7c4;border-radius:16px;color:#243d50;background:#fffdf5;box-shadow:0 12px 50px #182f4f55}
+.audio-dialog:not([open]){display:none}
+.audio-dialog[open]{display:grid;gap:13px}
+.audio-dialog::backdrop{background:#182f4f80}
+.audio-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.audio-heading h2{font-size:23px;line-height:1.1;margin:0;color:#234d78}
+.audio-close{font-size:21px;line-height:1;padding:6px 10px;min-height:35px;background:#e7edf0;color:#315779;border:1px solid #b8cdd8}
+.audio-mute{background:#287a4c;border:1px solid #22683f;min-height:43px;font-size:14px}
+.audio-mute[data-muted=false]{background:#e7edf0;color:#315779;border-color:#b8cdd8}
+.audio-volume{display:grid;gap:5px;min-width:0;color:#405866;font-size:13px;font-weight:750}
+.audio-volume span{display:flex;justify-content:space-between}
+.audio-volume input{width:100%;accent-color:#367b62;min-height:32px;margin:0}
+.audio-test{background:#f1e7d2;color:#7a562d;border:1px solid #ceb994;min-height:36px;font-size:13px}
+.audio-status,.audio-note{font-size:12px;color:#526875;line-height:1.35}
+.audio-status{font-weight:750}
+@media(max-width:600px){.home-utilities{display:grid;gap:3px;justify-content:stretch}.home-utilities .home-motion{min-height:30px;font-size:10px;max-width:none}.home-utilities .sound-settings{min-height:30px;font-size:11px}.game-sound-settings{padding:4px 6px;min-height:30px;font-size:10px}.cannon-workshop .selection-top{grid-template-columns:auto minmax(0,1fr) auto}.workshop-sound-settings{padding:5px 7px;font-size:10px}}
+@media(max-height:480px){.audio-dialog[open]{gap:8px;padding:12px}.audio-heading h2{font-size:19px}.audio-volume input{min-height:25px}.audio-mute{min-height:34px}.sound-settings{min-height:27px;font-size:11px;padding:4px 7px}}
+
+@media(max-width:480px){.selection-top.has-audio{grid-template-columns:auto minmax(0,1fr) auto;gap:5px}.selection-top.has-audio .workshop-sound-settings{padding:5px 7px;font-size:10px}.selection-top.has-audio .selection-heading h1{font-size:clamp(18px,5vw,24px)}}
