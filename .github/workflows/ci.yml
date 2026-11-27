@@ -15,6 +15,12 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - run: npm test
+      - run: npm run audit:supports > support-audit.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: support-audit
+          path: support-audit.md
+          retention-days: 14
       - run: npm run build
 
   browser:

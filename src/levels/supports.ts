@@ -20,8 +20,11 @@ function platformPlan(level:Level,id:string,anchor:Point,deck:Deck,direction:1|-
  const r=terrain.bounds,gap=deck.y-r.maxY;
  // The attachment has to reach real terrain below the artwork.
  if(gap<-EPS||r.maxX<deck.minX-.40||r.minX>deck.maxX+.40)return undefined;
- const a=clamp(deck.minX+.14,r.minX+.015,r.maxX-.015),b=clamp(deck.maxX-.14,r.minX+.015,r.maxX-.015);
- const attachment=[point(Math.min(a,b),r.maxY),point(Math.max(a,b),r.maxY)] as const;
+ // Spread the feet across the available ledge, even if the cannon's
+ // rearward deck only overlaps its near edge (the early meadow levels).
+ const inset=Math.min(.025,(r.maxX-r.minX)*.12),half=Math.min(.32,(r.maxX-r.minX-2*inset)/2);
+ const mid=clamp(centre(deck),r.minX+inset+half,r.maxX-inset-half);
+ const attachment=[point(mid-half,r.maxY),point(mid+half,r.maxY)] as const;
  const [left,right]=deckEnds(deck);
  const segments=[line(left,attachment[0]),line(right,attachment[1])];
  // Open truss, not a new opaque wall. One diagonal braces a longer mount.
@@ -55,6 +58,7 @@ function resolve(level:Level,id:string,anchor:Point,direction:1|-1,override?:Sup
  const deck:Deck={minX:Math.max(b.minX,rawMin),maxX:Math.min(b.maxX,rawMax),y:anchor.y-(isExit?EXIT_FOOTPRINT.drop:CANNON_FOOTPRINT.drop)};
  if(width(deck)<.16||deck.y<b.minY-EPS)throw Error(level.id+': artwork has no support room at '+id);
  const terrain=override?.terrainId?level.obstacles.find(o=>o.id===override.terrainId):undefined;
+ if(override?.terrainId&&!terrain)throw Error(level.id+': missing support terrain '+override.terrainId);
  const platforms=level.obstacles.flatMap(o=>{
   const p=platformPlan(level,id,anchor,deck,direction,o);
   if(!p)return [];
