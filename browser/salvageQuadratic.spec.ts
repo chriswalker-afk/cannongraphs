@@ -2,9 +2,9 @@ import {test,expect,type Page} from '@playwright/test';
 import {PROGRESS_KEY} from '../src/game/progressStore';
 async function enter(page:Page,id:string,mode='Cadet'){
  await page.goto('/');await page.locator('#home-play').click();await page.getByRole('button',{name:'Broken cannons',exact:true}).click();
- await page.getByRole('button',{name:'Salvage Yard · flight tests ↗',exact:true}).click();
- await expect(page.locator('.salvage-linear-choices section')).toHaveCount(6);await expect(page.locator('.salvage-quadratic-choices section')).toHaveCount(6);await expect(page.locator('.salvage-flight-tests section')).toHaveCount(2);
- await page.locator('[data-salvage-level="'+id+'"]').getByRole('button',{name:mode,exact:true}).click();
+ await page.locator('[data-world-number="8"]').click();await page.getByRole('button',{name:new RegExp('^'+mode+'\\.')} ).click();
+ await expect(page.locator('.level-number')).toHaveCount(12);
+ await page.locator('[data-level-id="'+id+'"]').click();await page.locator('.selection-play').click();
 }
 const mount=(id:string)=>'[data-mount-id="'+id+'"]';
 const part=(id:string)=>'[data-anchor-part="'+id+'"]';
@@ -44,9 +44,10 @@ test('three locked parts fire in inferred order; finale has ten mounts, two arcs
  await expect(page.locator('#world-label')).toContainText('12 / 12');await expect(page.locator('[data-mount-id]')).toHaveCount(10);
  await place(page,'B','P');await place(page,'C','Q');await place(page,'D','R');await expect(page.locator('#plan-ready')).toHaveText('2 / 4 programmed');
  await program(page,'A','2x/3+2');await program(page,'C','-x/2+15/2');await info.attach('salvage-finale',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
- await launch(page);await expect(page.locator('#next-level')).toContainText('More puzzles');
- const progress=await page.evaluate(k=>localStorage.getItem(k),PROGRESS_KEY);expect(progress??'').not.toContain('salvage-quadratic-');
- await page.locator('#next-level').click();await expect(page.locator('.salvage-quadratic-choices section')).toHaveCount(6);
+ await launch(page);await expect(page.locator('#next-level')).toBeHidden();
+ const progress=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)??'{}'),PROGRESS_KEY);expect(progress.records['salvage-quadratic-11'].pilot.bestAttempts).toBe(1);expect(progress.records['salvage-quadratic-12'].pilot.bestAttempts).toBe(1);
+ await page.locator('#level-menu').click();await expect(page.locator('[data-level-id="salvage-quadratic-12"]')).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-level-id="salvage-quadratic-12"] .level-progress-mark')).toHaveText('★★★');
+ await page.reload();await page.locator('#home-play').click();await page.getByRole('button',{name:'Broken cannons',exact:true}).click();await expect(page.locator('[data-world-number="8"]')).toContainText('2 / 12 completed');
 });
 test('finale phone layout keeps three inventory cards, exact coordinates and the entire graph accessible',async({page},info)=>{
  await page.setViewportSize({width:390,height:844});await enter(page,'salvage-quadratic-12','Ace');
@@ -59,4 +60,14 @@ test('finale phone layout keeps three inventory cards, exact coordinates and the
  const metrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));expect(metrics.scroll).toBeLessThanOrEqual(metrics.width+2);
  await info.attach('salvage-finale-phone',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
  await page.locator('#restart-level').click();await expect(page.locator('#plan-ready')).toHaveText('0 / 4 programmed');
+});
+
+test('Foundry finale advances into official Salvage Yard and retains the selected mode',async({page})=>{
+ await page.setViewportSize({width:1366,height:768});await page.goto('/');await page.locator('#home-play').click();await page.getByRole('button',{name:'Broken cannons',exact:true}).click();
+ await page.locator('[data-world-number="7"]').click();await page.locator('.mode-card').nth(1).click();await page.locator('[data-level-id="foundry-quadratic-12"]').click();await page.locator('.selection-play').click();
+ for(const [id,target] of [['B',4],['D',2]] as const){const h=page.locator('[data-lift-handle="'+id+'"]');await h.focus();const y=Number(await h.getAttribute('aria-valuenow'));for(let i=0;i<Math.abs(y-target);i++)await page.keyboard.press(y<target?'ArrowUp':'ArrowDown');}
+ await program(page,'A','2x/3+2');await program(page,'C','15/2-x/2');
+ await page.getByRole('button',{name:'Use reduced motion'}).click();await launch(page);
+ await expect(page.locator('#next-level')).toContainText('Next world');await page.locator('#next-level').click();
+ await expect(page.locator('main[data-world="8"][data-mode="pilot"]')).toBeVisible();await expect(page.locator('#world-label')).toContainText('1 / 12');await expect(page.locator('#plan-ready')).toHaveText('1 / 2 programmed');
 });

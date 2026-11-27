@@ -10,9 +10,9 @@ for(const viewport of [{width:1366,height:768},{width:1440,height:800},{width:84
   await expect(page.locator('.selection-heading p')).toHaveText('6 worlds · 72 levels');
   if(viewport.width>=801)expect(await page.locator('.world-grid').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(3);
   await widthFits(page);await info.attach('normal-worlds',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
-  await broken.click();await expect(broken).toHaveAttribute('aria-pressed','true');await expect(page.locator('.world-card')).toHaveCount(1);
-  await expect(page.locator('.selection-heading p')).toHaveText('1 world · 12 levels');await expect(page.locator('.world-card [data-scenery="broken-foundry"]')).toHaveCount(1);
-  await expect(page.locator('.world-card [data-lift-deck]')).toHaveCount(2);await widthFits(page);
+  await broken.click();await expect(broken).toHaveAttribute('aria-pressed','true');await expect(page.locator('.world-card')).toHaveCount(2);
+  await expect(page.locator('.selection-heading p')).toHaveText('2 worlds · 24 levels');await expect(page.locator('.world-card [data-scenery="broken-foundry"]')).toHaveCount(1);
+  await expect(page.locator('.world-card [data-lift-deck]')).toHaveCount(2);await expect(page.locator('[data-world-number="8"] [data-salvage-postcard]')).toHaveCount(1);await expect(page.locator('[data-world-number="8"] [data-postcard-mount]')).toHaveCount(3);await widthFits(page);
   await info.attach('broken-worlds',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
   await broken.focus();await page.keyboard.press('ArrowLeft');await expect(normal).toBeFocused();await expect(page.locator('.world-card')).toHaveCount(6);
   await page.keyboard.press('ArrowRight');await expect(broken).toBeFocused();await page.locator('[data-world-number="7"]').click();
@@ -27,7 +27,7 @@ for(const viewport of [{width:1366,height:768},{width:1440,height:800},{width:84
   await info.attach('foundry-game',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
   await page.locator('#level-menu').click();await expect(page.locator('[data-level-id="foundry-quadratic-12"]')).toHaveAttribute('aria-pressed','true');
   await page.locator('.selection-back').click();await page.locator('.selection-back').click();
-  await expect(broken).toHaveAttribute('aria-pressed','true');await expect(page.locator('.world-card')).toHaveCount(1);
+  await expect(broken).toHaveAttribute('aria-pressed','true');await expect(page.locator('.world-card')).toHaveCount(2);
   await normal.click();await expect(page.locator('.world-card')).toHaveCount(6);expect(errors).toEqual([]);
  });
 }

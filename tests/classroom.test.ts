@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {levels,worlds} from '../src/levels/catalog';
 import {referenceSolutions} from './fixtures/referenceSolutions';
-import {referenceLayout} from './fixtures/referenceLayout';
+import {referenceLayout,referenceOrder} from './fixtures/referenceLayout';
 import {parseCannonEquation,evaluateCannonEquation} from '../src/engine/equations/advanced';
 import {simulateRoute} from '../src/engine/simulation/linearRoute';
 import {CAPTURE_EPSILON} from '../src/engine/simulation/linearAttempt';
@@ -23,16 +23,16 @@ test('unit grid is independent from label density, including negative and zoomed
  }
  assert.deepEqual(integerTicks(-.9,.9),[0]);assert.deepEqual(integerTicks(2.1,2.9),[]);assert.equal(labelStep(NaN),1);
 });
-test('all 84 mathematical routes complete in all 252 level/mode combinations and persist valid records',()=>{
+test('all 96 mathematical routes complete in all 288 level/mode combinations and persist valid records',()=>{
  let progress=emptyProgress(),runs=0;
- assert.equal(referenceSolutions.length,7);
+ assert.equal(referenceSolutions.length,8);
  for(const [wi,w] of worlds.entries()){
   assert.equal(referenceSolutions[wi].length,12);
   for(const [li,l] of w.levels.entries()){
-   const references=referenceSolutions[wi][li],equations=new Map(l.cannons.map(c=>[c.id,parseCannonEquation(references[c.id],c.type)]));
-   const layout=referenceLayout(l),route=simulateRoute(layout,equations);
+   const references=referenceSolutions[wi][li],layout=referenceLayout(l),equations=new Map(layout.cannons.map(c=>[c.id,parseCannonEquation(references[c.id],c.type)]));
+   const route=simulateRoute(layout,equations);
    assert.equal(route.event.kind,'exit',l.id);
-   assert.deepEqual(route.legs.map(leg=>leg.cannonId),l.cannons.map(c=>c.id),l.id);
+   assert.deepEqual(route.legs.map(leg=>leg.cannonId),referenceOrder(layout),l.id);
    assert.ok(Math.abs(route.end.x-l.exit.x)<=CAPTURE_EPSILON&&Math.abs(route.end.y-l.exit.y)<=CAPTURE_EPSILON,l.id);
    for(const leg of route.legs)for(const t of [0,.25,.5,.75,1]){
     const p=leg.pointAt(t),y=evaluateCannonEquation(equations.get(leg.cannonId)!,p.x);
@@ -50,10 +50,10 @@ test('all 84 mathematical routes complete in all 252 level/mode combinations and
    }
   }
  }
- assert.equal(runs,252);
+ assert.equal(runs,288);
  const restored=parseProgress(JSON.stringify(progress)),summary=summarizeProgress(restored);
  assert.deepEqual(restored,progress);assert.equal(summary.completed,levels.length);assert.equal(summary.gems,summary.gemTotal);
- for(const mode of learningModes){assert.equal(summary.modes[mode.id].completed,84);assert.equal(summary.modes[mode.id].stars,mode.unlimited?0:252);}
+ for(const mode of learningModes){assert.equal(summary.modes[mode.id].completed,96);assert.equal(summary.modes[mode.id].stars,mode.unlimited?0:288);}
  const earned=earnedAchievementIds(restored);assert.equal(earned.size,achievementDefinitions.length);
  assert.ok(pipCosmetics.every(c=>cosmeticUnlocked(c,earned)));assert.ok(cannonCosmetics.every(c=>cannonCosmeticUnlocked(c,earned)));
 });

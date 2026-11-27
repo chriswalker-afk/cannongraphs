@@ -20,11 +20,12 @@ export const achievementDefinitions:readonly AchievementDefinition[]=[
  {id:'gem-collector',title:'Gem collector',description:'Collect ten different gems across successful flights.',symbol:'◆',target:10,count:(p,scope)=>summarizeProgress(p,scope).gems},
  {id:'gem-explorer',title:'Gem explorer',description:'Collect thirty different gems across successful flights.',symbol:'◇',target:30,count:(p,scope)=>summarizeProgress(p,scope).gems},
  {id:'treasure-map',title:'Treasure map',description:'Collect every gem in one gem-bearing level, across successful flights.',symbol:'▧',target:1,count:(p,scope)=>scope.filter(l=>{const s=summarizeProgress(p,[l]);return s.gemTotal>0&&s.gems===s.gemTotal;}).length},
- {id:'relay-runner',title:'Relay runner',description:'Complete a level featuring at least three cannons.',symbol:'⇢',target:1,count:(p,scope)=>scope.filter(l=>l.cannons.length>=3&&learningModes.some(m=>getRecord(p,l.id,m.id))).length},
+ {id:'relay-runner',title:'Relay runner',description:'Complete a level featuring at least three cannons.',symbol:'⇢',target:1,count:(p,scope)=>scope.filter(l=>l.cannons.length+(l.anchorPuzzle?.inventory.length??0)>=3&&learningModes.some(m=>getRecord(p,l.id,m.id))).length},
  {id:'world-explorer',title:'World explorer',description:'Complete all twelve levels of a world in one mode.',symbol:'◎',target:1,count:(p,scope)=>learningModes.reduce((n,m)=>n+completeWorlds(p,m.id,scope),0)},
  {id:'ace-world',title:'Ace of a world',description:'Complete all twelve levels of a world in Ace.',symbol:'♜',target:1,count:(p,scope)=>completeWorlds(p,'ace',scope)},
  {id:'graphiverse-explorer',title:'Graphiverse explorer',description:'Complete all 72 levels of the original six worlds in any combination of modes.',symbol:'✺',target:72,count:(p,scope)=>summarizeProgress(p,scope.filter(l=>l.world<=6)).completed},
  {id:'foundry-explorer',title:'Foundry engineer',description:'Complete all twelve Broken Foundry levels in any combination of modes.',symbol:'⚙',target:12,count:(p,scope)=>summarizeProgress(p,scope.filter(l=>l.world===7)).completed},
+ {id:'salvage-explorer',title:'Salvage engineer',description:'Complete all twelve Salvage Yard levels in any combination of modes.',symbol:'⚒',target:12,count:(p,scope)=>summarizeProgress(p,scope.filter(l=>l.world===8)).completed},
  {id:'all-worlds-explorer',title:'Master explorer',description:'Complete all '+levels.length+' current levels in any combination of modes.',symbol:'✷',target:levels.length,count:(p,scope)=>summarizeProgress(p,scope).completed}
 ];
 export function achievements(p:Progress,scope:readonly ProgressLevel[]=levels):readonly Achievement[]{

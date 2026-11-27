@@ -4,7 +4,8 @@ import {renderFloatingScenery} from './floatingScenery';
 import {renderPeakScenery} from './peakScenery';
 import {renderRuinsScenery} from './ruinsScenery';
 import {renderFactoryScenery} from './factoryScenery';
-import {renderFoundryPostcard} from './foundryScenery';
+import {renderFoundryPostcard,renderBrokenDetails} from './foundryScenery';
+import {renderSalvageScenery} from './salvageArt';
 import {renderCosmicScenery} from './cosmicScenery';
 import {identityForWorld} from '../game/worldIdentity';
 import {cannonTypes,type CannonType} from '../game/cannons';
@@ -15,6 +16,7 @@ export function renderWorldMenuArt(host:HTMLElement,number:number){
  const svg=el('svg',{viewBox:'0 0 360 150','aria-hidden':'true',focusable:'false',preserveAspectRatio:'xMidYMid slice'},host);
  el('rect',{width:w,height:h,fill:identity.sky},svg);
  if(number===7){renderFoundryPostcard(svg,w,h);return;}
+ if(number===8){renderSalvagePostcard(svg,w,h);return;}
  if(number===1){
   el('circle',{cx:285,cy:32,r:25,fill:'#fff0b7'},svg);
   for(const [x,y] of [[55,26],[155,17],[320,64]]){const cloud=el('g',{transform:'translate('+x+' '+y+')',fill:'#fffdf3',opacity:.74},svg);el('ellipse',{rx:29,ry:8},cloud);el('circle',{cx:-11,cy:-4,r:11},cloud);el('circle',{cx:8,cy:-6,r:15},cloud);}
@@ -84,4 +86,27 @@ export function renderWorldMenuArt(host:HTMLElement,number:number){
  el('rect',{x:-.92,y:.48,width:1.25,height:.16,rx:.05,fill:identity.ground,stroke:identity.ink,'stroke-width':.02},pl);
  renderCannonArt(pl,motif.type,motif.angle);
  const pip=createPip(fg,number);pip.root.setAttribute('transform','translate(70 '+(y-12)+') scale(39)');pip.setPose('excited');
+}
+
+ // A decorative postcard with empty sockets and loose spare parts. No real
+ // puzzle coordinates or successful trajectories are revealed.
+function renderSalvagePostcard(svg:Element,w:number,h:number){
+ renderSalvageScenery(svg,w,h,2);
+ const g=el('g',{'data-salvage-postcard':'true'},svg);
+ el('path',{d:'M0 131 H360 V150 H0Z',fill:'#889581'},g);
+ el('path',{d:'M270 132 V23 H342 M270 23 L305 5 342 23 M329 23 V72 q0 12 -10 12',fill:'none',stroke:'#687b6d','stroke-width':7,'stroke-linejoin':'round','stroke-linecap':'round'},g);
+ el('path',{d:'M270 23 L286 40 270 57 286 74 270 91 286 108 270 130',fill:'none',stroke:'#9eab91','stroke-width':2.5},g);
+ for(const [x,y] of [[164,35],[219,79],[310,111]]){
+  const m=el('g',{transform:'translate('+x+' '+y+')','data-postcard-mount':''},g);
+  el('path',{d:'M-13 12 V'+(132-y)+' M10 12 V'+(132-y)+' M-13 22 L10 40',fill:'none',stroke:'#879481','stroke-width':3.5,opacity:.8},m);
+  el('rect',{x:-19,y:7,width:37,height:8,rx:2,fill:'#b6a178',stroke:'#716a50','stroke-width':1.3},m);
+  el('circle',{r:9,fill:'#f9f5e2',stroke:'#9a7c43','stroke-width':2,'stroke-dasharray':'3 2'},m);
+  el('path',{d:'M-4 0 H4 M0 -4 V4',stroke:'#8a7345','stroke-width':1.5},m);
+ }
+ const cannon=el('g',{transform:'translate(89 104) scale(45)'},g);
+ el('rect',{x:-.92,y:.48,width:1.25,height:.16,rx:.05,fill:'#b6a178',stroke:'#716a50','stroke-width':.025},cannon);
+ const barrel=renderCannonArt(cannon,'quadratic',44);renderBrokenDetails(cannon,barrel);
+ const pip=createPip(g,8);pip.root.setAttribute('transform','translate(39 100) scale(36)');pip.setPose('excited');
+ el('path',{d:'M104 85 Q130 28 151 37 M146 30 l6 7 -9 3',fill:'none',stroke:'#a37a3d','stroke-width':2.6,'stroke-dasharray':'5 4','stroke-linecap':'round','stroke-linejoin':'round'},g);
+ const spare=el('g',{transform:'translate(242 125) scale(31)'},g);const spareBarrel=renderCannonArt(spare,'linear',12);renderBrokenDetails(spare,spareBarrel);
 }

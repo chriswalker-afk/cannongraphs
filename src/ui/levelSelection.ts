@@ -107,7 +107,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   const w=selectedWorld(state);if(!w||state.step!=='levels'){renderWorlds();return;}
   const mode=state.mode,policy=modePolicy(mode);
   const identity=identityForWorld(w.number);
-  const {main,h1}=screen(w.name,(w.number===7?'Broken cannons':'World '+w.number)+' · '+policy.name+' · '+identity.focus,'← Modes',()=>{
+  const {main,h1}=screen(w.name,(w.number>=7?'Broken cannons':'World '+w.number)+' · '+policy.name+' · '+identity.focus,'← Modes',()=>{
    state=backToModes(state);renderModes();
   });
   main.dataset.selection='levels';main.dataset.worldNumber=String(w.number);theme(main,w);
@@ -174,6 +174,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
    const facts=element('div','level-facts',info);
    element('span','level-fact',facts,s.cannonCount+' '+(s.cannonCount===1?'cannon':'cannons'));
    if(s.liftCount)element('span','level-fact',facts,s.liftCount+' movable '+(s.liftCount===1?'platform':'platforms'));
+   if(s.mountCount){element('span','level-fact',facts,s.mountCount+' candidate mounts');element('span','level-fact',facts,s.movableCount+' movable · '+s.lockedCount+' locked');if(level.id==='salvage-linear-1'||level.id==='salvage-linear-2')element('span','level-fact',facts,'Incoming equation supplied');}
    element('span','level-fact',facts,modeBudgetLabel(mode,level));
    if(s.gemCount)element('span','level-fact',facts,s.gemCount+' optional '+(s.gemCount===1?'gem':'gems'));
    const record=getRecord(progress,level.id,mode),rating=recordStars(record,level,mode);

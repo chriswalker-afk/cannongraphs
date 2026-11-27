@@ -2,7 +2,7 @@ import {levels} from '../levels/catalog';
 import type {Level} from '../levels/schema';
 import {validAchievementIds} from './achievementIds';
 import {playedLayout,routeMatchesLayout} from './playedLayout';
-export type ProgressLevel=Pick<Level,'id'|'world'|'creatures'>&{readonly cannons:readonly unknown[];readonly gems?:readonly {readonly id:string}[]};
+export type ProgressLevel=Pick<Level,'id'|'world'|'creatures'>&{readonly cannons:readonly unknown[];readonly anchorPuzzle?:{readonly inventory:readonly unknown[]};readonly gems?:readonly {readonly id:string}[]};
 import {learningModes,modeBudget,type LearningMode} from './learningModes';
 import type {LevelState} from './levelState';
 import {scoreStars,type Stars} from './scoring';

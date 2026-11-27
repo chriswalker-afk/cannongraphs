@@ -814,3 +814,12 @@ main[data-has-anchors=true] .camera-tools button,main[data-has-anchors=true] .an
 .custom-inventory-tools strong{color:#53614e}.custom-inventory-tools .custom-secondary{font-size:11px;padding:6px 4px;text-align:left}
 .custom-part-panel .custom-lift-equation{overflow-wrap:anywhere}
 @media(max-width:850px){.custom-inventory-tools{grid-template-columns:repeat(2,minmax(0,1fr))}.custom-inventory-tools strong,.custom-inventory-tools p{grid-column:1/-1}.custom-anchor-mode{width:max-content;max-width:100%}}
+
+/* Two broken worlds use balanced, matching destination cards. */
+main.selection-screen[data-cannon-category=broken] .world-grid{grid-template-columns:repeat(2,minmax(0,520px));justify-content:center;align-content:center}
+main.selection-screen[data-cannon-category=broken] .world-card-art{height:clamp(90px,26vh,220px)}
+main.selection-screen[data-cannon-category=broken] .world-card-copy{padding:clamp(8px,1.5vw,16px)}
+main[data-world="8"] header,main[data-world="8"] footer,main[data-world="8"] .toolbar{background:#f4f0e2}
+main[data-world="8"] .stage{background:#cbd2c2}main[data-world="8"] .brand-mark{background:#d8c59a;color:#5f654b}
+@media(max-height:620px) and (min-width:801px){main.selection-screen[data-cannon-category=broken] .world-card-art{height:clamp(65px,23vh,145px)}}
+@media(max-width:480px){main.selection-screen[data-cannon-category=broken] .world-grid{align-content:start;gap:7px}main.selection-screen[data-cannon-category=broken] .world-card-art{height:clamp(68px,15vh,125px)}main.selection-screen[data-cannon-category=broken] .world-card-description{font-size:10px;line-height:1.25}main.selection-screen[data-cannon-category=broken] .world-card-copy{padding:7px;gap:3px}}

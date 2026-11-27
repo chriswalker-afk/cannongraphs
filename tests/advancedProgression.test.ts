@@ -46,7 +46,7 @@ test('advanced relays force every nonadjacent forward shortcut beyond the functi
  assert.ok(checked>=60);
 });
 test('the original six worlds retain the exact 3-3-3-3 curriculum; all seven families appear in the final three levels',()=>{
- assert.equal(levels.length,84);assert.equal(levels.filter(l=>l.world<=6).reduce((n,l)=>n+l.cannons.length,0),180);
+ assert.equal(levels.length,96);assert.equal(levels.filter(l=>l.world<=6).reduce((n,l)=>n+l.cannons.length,0),180);
  for(const w of worlds.slice(0,6))assert.deepEqual(w.levels.map(l=>l.cannons.length),[1,1,1,2,2,2,3,3,3,4,4,4]);
  assert.deepEqual(worlds[4].levels.filter(l=>!l.id.includes('-r')).map(l=>l.id),['5-01','5-02','5-07','5-11','5-12']);
  assert.deepEqual(worlds[5].levels.filter(l=>!l.id.includes('-r')).map(l=>l.id),['6-01','6-04','6-07','6-11']);

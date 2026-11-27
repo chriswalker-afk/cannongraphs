@@ -158,8 +158,8 @@ test('invalid anchor definitions and placements are rejected without changing th
  assert.equal(l.cannons.length,1);
 });
 
-test('existing curriculum remains seven worlds and 84 levels; ordinary flight behavior is unchanged',()=>{
- assert.equal(worlds.length,7);assert.equal(levels.length,84);assert.ok(levels.every(l=>!l.anchorPuzzle));
+test('existing curriculum remains eight worlds and 96 levels; ordinary flight behavior is unchanged',()=>{
+ assert.equal(worlds.length,8);assert.equal(levels.length,96);assert.ok(levels.filter(l=>l.world<8).every(l=>!l.anchorPuzzle));assert.equal(levels.filter(l=>!!l.anchorPuzzle).length,12);
  const ordinary={...fixture(),anchorPuzzle:undefined,cannons:[...fixture().cannons,{id:'B',type:'linear' as const,direction:1 as const,position:{x:4,y:5}}]};
  assert.equal(simulateRoute(ordinary,new Map([['A',parseLinearEquation('1')],['B',parseLinearEquation('-x+9')]])).event.kind,'exit');
 });

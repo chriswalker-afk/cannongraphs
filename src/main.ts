@@ -16,7 +16,7 @@ import {createLevelFlightPlan,getPlanEntry,editPlan,countReady,snapshotPlan,reco
 import type {Level} from './levels/schema';
 import {liftDemos} from './levels/liftDemos';
 import {anchorDemos} from './levels/anchorDemos';
-import {salvageLevels,initialSalvagePlan,nextSalvageLevel} from './levels/salvage';
+import {initialSalvagePlan} from './levels/salvage';
 import {moveAnchorInPlanning,canLaunchAnchorPuzzle} from './game/anchorPlacement';
 import {mountAnchorTray} from './ui/anchorTray';
 import {initialFoundryPlan} from './levels/foundry';
@@ -74,16 +74,14 @@ function showLiftDemos(){
 }
 function showAnchorDemos(){
  cleanup();audio.setTheme('menu');worldCategory='broken';
- app.innerHTML='<main class="lift-demo-menu salvage-demo-menu"><header><button type="button" id="anchor-demo-back">← Worlds</button><h1>The Salvage Yard</h1></header><p>Anchor placement · twelve progressive puzzles and two experimental flight tests. Practice records are not saved yet.</p><h2>Linear placement · 1–6</h2><div class="lift-demo-choices salvage-linear-choices"></div><h2>Quadratic and mixed placement · 7–12</h2><div class="lift-demo-choices salvage-quadratic-choices"></div><h2>Flight tests</h2><div class="lift-demo-choices salvage-flight-tests"></div></main>';
- const choices=app.querySelector<HTMLElement>('.salvage-flight-tests')!,linear=app.querySelector<HTMLElement>('.salvage-linear-choices')!,quadratic=app.querySelector<HTMLElement>('.salvage-quadratic-choices')!;
- for(const demo of [...salvageLevels,...anchorDemos]){
-  const index=salvageLevels.indexOf(demo),card=document.createElement('section');card.dataset.anchorDemo=demo.id;
-  if(index>=0){card.dataset.salvageLevel=demo.id;card.dataset.band=['introduction','development','challenge','mastery'][Math.floor(index/3)];}
-  const title=document.createElement('h2');title.textContent=(index>=0?(index+1)+'. ':'')+demo.title;card.append(title);
+ app.innerHTML='<main class="lift-demo-menu salvage-demo-menu"><header><button type="button" id="anchor-demo-back">← Worlds</button><h1>Salvage Yard flight tests</h1></header><p>Two experimental puzzles. These do not count towards the official world records.</p><div class="lift-demo-choices salvage-flight-tests"></div></main>';
+ const choices=app.querySelector<HTMLElement>('.salvage-flight-tests')!;
+ for(const demo of anchorDemos){
+  const card=document.createElement('section');card.dataset.anchorDemo=demo.id;
+  const title=document.createElement('h2');title.textContent=demo.title;card.append(title);
   const description=document.createElement('p');description.textContent=demo.objective;card.append(description);
-  if(index>=0){const facts=document.createElement('small');facts.className='salvage-puzzle-facts';facts.textContent=demo.anchorPuzzle!.inventory.length+' movable '+(demo.anchorPuzzle!.inventory.length===1?'cannon':'cannons')+' · '+demo.anchorPuzzle!.anchors.length+' mounts'+(index<2?' · Incoming line supplied':' · Program your own line');card.append(facts);}
   for(const mode of ['cadet','pilot','ace'] as const){const b=document.createElement('button');b.type='button';b.textContent=modePolicy(mode).name;b.onclick=()=>mountLevel(demo,mode,undefined,undefined,false,true);card.append(b);}
-  (index<0?choices:index<6?linear:quadratic).append(card);
+  choices.append(card);
  }
  app.querySelector<HTMLButtonElement>('#anchor-demo-back')!.onclick=()=>showSelection(false,'broken');
  cleanup=()=>{};
@@ -108,15 +106,15 @@ function startLevel(level:Level,mode:LearningMode,forceTutorial=false){
 }
 function mountLevel(level:Level,mode:LearningMode,tutorialReturn?:TutorialReturn,customRun?:CustomRun,liftDemo=false,anchorDemo=false){
  const authoredLevel=level,practiceDemo=liftDemo||anchorDemo,hasAnchors=!!level.anchorPuzzle;
- const theme=()=>audio.setTheme((level.world===8?7:level.world) as MusicTheme);
+ const theme=()=>audio.setTheme(level.world as MusicTheme);
  cleanup();theme();if(!customRun&&!practiceDemo){lastLevel=tutorialReturn?.level??level;lastMode=tutorialReturn?.mode??mode;worldCategory=lastLevel.world===7||lastLevel.anchorPuzzle?'broken':'normal';}
  const policy=modePolicy(mode),budget=modeBudget(mode,level),look=lookStore.read(earnedAchievementIds(progressStore.read())),cannonLook=cannonStore.read(earnedAchievementIds(progressStore.read()));
 app.innerHTML=`<main class="game-screen"><header><div class="brand"><button class="brand-mark home-return" id="home-return" type="button" aria-label="Return to home" title="Return to home (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8M5.5 10v10h5v-6h3v6h5V10" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div><h1>Cannon Graphs!</h1><p id="world-label"></p><p id="level-objective" class="level-objective"></p></div></div><div id="pip-queue" class="pip-queue" role="group" aria-label="Pips ready"></div><button class="game-level-menu" id="level-menu" type="button" title="Choose levels (leaves this run)"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="3" y="14" width="7" height="7" rx="1.4" fill="currentColor"/><rect x="14" y="14" width="7" height="7" rx="1.4" fill="currentColor"/></svg><span>Levels</span></button><button class="sound-settings game-sound-settings" id="sound-settings" type="button" aria-label="Sound settings">♪ Off</button></header><div class="toolbar"><div id="inspect-info" role="status">Click a cannon to program it. Hover or focus an object to inspect it.</div><button type="button" id="graph-preview" class="graph-preview-toggle" aria-pressed="false" hidden>Show graph</button><span id="gem-readout" class="gem-readout" role="status" hidden></span><button id="tutorial-help" class="motion-mode" type="button" hidden>Flight school</button><button id="motion-mode" class="motion-mode" type="button">Motion</button><div class="camera-tools" role="group" aria-label="View controls"><button id="pan-left" aria-label="Pan left" title="Pan left">←</button><button id="pan-up" aria-label="Pan up" title="Pan up">↑</button><button id="pan-down" aria-label="Pan down" title="Pan down">↓</button><button id="pan-right" aria-label="Pan right" title="Pan right">→</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output id="zoom-readout">100%</output><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-reset" aria-label="Reset view" title="Reset view">↺</button></div></div><section class="stage" aria-label="Game scene"><div id="level-resolution" class="level-resolution" role="region" aria-labelledby="resolution-heading" hidden><div class="resolution-icon" aria-hidden="true" id="resolution-icon"></div><h2 id="resolution-heading" tabindex="-1"></h2><div id="resolution-stars" class="resolution-stars" role="img" aria-label=""></div><p id="resolution-detail"></p><p id="resolution-gems" class="resolution-gems" hidden></p><p id="resolution-record" class="resolution-record" hidden></p><p id="resolution-achievements" class="resolution-achievements" hidden></p><div class="resolution-actions"><button id="replay-level" type="button"></button><button id="next-level" type="button" hidden>Next level →</button></div></div></section><section id="cannon-popup" class="cannon-popup" role="dialog" aria-modal="false" aria-labelledby="popup-title" hidden><div class="popup-heading"><h2 id="popup-title"></h2><button type="button" id="popup-close" aria-label="Close cannon editor">×</button></div><div id="popup-editor"></div><div class="popup-nav"><button type="button" id="previous-cannon">← Previous cannon</button><button type="button" id="next-cannon">Next cannon →</button><button type="button" id="popup-done">Done ✓</button></div></section><footer class="planning-footer"><div class="planning-editor"><div class="program-summary"><button type="button" id="edit-cannons">Edit cannons</button><span id="plan-ready" role="status"></span><div class="halo-legend" aria-label="Cannon programming status"><span data-status="empty">Unprogrammed</span><span data-status="ready">Programmed</span><span data-status="revise">Failed</span><span data-status="tested">Successful</span></div></div><p id="flight-result" role="status" class="flight-result" hidden></p><aside id="flight-hint" class="flight-hint" aria-label="Mathematical feedback" aria-live="polite" hidden></aside></div><div class="launch-panel"><button id="launch" class="launch" disabled>▶ Launch</button><button id="restart-level" class="restart-level" type="button">↺ Restart</button><small id="phase-label" aria-live="off">Planning</small></div></footer></main>`;
-const world=anchorDemo||customRun&&level.world===8?worlds[6]:customRun||liftDemo?worlds[level.world-1]:worldForLevel(lastLevel!.id)!,position=customRun||practiceDemo?{index:0,total:0}:levelPosition(lastLevel!.id)!,following=anchorDemo?nextSalvageLevel(level.id):practiceDemo||customRun?undefined:tutorialReturn?.level??nextLevel(level.id);
-app.querySelector('main')!.dataset.world=String(anchorDemo||customRun&&level.world===8?8:world.number);app.querySelector('main')!.dataset.mode=mode;
+const world=anchorDemo||customRun||liftDemo?worlds[level.world-1]:worldForLevel(lastLevel!.id)!,position=customRun||practiceDemo?{index:0,total:0}:levelPosition(lastLevel!.id)!,following=practiceDemo||customRun?undefined:tutorialReturn?.level??nextLevel(level.id);
+app.querySelector('main')!.dataset.world=String(world.number);app.querySelector('main')!.dataset.mode=mode;
 if(level.cannons.some(c=>c.lift))app.querySelector('main')!.dataset.hasLifts='true';
 if(hasAnchors)app.querySelector('main')!.dataset.hasAnchors='true';
-app.querySelector<HTMLElement>('#world-label')!.textContent=anchorDemo?'The Salvage Yard · '+(salvageLevels.some(l=>l.id===level.id)?(salvageLevels.findIndex(l=>l.id===level.id)+1)+' / '+salvageLevels.length+' · ':'')+level.title+' · '+policy.name:liftDemo?'Broken Foundry · '+level.title+' · '+policy.name:customRun?(customRun.kind==='test'?'Playtest · '+level.title+' · Free practice':'Custom level · '+level.title+' · '+policy.name):tutorialReturn?'Flight school · Free practice':world.name+' · '+position.index+' / '+position.total+' · '+policy.name+(level.world===7?' · '+level.title:'');
+app.querySelector<HTMLElement>('#world-label')!.textContent=anchorDemo?'The Salvage Yard · '+level.title+' · '+policy.name:liftDemo?'Broken Foundry · '+level.title+' · '+policy.name:customRun?(customRun.kind==='test'?'Playtest · '+level.title+' · Free practice':'Custom level · '+level.title+' · '+policy.name):tutorialReturn?'Flight school · Free practice':world.name+' · '+position.index+' / '+position.total+' · '+policy.name+(level.world>=7?' · '+level.title:'');
 if(tutorialReturn)app.querySelector('main')!.dataset.tutorial='true';
 if(customRun)app.querySelector('main')!.dataset.customTest=customRun.kind;
 app.querySelector<HTMLElement>('#level-objective')!.textContent=modeObjective(mode,level);
@@ -131,7 +129,7 @@ const levelMenu=button('level-menu');levelMenu.setAttribute('aria-label',customR
 const editorRoot=app.querySelector<HTMLElement>('#popup-editor')!,popup=app.querySelector<HTMLElement>('#cannon-popup')!,popupTitle=app.querySelector<HTMLElement>('#popup-title')!;
 const previousCannon=button('previous-cannon'),nextCannon=button('next-cannon'),editCannons=button('edit-cannons'),planReady=app.querySelector<HTMLElement>('#plan-ready')!;
 const mountedIds=()=>level.cannons.map(c=>c.id),memory=new Map<string,EditorMemory>();
- const freshPlan=()=>anchorDemo?initialSalvagePlan(level):liftDemo||!customRun&&level.world===7?initialFoundryPlan(level):createLevelFlightPlan(level);
+ const freshPlan=()=>anchorDemo||!customRun&&level.world===8?initialSalvagePlan(level):liftDemo||!customRun&&level.world===7?initialFoundryPlan(level):createLevelFlightPlan(level);
 let plan=freshPlan(),selected=level.startId,switching=false,previewOn=false;
 const previewButton=button('graph-preview');previewButton.hidden=!!tutorialReturn||!policy.preview;
 function clearPreview(){previewOn=false;scene.setGraphPreview([]);previewButton.textContent='Show graph';previewButton.setAttribute('aria-pressed','false');}
@@ -338,7 +336,7 @@ levelMenu.addEventListener('click',()=>{if(!levelMenu.disabled){if(anchorDemo){s
 homeButton.addEventListener('click',()=>{if(!homeButton.disabled)showHome(true);});
 restartButton.addEventListener('click',()=>reset(false));
 replay.addEventListener('click',()=>reset(!tutorialReturn));
-advance.addEventListener('click',()=>{if(state.phase!=='success')return;if(anchorDemo){if(following)mountLevel(following,mode,undefined,undefined,false,true);else showAnchorDemos();return;}if(liftDemo){if(following)mountLevel(following,mode,undefined,undefined,true);else showLiftDemos();return;}if(customRun){if(customRun.kind==='test'){customStore.select(customRun.id);showCustomWorkshop();}else showCustomLibrary(customRun.id,mode);return;}if(following){if(tutorialReturn)leaveTutorial();else startLevel(following,mode);}});
+advance.addEventListener('click',()=>{if(state.phase!=='success')return;if(anchorDemo){showAnchorDemos();return;}if(liftDemo){if(following)mountLevel(following,mode,undefined,undefined,true);else showLiftDemos();return;}if(customRun){if(customRun.kind==='test'){customStore.select(customRun.id);showCustomWorkshop();}else showCustomLibrary(customRun.id,mode);return;}if(following){if(tutorialReturn)leaveTutorial();else startLevel(following,mode);}});
 launchButton.addEventListener('click',()=>{
  if(!canLaunch(state)||hasAnchors&&!canLaunchAnchorPuzzle(level,plan,state))return;
  const equations=snapshotPlan(plan);if(!equations)return;
