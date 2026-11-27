@@ -1,0 +1,31 @@
+import {test,expect} from '@playwright/test';
+test('linear demo lift moves by keyboard, updates locked equation and resets',async({page})=>{
+ await page.goto('./');
+ await page.locator('#home-lift-demos').click();
+ await page.locator('.lift-demo-choices section').first().getByRole('button',{name:'Cadet'}).click();
+ const handle=page.locator('[data-lift-handle="B"]');
+ await expect(handle).toHaveAttribute('aria-valuenow','2');
+ await handle.focus();await page.keyboard.press('ArrowUp');await page.keyboard.press('ArrowUp');await page.keyboard.press('ArrowUp');
+ await expect(handle).toHaveAttribute('aria-valuenow','5');
+ await page.locator('[data-inspect="B"]').click();
+ await expect(page.locator('.lift-equation')).toHaveText('y = -x + 9');
+ await page.locator('#popup-done').click();
+ await page.locator('#restart-level').click();
+ await expect(handle).toHaveAttribute('aria-valuenow','2');
+ await expect(page.locator('#launch')).toBeEnabled();
+});
+test('quadratic demo supports pointer movement and pilot has no preview',async({page})=>{
+ await page.goto('./');await page.locator('#home-lift-demos').click();
+ await page.locator('.lift-demo-choices section').nth(1).getByRole('button',{name:'Pilot'}).click();
+ const handle=page.locator('[data-lift-handle="B"]');
+ await expect(handle).toHaveAttribute('aria-valuenow','6');
+ const box=await handle.boundingBox();const rail=await page.locator('[data-layer="lift-rail"] line').first().boundingBox();
+ if(!box||!rail)throw Error('Missing lift geometry');
+ const scale=rail.height/6.47;
+ await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2,box.y+box.height/2+3*scale,{steps:8});await page.mouse.up();
+ await expect(handle).toHaveAttribute('aria-valuenow','3');
+ await expect(page.locator('#graph-preview')).toBeHidden();
+ await page.locator('#launch').click();
+ await expect(handle).toHaveAttribute('aria-disabled','true');
+ await expect(page.locator('#resolution-heading')).toHaveText('Level complete!',{timeout:30000});
+});

@@ -96,5 +96,5 @@ function resolve(level:Level,id:string,anchor:Point,direction:1|-1,override?:Sup
 // Pure geometry, calculated once per mounted level, independent of the
 // student's equation, mode, camera, cosmetic and animation state.
 export function levelSupports(level:Level):readonly SupportPlan[]{
- return [...level.cannons.map(c=>resolve(level,c.id,c.position,c.direction,level.supports?.[c.id])),resolve(level,'exit',level.exit,1,level.supports?.exit)];
+ return [...level.cannons.filter(c=>!c.lift).map(c=>resolve(level,c.id,c.position,c.direction,level.supports?.[c.id])),resolve(level,'exit',level.exit,1,level.supports?.exit)];
 }

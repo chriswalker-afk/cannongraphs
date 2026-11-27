@@ -30,7 +30,9 @@ import {renderGem} from './gem';
 import {renderCannonArt} from './cannonArt';
 import {levelSupports} from '../levels/supports';
 import {renderSupportArt} from './supportArt';
-import {EXIT_FOOTPRINT} from '../game/anchorArtGeometry';
+import {lockedLiftEquation,lockedLiftText} from '../levels/liftSpec';
+import {isQuadratic} from '../engine/equations/linear';
+import {EXIT_FOOTPRINT,CANNON_FOOTPRINT} from '../game/anchorArtGeometry';
 import {gemTimeline,gemsAt,bankedGems,type TimedGemHit} from '../animations/gemTimeline';
 
 type Inspection={id:string;label:string;detail:string;point:Point;lines?:string[];bounds?:Bounds};
@@ -44,13 +46,13 @@ function el(tag:string,attrs:Record<string,string|number>={},parent?:Element,con
 const fmt=(n:number)=>String(Number(n.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
-export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void;budget?:number;reducedMotion?:()=>boolean;onViewChange?:()=>void}){
- const policy=modePolicy(controls.mode??'pilot'),supports=levelSupports(level);
+export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;onLiftMove?:(id:string,y:number)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void;budget?:number;reducedMotion?:()=>boolean;onViewChange?:()=>void}){
+ const policy=modePolicy(controls.mode??'pilot');let supports=levelSupports(level);
  const svg=el('svg',{role:'group',tabindex:'-1','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
  let inspections=new Map<string,Inspection>(),tooltip:SVGGElement;
- let drag:{id:number;x:number;y:number}|undefined;
+ let drag:{id:number;x:number;y:number}|undefined,liftDrag:{pointer:number;id:string;offset:number}|undefined;
  let selectedCannon:string|undefined,planningEditable=false,popupOpen=false;
  let statuses=new Map<string,PlanStatus>();
  const statusLabels:Record<PlanStatus,string>={empty:'Unprogrammed',invalid:'Invalid or incomplete equation',ready:'Programmed, not tested',revise:'Failed flight — revise',tested:'Successful flight'};
@@ -90,7 +92,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function setPlanningSelection(id:string,editable:boolean,open=false){
   if(id!==selectedCannon&&pinned&&cannonTargets.has(pinned))pinned=undefined;
   if(id!==selectedCannon||!editable){previewPaths=[];paintGraphPreview();}
-  selectedCannon=id;planningEditable=editable;popupOpen=open;paintSelection();inspect();
+  selectedCannon=id;planningEditable=editable;popupOpen=open;paintSelection();for(const handle of Array.from(svg.querySelectorAll('[data-lift-handle]'))){handle.setAttribute('aria-disabled',String(!editable));handle.setAttribute('tabindex',editable?'0':'-1');}inspect();
  }
  const reducedMotion=()=>controls.reducedMotion?.()??false;
  const crewTotal=controls.budget??level.creatures;
@@ -118,7 +120,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function paintAttempt(){
   paintGems();
   if(!visual||!trace||!marker)return;
-  for(const id of barrels.keys())setBarrel(id,BARREL_ANGLE);
+  for(const id of barrels.keys()){const c=level.cannons.find(c=>c.id===id)!;const equation=c.lift?lockedLiftEquation(c):undefined;const slope=equation?(isQuadratic(equation)?2*equation.quadratic*c.position.x+equation.linear:equation.gradient):undefined;setBarrel(id,slope===undefined?BARREL_ANGLE:Math.atan(slope*c.direction)*180/Math.PI);}
   const result=active?.result??lastResult,cue=active?sampleRouteAttempt(active.elapsed,active.result,level,active.reduced,active.boardingFrom):undefined;
   marker.replaceChildren();marker.setAttribute('display','none');flightTrail?.setAttribute('display','none');
   const used=new Set<string>();
@@ -236,6 +238,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   g.addEventListener('keydown',event=>{const e=event as KeyboardEvent;if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  }
  function draw(){
+  const focusedLift=svg.contains(document.activeElement)?document.activeElement?.getAttribute('data-lift-handle'):null;
   const focusedId=svg.contains(document.activeElement)?document.activeElement?.getAttribute('data-inspect'):null;
   const {width:W,height:H}=viewport,q=plot();
   t=cameraTransform(level.bounds,viewport,camera);camera={zoom:t.zoom,center:t.center};
@@ -264,6 +267,13 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   el('rect',{x:tl.x,y:tl.y,width:br.x-tl.x,height:br.y-tl.y,fill:'#fff','fill-opacity':.13,stroke:'#527d92','stroke-opacity':.4},content);
   const supportLayer=el('g',{'data-layer':'anchor-supports','pointer-events':'none','aria-hidden':'true'},content);
   for(const support of supports)renderSupportArt(supportLayer,support,level.world,p,scale,controls.cannonLook);
+  for(const c of level.cannons){if(!c.lift)continue;
+   const x=c.position.x-c.direction*.5,a=p({x,y:c.lift.maxY}),z=p({x,y:c.lift.minY-CANNON_FOOTPRINT.drop});
+   const rail=el('g',{'data-layer':'lift-rail','pointer-events':'none','aria-hidden':'true'},supportLayer);
+   el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#46565c','stroke-width':Math.max(7,scale*.25),'stroke-linecap':'round'},rail);
+   el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#a9b9b9','stroke-width':Math.max(2,scale*.07)},rail);
+   for(let y=c.lift.minY;y<=c.lift.maxY&&y<c.lift.minY+100;y++){const mark=p({x,y});el('line',{x1:mark.x-5,y1:mark.y,x2:mark.x+5,y2:mark.y,stroke:'#d4a442','stroke-width':2},rail);}
+  }
   const xGrid=gridTicks(loX,hiX,scale),yGrid=gridTicks(loY,hiY,scale),xs=xGrid.labels,ys=yGrid.labels;
   for(const x of xGrid.units){const a=p({x,y:b.minY}),z=p({x,y:b.maxY});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':x%xGrid.step===0?.40:.23,'data-grid-x':x},content);}
   for(const y of yGrid.units){const a=p({x:b.minX,y}),z=p({x:b.maxX,y});el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#315b75','stroke-opacity':y%yGrid.step===0?.40:.23,'data-grid-y':y},content);}
@@ -283,11 +293,29 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    el('rect',{x:-.89,y:-.37,width:1.26,height:1.06,rx:.18,fill:'transparent','pointer-events':'all','data-cannon-hit':''},body);
    el('rect',{x:-.84,y:-.30,width:1.16,height:.93,rx:.18,class:'planning-halo','pointer-events':'none'},body);
    el('rect',{x:-.89,y:-.35,width:1.26,height:1.03,rx:.21,fill:'none',stroke:'#fff','stroke-width':.035,'stroke-dasharray':'.09 .045',class:'selected-halo','pointer-events':'none'},body);
+   if(c.lift){
+    const deck=el('g',{'pointer-events':'none','aria-hidden':'true'},body);
+    el('rect',{x:-.87,y:CANNON_FOOTPRINT.drop,width:1.02,height:.14,rx:.025,fill:'#eab64e',stroke:'#4c493e','stroke-width':.04},deck);
+    for(let i=0;i<4;i++)el('path',{d:'M'+(-.84+i*.24)+' .48 l.1 0 -.08 .12 -.1 0Z',fill:'#514a3e'},deck);
+   }
    const barrel=renderCannonArt(body,c.type,BARREL_ANGLE,controls.cannonLook,c.direction);barrels.set(c.id,barrel);
+   if(c.lift){
+    el('path',{d:'M-.52 -.15 l.08 .07 -.07 .06 .09 .09',stroke:'#393d3b','stroke-width':.035,fill:'none','pointer-events':'none'},barrel);
+    const lock=el('g',{transform:'translate(-.63 -.4)','pointer-events':'none','aria-hidden':'true'},body);
+    el('rect',{x:-.1,y:-.02,width:.2,height:.15,rx:.03,fill:'#eab64e',stroke:'#56462d','stroke-width':.025},lock);
+    el('path',{d:'M-.055 -.02 V-.07 a.055 .055 0 0 1 .11 0 V-.02',stroke:'#56462d','stroke-width':.035,fill:'none'},lock);
+   }
    el('circle',{r:.12,fill:'white','fill-opacity':.2,stroke:'#fff','stroke-width':.028},g);
    el('circle',{r:.044,fill:'#fff',stroke:'#203d54','stroke-width':.022},g);
    el('text',{x:0,y:-.35,'text-anchor':'middle','font-size':.25,'font-weight':800,fill:'#203d54',stroke:'#eaf8f8','stroke-width':.05,'paint-order':'stroke'},g,c.id+(c.direction===-1?' ←':' →'));
-   target(g,{id:c.id,label:'Cannon '+c.id+' · '+style.label,detail:coord(c.position)+' · fires '+(c.direction===1?'right':'left'),point:c.position},true);
+   target(g,{id:c.id,label:'Cannon '+c.id+' · '+style.label+(c.lift?' · Locked lift':''),detail:coord(c.position)+' · fires '+(c.direction===1?'right':'left'),point:c.position},true);
+   if(c.lift){
+    const handle=el('g',{transform:'translate('+(a.x-c.direction*Math.max(34,scale*1.02))+' '+(a.y+scale*.35)+')','data-lift-handle':c.id,role:'slider',tabindex:'0','aria-label':'Move cannon '+c.id+' vertically','aria-orientation':'vertical','aria-valuemin':c.lift.minY,'aria-valuemax':c.lift.maxY,'aria-valuenow':c.position.y,class:'lift-handle','aria-disabled':String(!planningEditable)},content);handle.setAttribute('tabindex',planningEditable?'0':'-1');
+    el('rect',{x:-14,y:-23,width:28,height:46,rx:6,fill:'#eab64e',stroke:'#544b35','stroke-width':2},handle);
+    el('path',{d:'M-6 -9 L0 -15 6 -9 M-6 9 L0 15 6 9 M-5 0 H5',stroke:'#4f4635','stroke-width':2.4,fill:'none','stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'},handle);
+    handle.addEventListener('keydown',event=>{const key=(event as KeyboardEvent).key;if(!planningEditable||!['ArrowUp','ArrowDown','Home','End'].includes(key))return;event.preventDefault();event.stopPropagation();controls.onLiftMove?.(c.id,key==='Home'?c.lift!.minY:key==='End'?c.lift!.maxY:c.position.y+(key==='ArrowUp'?1:-1));});
+    handle.addEventListener('click',event=>event.stopPropagation());
+   }
   }
   const a=p(level.exit),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content);
   el('path',{d:'M-'+EXIT_FOOTPRINT.halfWidth+' '+EXIT_FOOTPRINT.drop+' V-.06 A'+EXIT_FOOTPRINT.halfWidth+' '+EXIT_FOOTPRINT.halfWidth+' 0 0 1 '+EXIT_FOOTPRINT.halfWidth+' -.06 V'+EXIT_FOOTPRINT.drop+'Z',fill:'#b5a38b',stroke:'#6b665c','stroke-width':.04},g);
@@ -319,16 +347,22 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   controls.reset.disabled=camera.zoom===MIN_ZOOM;for(const button of [controls.left,controls.right,controls.up,controls.down])button.disabled=camera.zoom===MIN_ZOOM;
   svg.classList.toggle('zoomed',camera.zoom>MIN_ZOOM);paintSelection();inspect();
   if(focusedId){const target=Array.from(svg.querySelectorAll<SVGElement>('[data-inspect]')).find(g=>g.getAttribute('data-inspect')===focusedId&&g.getAttribute('tabindex')==='0');(target??svg).focus({preventScroll:true});}
+  if(focusedLift){const handle=Array.from(svg.querySelectorAll<SVGElement>('[data-lift-handle]')).find(g=>g.getAttribute('data-lift-handle')===focusedLift);handle?.focus({preventScroll:true});}
   controls.onViewChange?.();
  }
+ function setLevelGeometry(next:Level){if(active||rapid)return;level=next;supports=levelSupports(level);draw();}
  const zoom=(factor:number)=>{camera=zoomCamera(level.bounds,viewport,camera,Number((camera.zoom*factor).toFixed(3)),pinned?inspections.get(pinned)?.point:undefined);draw();};
  controls.in.addEventListener('click',()=>zoom(1.25));controls.out.addEventListener('click',()=>zoom(.8));controls.reset.addEventListener('click',()=>{camera=initialCamera(level.bounds);draw();});
  const pan=(dx:number,dy:number)=>{camera=panCamera(level.bounds,viewport,camera,dx,dy);draw();};
  controls.left.addEventListener('click',()=>pan(viewport.width*.16,0));controls.right.addEventListener('click',()=>pan(-viewport.width*.16,0));
  controls.up.addEventListener('click',()=>pan(0,viewport.height*.16));controls.down.addEventListener('click',()=>pan(0,-viewport.height*.16));
- svg.addEventListener('pointerdown',e=>{if((e.target as Element).closest('[data-inspect]'))return;pinned=undefined;inspect();if(camera.zoom<=1||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};svg.setPointerCapture(e.pointerId);svg.classList.add('dragging');});
- svg.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;pan(dx,dy);});
- const stop=(e:PointerEvent)=>{if(drag?.id===e.pointerId){drag=undefined;svg.classList.remove('dragging');}};
+ function pointerWorld(e:PointerEvent){const point=svg.createSVGPoint();point.x=e.clientX;point.y=e.clientY;const matrix=svg.getScreenCTM();if(!matrix)return undefined;const q=point.matrixTransform(matrix.inverse());return t.toWorld(q);}
+ svg.addEventListener('pointerdown',e=>{
+  const handle=(e.target as Element).closest('[data-lift-handle]');
+  if(handle){if(!planningEditable||e.button!==0)return;const id=handle.getAttribute('data-lift-handle')!,c=level.cannons.find(c=>c.id===id),p=pointerWorld(e);if(!c||!p)return;e.preventDefault();liftDrag={pointer:e.pointerId,id,offset:c.position.y-p.y};svg.setPointerCapture(e.pointerId);return;}
+  if((e.target as Element).closest('[data-inspect]'))return;pinned=undefined;inspect();if(camera.zoom<=1||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};svg.setPointerCapture(e.pointerId);svg.classList.add('dragging');});
+ svg.addEventListener('pointermove',e=>{if(liftDrag?.pointer===e.pointerId){const p=pointerWorld(e);if(p&&planningEditable)controls.onLiftMove?.(liftDrag.id,p.y+liftDrag.offset);return;}if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;pan(dx,dy);});
+ const stop=(e:PointerEvent)=>{if(liftDrag?.pointer===e.pointerId)liftDrag=undefined;if(drag?.id===e.pointerId){drag=undefined;svg.classList.remove('dragging');}};
  svg.addEventListener('pointerup',stop);svg.addEventListener('pointercancel',stop);svg.addEventListener('lostpointercapture',stop);
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
  const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100||width===viewport.width&&height===viewport.height)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
@@ -336,5 +370,5 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function revealCannon(id:string){const target=cannonTargets.get(id);if(target?.getAttribute('tabindex')==='-1'){camera=initialCamera(level.bounds);draw();}}
  function focusCannon(id:string){revealCannon(id);(cannonTargets.get(id) as SVGElement|undefined)?.focus({preventScroll:true});}
  function cannonRect(id:string){return cannonTargets.get(id)?.getBoundingClientRect();}
- return {playFlight,playRapidFire,clearFlight,setPlanningSelection,setPlanStatuses,revealCannon,focusCannon,cannonRect,setTutorialGuides,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
+ return {playFlight,playRapidFire,clearFlight,setLevelGeometry,setPlanningSelection,setPlanStatuses,revealCannon,focusCannon,cannonRect,setTutorialGuides,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
 }
