@@ -18,7 +18,7 @@ const near=(a:number,b:number,tol=1e-6)=>assert.ok(Math.abs(a-b)<=tol,a+' != '+b
 const advanced=(i:number,id='A')=>{const e=plan(i).get(id)!;assert.ok(isAdvanced(e));return e;};
 test('World 5 contains twelve unlocked levels and replaces the engine preview',()=>{
  assert.equal(worlds.slice(0,5).flatMap(w=>w.levels).length,60);
- assert.equal(worlds[4].name,'Contraption Factory');assert.equal(nextLevel('4-12'),contraptionFactory[0]);
+ assert.equal(worlds[4].name,'Contraption Factory');assert.equal(nextLevel(worlds[3].levels.at(-1)!.id),contraptionFactory[0]);
  assert.equal(new Set(levels.map(l=>l.id)).size,levels.length);
  assert.deepEqual(contraptionFactory.map(l=>l.id),Array.from({length:12},(_,i)=>'5-'+String(i+1).padStart(2,'0')));
  assert.deepEqual(contraptionFactory.map(l=>l.cannons.length),[1,1,1,1,1,1,1,1,1,1,2,4]);
