@@ -26,14 +26,17 @@ async function verify(page:Page,w:number,l:number){
   const mount=layer.locator('[data-support-for="'+plan.id+'"]');
   await expect(mount).toHaveAttribute('data-support-kind',plan.kind);await expect(mount).toHaveAttribute('data-support-terrain',plan.terrainId??'background-roof');
   await expect(mount).toHaveAttribute('aria-hidden','true');
-  const result=await mount.evaluate((node,{id,x,y,drop})=>{
-   const target=document.querySelector<SVGGraphicsElement>('.stage [data-inspect="'+id+'"]')!;
-   const m=node as unknown as SVGGraphicsElement,grid=document.querySelector('.stage [data-grid-x]')!;
-   const point=new DOMPoint(x,y).matrixTransform(m.getCTM()!);
-   const artwork=new DOMPoint(0,drop).matrixTransform(target.getCTM()!);
-   return {delta:Math.hypot(point.x-artwork.x,point.y-artwork.y),behindGrid:!!(m.compareDocumentPosition(grid)&Node.DOCUMENT_POSITION_FOLLOWING),behindTarget:!!(m.compareDocumentPosition(target)&Node.DOCUMENT_POSITION_FOLLOWING),pointer:getComputedStyle(m).pointerEvents,inspectable:!!m.querySelector('[data-inspect]')};
-  },{id:plan.id,x:plan.anchor.x,y:plan.deck.y,drop:plan.anchor.y-plan.deck.y});
-  expect(result.delta).toBeLessThan(.05);expect(result.behindGrid).toBe(true);expect(result.behindTarget).toBe(true);expect(result.pointer).toBe('none');expect(result.inspectable).toBe(false);
+  // ResizeObserver can replace the complete SVG between locator resolution
+  // and evaluation. Query both nodes in the same browser task, and only
+  // measure the current scene once its viewport matches the stage.
+  await expect.poll(()=>page.evaluate(({id,x,y,drop})=>{
+   const stage=document.querySelector<HTMLElement>('.stage')!,svg=stage.querySelector<SVGSVGElement>('svg')!;
+   const m=svg.querySelector<SVGGraphicsElement>('[data-support-for="'+id+'"]'),target=svg.querySelector<SVGGraphicsElement>('[data-inspect="'+id+'"]'),grid=svg.querySelector('[data-grid-x]');
+   if(!m||!target||!grid||!m.isConnected||!target.isConnected||Math.abs(svg.viewBox.baseVal.width-stage.clientWidth)>1||Math.abs(svg.viewBox.baseVal.height-stage.clientHeight)>1)return null;
+   const a=m.getCTM(),b=target.getCTM();if(!a||!b)return null;
+   const point=new DOMPoint(x,y).matrixTransform(a),artwork=new DOMPoint(0,drop).matrixTransform(b);
+   return {aligned:Math.hypot(point.x-artwork.x,point.y-artwork.y)<.05,behindGrid:!!(m.compareDocumentPosition(grid)&Node.DOCUMENT_POSITION_FOLLOWING),behindTarget:!!(m.compareDocumentPosition(target)&Node.DOCUMENT_POSITION_FOLLOWING),pointer:getComputedStyle(m).pointerEvents,inspectable:!!m.querySelector('[data-inspect]')};
+  },{id:plan.id,x:plan.anchor.x,y:plan.deck.y,drop:plan.anchor.y-plan.deck.y})).toEqual({aligned:true,behindGrid:true,behindTarget:true,pointer:'none',inspectable:false});
  }
 }
 for(const s of scenarios)test('connected scene mounts: '+s.name,async({page},info)=>{
@@ -50,4 +53,16 @@ test('support remains fixed to the original coordinates during loading, flight a
  await expect(page.locator('[data-launch-visual][display="inline"][data-launch-phase="flying"] [data-flight-pip]')).toBeVisible();
  await verify(page,1,3);await expect(page.locator('#resolution-heading')).toHaveText('Level complete!',{timeout:15000});
  await verify(page,1,3);expect(errors).toEqual([]);
+});
+
+test('mobile coordinate inspection does not resize the toolbar or stage and zoom stays usable',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await enter(page,1,1);
+ const measure=()=>page.evaluate(()=>({toolbar:document.querySelector('.toolbar')!.getBoundingClientRect().height,stage:document.querySelector('.stage')!.getBoundingClientRect().height}));
+ const original=await measure();
+ for(const id of ['A','exit','floor','exit-ledge']){
+  await page.locator('.stage [data-inspect="'+id+'"]').focus();
+  await expect(page.locator('#inspect-info')).not.toContainText('Click a cannon to program it.');
+  await expect.poll(measure).toEqual(original);
+ }
+ await page.locator('#zoom-in').click({timeout:5000});await expect(page.locator('#zoom-readout')).toHaveText('125%');await verify(page,1,1);
 });

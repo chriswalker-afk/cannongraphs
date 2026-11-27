@@ -41,3 +41,5 @@ Phases 1–3 complete: all seven cannon families and 72 levels across six worlds
 | 35 | Worlds 3–4: equivalent progression for quadratics and mixed routes |
 | 36 | Worlds 5–6: equivalent progression for advanced families; plan optional former finales separately |
 | 37 | Level-selection tiers and whole-catalogue progression audit |
+
+PR37 concludes the catalogue revision with four labelled cannon-count bands in every world. The regular catalogue is guarded at runtime and audited in CI. Optional bonus finales and further classroom-calibrated difficulty adjustments remain separate future work.

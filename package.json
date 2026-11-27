@@ -9,7 +9,8 @@
     "test": "tsx --test tests/*.test.ts",
     "preview": "vite preview",
     "test:browser": "playwright test",
-    "audit:supports": "tsx scripts/audit-supports.ts"
+    "audit:supports": "tsx scripts/audit-supports.ts",
+    "audit:progression": "tsx scripts/audit-progression.ts"
   },
   "devDependencies": {
     "vite": "6.3.5",

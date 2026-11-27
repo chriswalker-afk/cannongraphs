@@ -1,5 +1,6 @@
 import {worlds,levels,type World} from '../levels/catalog';
 import type {Level} from '../levels/schema';
+import {levelTiers} from '../levels/progression';
 import {cannonTypes,type CannonType} from '../game/cannons';
 import {identityForWorld} from '../game/worldIdentity';
 import {beginSelection,selectWorld,selectMode,backToModes,selectLevel,backToWorlds,selectedWorld,selectedLevel,summarizeLevel} from '../game/levelSelection';
@@ -106,17 +107,30 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   element('span','selected-mode-label',copy,policy.name+' · '+modeBudgetLabel(mode));
   const families=element('div','selection-families',copy);
   for(const family of identity.families)familyChip(families,family);
-  element('h2','level-board-heading',board,'Choose a level');
-  const tiles=element('div','level-number-grid',board);tiles.setAttribute('role','group');tiles.setAttribute('aria-label',w.name+' levels');
-  const buttons=new Map<string,HTMLButtonElement>();
-  for(const [i,l] of w.levels.entries()){
-   const tile=action(tiles,'level-number',String(i+1),()=>{
-    if(disposed)return;
-    state=selectLevel(state,l.id);refreshLevel();
-   });
-   const record=getRecord(progress,l.id,mode),rating=recordStars(record,l,mode);
-   if(record){tile.dataset.completed='true';const mark=element('span','level-progress-mark',tile,rating===null?'✓':'★'.repeat(rating));mark.setAttribute('aria-hidden','true');}
-   tile.setAttribute('aria-label','Level '+(i+1)+(record?(rating===null?', practice complete':', '+rating+' out of 3 stars'):', not completed'));tile.setAttribute('aria-pressed','false');buttons.set(l.id,tile);
+  const heading=element('h2','level-board-heading',board,'Choose a level');
+  element('small','',heading,'All 12 unlocked');
+  const tierList=element('div','level-tier-list',board);
+  tierList.setAttribute('role','group');tierList.setAttribute('aria-label',w.name+' level tiers');
+  const buttons=new Map<string,HTMLButtonElement>(),tierRows=new Map<number,HTMLElement>();
+  for(const {tier,entries} of levelTiers(w.levels)){
+   const row=element('section','level-tier',tierList);row.dataset.cannons=String(tier.count);tierRows.set(tier.count,row);
+   row.setAttribute('aria-labelledby','tier-'+tier.count+'-heading');
+   row.style.setProperty('--tier-accent',tier.accent);row.style.setProperty('--tier-ink',tier.ink);row.style.setProperty('--tier-tint',tier.tint);
+   const label=element('div','level-tier-heading',row);
+   const title=element('h3','',label,tier.name);title.id='tier-'+tier.count+'-heading';
+   const count=element('span','level-tier-count',label,tier.count+' '+(tier.count===1?'cannon':'cannons'));count.id='tier-'+tier.count+'-count';
+   row.setAttribute('aria-describedby',count.id);
+   const tiles=element('div','level-number-grid',row);tiles.setAttribute('role','group');tiles.setAttribute('aria-label',tier.name+' · '+count.textContent);
+   for(const {level:l,number} of entries){
+    const tile=action(tiles,'level-number',String(number),()=>{
+     if(disposed)return;
+     state=selectLevel(state,l.id);refreshLevel();
+    });
+    tile.dataset.levelId=l.id;tile.dataset.levelNumber=String(number);
+    const record=getRecord(progress,l.id,mode),rating=recordStars(record,l,mode);
+    if(record){tile.dataset.completed='true';const mark=element('span','level-progress-mark',tile,rating===null?'✓':'★'.repeat(rating));mark.setAttribute('aria-hidden','true');}
+    tile.setAttribute('aria-label','Level '+number+', '+tier.name+', '+count.textContent+(record?(rating===null?', practice complete':', '+rating+' out of 3 stars'):', not completed'));tile.setAttribute('aria-pressed','false');buttons.set(l.id,tile);
+   }
   }
   const panel=element('section','level-details',shell);panel.setAttribute('aria-label','Selected level');
   const info=element('div','level-details-info',panel);info.setAttribute('aria-live','polite');info.setAttribute('aria-atomic','true');
@@ -126,6 +140,7 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
   refreshLevel=()=>{
    const level=selectedLevel(state);
    for(const [id,b] of buttons)b.setAttribute('aria-pressed',String(id===level?.id));
+   for(const [count,row] of tierRows)row.dataset.selected=String(level?.cannons.length===count);
    info.replaceChildren();
    play.disabled=!level;
    if(!level){
@@ -136,7 +151,9 @@ export function mountLevelSelection(root:HTMLElement,options:Options){
    }
    panel.dataset.selected='true';
    const s=summarizeLevel(level);
-   element('div','level-details-kicker',info,'LEVEL '+String(s.index).padStart(2,'0')+' / '+w.levels.length);
+   panel.style.setProperty('--detail-tier-accent',s.tier.accent);panel.style.setProperty('--detail-tier-ink',s.tier.ink);
+   const kicker=element('div','level-details-kicker',info,'LEVEL '+String(s.index).padStart(2,'0')+' / '+w.levels.length+' · ');
+   element('span','level-details-tier',kicker,s.tier.name.toUpperCase());
    element('h2','level-details-title',info,s.title);
    element('p','level-details-objective',info,modeObjective(mode,level));
    const types=element('div','selection-families',info);for(const f of s.families)familyChip(types,f.type,f.count);

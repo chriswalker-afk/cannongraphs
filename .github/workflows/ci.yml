@@ -21,6 +21,12 @@ jobs:
           name: support-audit
           path: support-audit.md
           retention-days: 14
+      - run: npm run audit:progression > difficulty-audit.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: difficulty-audit
+          path: difficulty-audit.md
+          retention-days: 14
       - run: npm run build
 
   browser:

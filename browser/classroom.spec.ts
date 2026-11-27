@@ -55,7 +55,7 @@ for(const viewport of [{width:1366,height:768},{width:768,height:1024},{width:39
   await fits(page);await capture(page,info,'home');
   await page.locator('#home-play').click();await expect(page.locator('.world-card')).toHaveCount(6);await fits(page);await capture(page,info,'worlds');
   await page.locator('.world-card').nth(5).click();await expect(page.locator('.mode-card')).toHaveCount(3);await fits(page);await capture(page,info,'modes');
-  await page.locator('.mode-card').nth(2).click();await expect(page.locator('.selection-play')).toBeDisabled();await page.locator('.level-number').nth(11).click();await fits(page);await capture(page,info,'levels');
+  await page.locator('.mode-card').nth(2).click();await expect(page.locator('.level-tier')).toHaveCount(4);for(const count of [1,2,3,4])await expect(page.locator('.level-tier[data-cannons="'+count+'"] .level-number')).toHaveCount(3);await expect(page.locator('.selection-play')).toBeDisabled();await page.locator('.level-number').nth(11).click();await fits(page);await capture(page,info,'levels');
   await page.locator('.selection-play').click();await expect(page.locator('main.game-screen')).toBeVisible();
   await expect(page.locator('#motion-mode')).toHaveText('Motion: full');await chooseReduced(page);
   await expect.poll(async()=>Math.round((await page.locator('.stage').boundingBox())?.height??0)).toBeGreaterThanOrEqual(210);
