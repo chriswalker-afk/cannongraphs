@@ -416,3 +416,16 @@ main.home-screen{height:auto;min-height:100dvh;grid-template-rows:auto minmax(15
 @media(max-width:650px){.cannon-popup{padding:9px;gap:7px}.parameter-equation{font-size:18px;gap:3px 1px;padding:7px 5px}.coefficient-input{width:45px;font-size:16px}.parameter-step{padding:3px 5px}.halo-legend{font-size:9px;gap:3px 6px}.program-summary{gap:4px 6px}.game-screen .planning-footer{flex-wrap:wrap}.game-screen .launch-panel{flex:1 1 auto}}
 @media(max-height:460px){.cannon-popup{gap:6px;padding:8px}.parameter-equation{padding:5px}.parameter-help{font-size:10px}.popup-nav button{padding:5px 8px}}
 @media(forced-colors:active){.planning-halo{forced-color-adjust:none}.cannon-target:focus-visible{outline:2px solid Highlight}}
+
+/* Standard graph forms: real formula buttons rather than a dropdown. */
+.parameter-choose-label{font-size:11px;font-weight:800;color:#536579}
+.parameter-form-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(142px,1fr));gap:5px;min-width:0}
+.parameter-form-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:48px;padding:6px 5px;border:1px solid #b8cdd8;border-radius:8px;background:#edf3f5;color:#315779;text-align:center;line-height:1.15}
+.parameter-form-choice:hover{background:#e1edf1}
+.parameter-form-choice[aria-pressed=true]{border:2px solid var(--popup-family,#2583ca);padding:5px 4px;background:#fff;box-shadow:0 0 0 1px var(--popup-family,#2583ca)}
+.form-choice-name{font-size:10px;font-weight:800}
+.form-choice-formula{font:600 15px Cambria,Georgia,serif;overflow-wrap:anywhere}
+.parameter-form-choice[aria-pressed=true] .form-choice-name{color:#203d54}
+@media(max-width:650px){.parameter-form-choices{grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:4px}.parameter-form-choice{min-height:44px;padding:5px 4px}.parameter-form-choice[aria-pressed=true]{padding:4px 3px}.form-choice-formula{font-size:13px}}
+@media(max-height:460px){.parameter-form-choice{min-height:40px;padding:4px}.parameter-form-choice[aria-pressed=true]{padding:3px}.form-choice-formula{font-size:13px}}
+@media(forced-colors:active){.parameter-form-choice[aria-pressed=true]{outline:2px solid Highlight;outline-offset:-2px}}
