@@ -11,7 +11,7 @@ test('click a cannon, enter exact coefficients, navigate, see failed/successful 
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await enter(page,1,10);
  const popup=page.locator('#cannon-popup'),a=status(page,'A'),b=status(page,'B');
  await expect(a).toHaveAttribute('data-status','empty');await expect(b).toHaveAttribute('data-status','empty');
- await a.locator('[data-cannon-muzzle]').click();await expect(popup).toBeVisible();await expect(field(page,'m')).toBeFocused();
+ await a.click();await expect(popup).toBeVisible();await expect(field(page,'m')).toBeFocused();
  await expect(page.locator('#previous-cannon')).toBeDisabled();await field(page,'m').press('ArrowUp');await expect(field(page,'m')).toHaveValue('1');
  await expect(a).toHaveAttribute('data-status','invalid');await field(page,'c').fill('1');await expect(a).toHaveAttribute('data-status','ready');
  await page.locator('#next-cannon').click();await expect(page.locator('#popup-title')).toContainText('Cannon B');await expect(field(page,'m')).toHaveValue('');

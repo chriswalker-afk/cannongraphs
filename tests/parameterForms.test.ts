@@ -83,3 +83,9 @@ test('anchored popup placement is clamped on all sides, including a narrow viewp
   }
  }
 });
+
+test('popup uses clear space beside its anchor when available',()=>{
+ const a={left:0,top:0,right:1000,bottom:600};
+ assert.equal(popupPosition({left:840,right:890,top:180,bottom:230},a,400,200).left,430);
+ assert.equal(popupPosition({left:100,right:150,top:180,bottom:230},a,400,200).left,160);
+});
