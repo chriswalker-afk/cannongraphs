@@ -40,11 +40,12 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
   node('span','parameter-math',equation,'y = ');
   for(const part of form.parts){
    if(typeof part==='string'){node('span','parameter-math',equation,part);continue;}
+   const fieldId=part.id;
    const field=node('span','parameter-field',equation),input=node('input','coefficient-input',field);input.type='text';input.autocomplete='off';input.spellcheck=false;input.maxLength=45;input.placeholder='▢';input.value=values[part.id]??'';input.dataset.parameter=part.id;input.setAttribute('aria-label',part.label);inputs.set(part.id,input);first??=input;
    const steppers=node('span','parameter-steppers',field);
-   function step(direction:1|-1,fine=false){input.value=stepParameter(input.value,direction,fine);values={...values,[part.id]:input.value};apply();}
+   function step(direction:1|-1,fine=false){input.value=stepParameter(input.value,direction,fine);values={...values,[fieldId]:input.value};apply();}
    for(const direction of [1,-1] as const){const b=node('button','parameter-step',steppers,direction===1?'▴':'▾');b.type='button';b.setAttribute('aria-label',(direction===1?'Increase ':'Decrease ')+part.label);b.addEventListener('click',()=>{step(direction);input.focus();});}
-   input.addEventListener('input',()=>{values={...values,[part.id]:input.value};apply();});
+   input.addEventListener('input',()=>{values={...values,[fieldId]:input.value};apply();});
    input.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();step(e.key==='ArrowUp'?1:-1,e.shiftKey);}});
   }
   syncMessage();
