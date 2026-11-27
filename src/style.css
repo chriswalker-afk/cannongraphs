@@ -265,3 +265,15 @@ main.workshop-screen{grid-template-rows:auto auto;align-content:center;backgroun
 @media(max-width:800px){main.workshop-screen{align-content:start}.workshop-shell{grid-template-columns:minmax(0,1fr)}.workshop-preview-panel{grid-template-columns:minmax(100px,.7fr) minmax(0,1fr);gap:7px}.workshop-preview-heading{grid-column:1/-1}.workshop-preview{grid-column:1;grid-row:2/5;height:clamp(110px,21vh,180px)}.workshop-poses,.workshop-status,.workshop-actions{grid-column:2}.workshop-status{min-height:0;font-size:11px}.workshop-actions{gap:5px}.workshop-actions .selection-play{min-height:36px;padding:6px;font-size:14px}.workshop-reset{min-height:31px;padding:5px;font-size:11px}.workshop-options{grid-template-columns:repeat(4,minmax(0,1fr))}.workshop-option-art{height:clamp(56px,10vh,82px)}}
 @media(max-width:600px){.home-details{justify-content:center}.home-details .home-log{font-size:10px}.workshop-preview-panel,.workshop-options-panel{padding:8px;gap:7px}.workshop-preview-heading h2,.workshop-options-heading h2{font-size:16px}.workshop-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.workshop-option-copy{padding:5px}.workshop-option-copy strong{font-size:11px}.workshop-option-state{font-size:9px}.workshop-tab{min-height:34px;font-size:11px;padding:5px}.workshop-pose{min-height:28px;padding:4px 7px;font-size:10px}}
 @media(max-height:480px) and (min-width:801px){main.workshop-screen{align-content:start}.workshop-preview-panel,.workshop-options-panel{padding:8px;gap:6px}.workshop-preview{height:125px}.workshop-option-art{height:48px}.workshop-option-copy{padding:4px;gap:2px}.workshop-tab{min-height:32px}.workshop-actions .selection-play{min-height:32px}.workshop-status{min-height:0}.workshop-options{grid-template-columns:repeat(4,minmax(0,1fr))}.workshop-item-detail{min-height:0;padding:5px 8px}}
+
+/* Cannon Workshop shares the Creature Workshop layout and control language. */
+.home-cannon-workshop{background:#f5ead9;color:#80542c;border-color:#d2b993}
+.home-cannon-workshop:hover{background:#efe0c6}
+.cannon-workshop .workshop-preview{background:radial-gradient(ellipse at 50% 40%,#fdf9e9,#d7e6e6)}
+.cannon-workshop .workshop-preview>svg{max-width:360px}
+.cannon-preview-controls{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.cannon-preview-controls label{display:flex;align-items:center;gap:5px;font-size:11px;color:#395f54;font-weight:750}
+.cannon-preview-controls select{min-width:0;max-width:100%;background:#f4f7f2;color:#315779;border:1px solid #b9cec5;border-radius:7px;font-size:12px;padding:5px 6px;min-height:34px}
+.cannon-family-note{font-size:11px;color:#526875;line-height:1.3}
+@media(max-width:800px){.cannon-workshop .cannon-preview-controls{grid-column:2}.cannon-workshop .workshop-preview{grid-row:2/6}.cannon-workshop .cannon-family-note{grid-column:2}.cannon-workshop .cannon-preview-controls select{font-size:11px;min-height:28px}}
+@media(max-height:480px) and (min-width:801px){.cannon-workshop .cannon-preview-controls select{min-height:28px}.cannon-family-note{font-size:10px}}
