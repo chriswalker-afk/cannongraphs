@@ -263,6 +263,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    const a=p(c.position),g=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},content),style=cannonTypes[c.type];
    g.classList.add('cannon-target');cannonTargets.set(c.id,g);
    const body=el('g',{transform:'scale('+c.direction+' 1)'},g);
+   el('rect',{x:-.89,y:-.37,width:1.26,height:1.06,rx:.18,fill:'transparent','pointer-events':'all','data-cannon-hit':''},body);
    el('rect',{x:-.84,y:-.30,width:1.16,height:.93,rx:.18,class:'planning-halo','pointer-events':'none'},body);
    el('rect',{x:-.89,y:-.35,width:1.26,height:1.03,rx:.21,fill:'none',stroke:'#fff','stroke-width':.035,'stroke-dasharray':'.09 .045',class:'selected-halo','pointer-events':'none'},body);
    const barrel=renderCannonArt(body,c.type,BARREL_ANGLE,controls.cannonLook,c.direction);barrels.set(c.id,barrel);

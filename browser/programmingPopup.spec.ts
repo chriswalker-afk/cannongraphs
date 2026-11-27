@@ -1,0 +1,45 @@
+import {test,expect,type Page} from '@playwright/test';
+import {openCannon} from './helpers/programming';
+async function enter(page:Page,w:number,l:number,mode=1){
+ await page.goto('/');await page.locator('#home-play').click();await page.locator('.world-card').nth(w-1).click();await page.locator('.mode-card').nth(mode).click();await page.locator('.level-number').nth(l-1).click();await page.locator('.selection-play').click();
+ await expect(page.locator('#cannon-popup')).toBeHidden();
+ await page.getByRole('button',{name:'Use reduced motion'}).click();
+}
+const status=(page:Page,id:string)=>page.locator('.cannon-target[data-inspect="'+id+'"]');
+const field=(page:Page,id:string)=>page.locator('#parameter-boxes [data-parameter="'+id+'"]');
+test('click a cannon, enter exact coefficients, navigate, see failed/successful halos, and revise only the failed cannon',async({page},info)=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await enter(page,1,10);
+ const popup=page.locator('#cannon-popup'),a=status(page,'A'),b=status(page,'B');
+ await expect(a).toHaveAttribute('data-status','empty');await expect(b).toHaveAttribute('data-status','empty');
+ await a.locator('[data-cannon-muzzle]').click();await expect(popup).toBeVisible();await expect(field(page,'m')).toBeFocused();
+ await expect(page.locator('#previous-cannon')).toBeDisabled();await field(page,'m').press('ArrowUp');await expect(field(page,'m')).toHaveValue('1');
+ await expect(a).toHaveAttribute('data-status','invalid');await field(page,'c').fill('1');await expect(a).toHaveAttribute('data-status','ready');
+ await page.locator('#next-cannon').click();await expect(page.locator('#popup-title')).toContainText('Cannon B');await expect(field(page,'m')).toHaveValue('');
+ await field(page,'m').fill('1');await field(page,'c').fill('1');await expect(b).toHaveAttribute('data-status','ready');
+ await page.locator('#previous-cannon').click();await expect(field(page,'m')).toHaveValue('1');await expect(field(page,'c')).toHaveValue('1');
+ await page.keyboard.press('Escape');await expect(popup).toBeHidden();await expect(a).toBeFocused();
+ await expect(page.locator('#plan-ready')).toHaveText('2 / 2 programmed');await page.locator('#launch').click();await expect(page.locator('#phase-label')).toHaveText('Adjust and retry',{timeout:20000});
+ await expect(a).toHaveAttribute('data-status','tested');await expect(b).toHaveAttribute('data-status','revise');
+ await openCannon(page,'B');await field(page,'m').fill('-1');await field(page,'c').fill('11');await expect(b).toHaveAttribute('data-status','ready');await expect(a).toHaveAttribute('data-status','tested');
+ await page.locator('#popup-done').click();await page.locator('#launch').click();await expect(popup).toBeHidden();await expect(page.locator('#resolution-heading')).toHaveText('Level complete!',{timeout:25000});
+ await expect(a).toHaveAttribute('data-status','tested');await expect(b).toHaveAttribute('data-status','tested');
+ await info.attach('successful-halos',{body:await page.screenshot(),contentType:'image/png'});expect(errors).toEqual([]);
+});
+test('small-screen popup stays on screen, has accessible navigation, and keeps fractional drafts across redraws',async({page},info)=>{
+ await page.setViewportSize({width:390,height:844});await enter(page,2,10);await openCannon(page,'A');
+ await field(page,'m').fill('2/3');await field(page,'m').press('ArrowUp');await expect(field(page,'m')).toHaveValue('5/3');await field(page,'m').press('ArrowDown');await expect(field(page,'m')).toHaveValue('2/3');await field(page,'c').fill('10/3');
+ await expect(status(page,'A')).toHaveAttribute('data-status','ready');
+ await page.locator('#next-cannon').click();await page.locator('#previous-cannon').click();await expect(field(page,'m')).toHaveValue('2/3');
+ await page.setViewportSize({width:844,height:390});
+ await expect.poll(async()=>{const b=await page.locator('#cannon-popup').boundingBox();return !!b&&b.x>=0&&b.y>=0&&b.x+b.width<=845&&b.y+b.height<=391;}).toBe(true);
+ await info.attach('landscape-popup',{body:await page.screenshot(),contentType:'image/png'});await page.locator('#popup-done').click();
+ await expect(page.locator('#cannon-popup')).toBeHidden();await expect(page.locator('#launch')).toBeDisabled();
+});
+test('advanced box forms and free expressions use the same cannon validation',async({page})=>{
+ await enter(page,3,5);await openCannon(page,'A');
+ await page.getByRole('combobox',{name:'Equation form'}).selectOption('vertex');await field(page,'a').fill('1');await field(page,'h').fill('3');await field(page,'k').fill('0');
+ await expect(status(page,'A')).toHaveAttribute('data-status','ready');await page.getByRole('button',{name:'Free equation',exact:true}).click();
+ await expect(page.locator('#equation-input')).toHaveValue('(1)*(x-(3))²+(0)');
+ await page.locator('#equation-input').fill('(x-3)^2');await page.getByRole('button',{name:'Use boxes',exact:true}).click();
+ await expect(field(page,'a')).toHaveValue('1');await expect(status(page,'A')).toHaveAttribute('data-status','ready');
+});

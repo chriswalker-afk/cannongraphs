@@ -1,5 +1,6 @@
 import {test,expect,type Page,type TestInfo} from '@playwright/test';
 import {referenceSolutions} from '../tests/fixtures/referenceSolutions';
+import {openCannon,openFree,enterFree} from './helpers/programming';
 const modeIndex={cadet:0,pilot:1,ace:2};
 type Mode=keyof typeof modeIndex;
 async function start(page:Page){
@@ -37,9 +38,9 @@ async function fits(page:Page){
 async function program(page:Page,world:number,level:number){
  const equations=referenceSolutions[world-1][level-1];
  for(const [id,equation] of Object.entries(equations)){
-  await page.locator('.plan-card[data-cannon-id="'+id+'"]').click();
+  await openFree(page,id);
   await page.locator('#equation-input').fill(equation);
-  await expect(page.locator('#equation-editor')).toHaveAttribute('data-state','ready');
+  await expect(page.locator('#equation-editor')).toHaveAttribute('data-state','ready');await page.locator('#popup-done').click();
  }
 }
 async function complete(page:Page){
@@ -58,8 +59,8 @@ for(const viewport of [{width:1366,height:768},{width:768,height:1024},{width:39
   await page.locator('.selection-play').click();await expect(page.locator('main.game-screen')).toBeVisible();
   await expect(page.locator('#motion-mode')).toHaveText('Motion: full');await chooseReduced(page);
   await expect.poll(async()=>Math.round((await page.locator('.stage').boundingBox())?.height??0)).toBeGreaterThanOrEqual(210);
-  await fits(page);await expect(page.locator('.plan-card')).toHaveCount(7);
-  await expect(page.locator('#equation-input')).toBeEditable();await expect(page.locator('#graph-preview')).toBeHidden();
+  await fits(page);await expect(page.locator('.cannon-target')).toHaveCount(7);await expect(page.locator('#cannon-popup')).toBeHidden();
+  await openCannon(page,'A');await expect(page.locator('[data-parameter="m"]')).toBeEditable();await expect(page.locator('#graph-preview')).toBeHidden();await page.locator('#popup-done').click();
   await expect(page.locator('[data-grid-x="1"]')).toHaveCount(1);await expect(page.locator('[data-grid-x="2"]')).toHaveCount(1);
   await capture(page,info,'finale-planning');
   await page.locator('#zoom-in').click();await expect(page.locator('#zoom-readout')).toHaveText('125%');await page.locator('#zoom-reset').click();
@@ -75,13 +76,13 @@ test('keyboard navigation, invalid equation, misfire, retry and successful reloa
  await page.locator('.level-number').first().focus();await page.keyboard.press('Enter');
  await page.locator('.selection-play').focus();await page.keyboard.press('Enter');
  await expect(page.locator('main.game-screen')).toBeVisible();await chooseReduced(page);
- const input=page.locator('#equation-input');await input.fill('x²');
+ await openFree(page,'A');const input=page.locator('#equation-input');await input.fill('x²');
  await expect(input).toHaveAttribute('aria-invalid','true');await expect(page.locator('#launch')).toBeDisabled();
- await input.fill('x+1');await expect(page.locator('#launch')).toBeEnabled();await page.locator('#launch').click();
+ await input.fill('x+1');await expect(page.locator('#launch')).toBeEnabled();await page.locator('#popup-done').click();await page.locator('#launch').click();
  await expect(page.locator('#phase-label')).toHaveText('Adjust and retry');
  await expect(page.locator('#pip-queue')).toContainText('4 waiting');await expect(page.locator('#flight-hint')).toBeVisible();
  await capture(page,info,'retry-feedback');
- await input.fill('x');await complete(page);
+ await enterFree(page,'x','A');await complete(page);
  await expect(page.locator('#resolution-stars')).toHaveAttribute('aria-label','2 out of 3 stars');
  await expect(page.locator('#resolution-achievements')).toContainText('First flight');
  await capture(page,info,'completion');
@@ -92,20 +93,20 @@ test('keyboard navigation, invalid equation, misfire, retry and successful reloa
  expect(errors).toEqual([]);
 });
 test('Cadet preview is optional and edit invalidates it; Ace has no preview or mathematical hints',async({page},info)=>{
- const errors=await start(page);await pick(page,1,'cadet',1);
+ const errors=await start(page);await pick(page,1,'cadet',1);await openFree(page,'A');
  await page.locator('#equation-template').click();
  await expect(page.locator('#equation-input')).toHaveValue('?x+?');await expect(page.locator('#launch')).toBeDisabled();
- await page.locator('#equation-input').fill('x+1');await expect(page.locator('#cadet-guide')).toContainText('needs y');
+ await page.locator('#equation-input').fill('x+1');await expect(page.locator('#cadet-guide')).toContainText('needs y');await page.locator('#popup-done').click();
  await page.locator('#graph-preview').click();await expect(page.locator('[data-layer="cadet-graph-preview"] path')).not.toHaveCount(0);
  await capture(page,info,'cadet-preview');
- await page.locator('#equation-input').fill('x+2');await expect(page.locator('[data-layer="cadet-graph-preview"] path')).toHaveCount(0);
+ await openFree(page,'A');await page.locator('#equation-input').fill('x+2');await expect(page.locator('[data-layer="cadet-graph-preview"] path')).toHaveCount(0);await page.locator('#popup-done').click();
  for(let i=0;i<2;i++){await page.locator('#launch').click();await expect(page.locator('#phase-label')).toHaveText('Adjust and retry');}
  await expect(page.locator('#pip-queue')).toContainText('2 tried');await expect(page.locator('#pip-queue')).toContainText('∞');
- await page.locator('#equation-input').fill('x');await complete(page);await expect(page.locator('#resolution-stars')).toBeHidden();
+ await enterFree(page,'x','A');await complete(page);await expect(page.locator('#resolution-stars')).toBeHidden();
  await page.locator('#home-return').click();await pick(page,1,'ace',1);
  await expect(page.locator('#equation-template')).toHaveCount(0);await expect(page.locator('#cadet-guide')).toHaveCount(0);
  await expect(page.locator('#graph-preview')).toBeHidden();await expect(page.locator('#pip-queue')).toContainText('3 waiting');
- await page.locator('#equation-input').fill('x+1');await page.locator('#launch').click();
+ await enterFree(page,'x+1','A');await page.locator('#launch').click();
  await expect(page.locator('#phase-label')).toHaveText('Adjust and retry');await expect(page.locator('#flight-hint')).toBeHidden();
  await expect(page.locator('#pip-queue')).toContainText('2 waiting');expect(errors).toEqual([]);
 });
@@ -124,8 +125,8 @@ test('focus on an inspected cannon survives scene resize and controls remain key
  await page.setViewportSize({width:1100,height:700});
  await expect.poll(async()=>page.locator('.stage>svg').getAttribute('viewBox')).not.toBe('0 0 960 620');
  await expect(page.locator('.stage [data-inspect="A"]')).toBeFocused();
- await page.keyboard.press('Enter');await expect(page.locator('#equation-input')).toBeFocused();
- await page.locator('#equation-input').fill('x');await expect(page.locator('#launch')).toBeEnabled();
+ await page.keyboard.press('Enter');await expect(page.locator('[data-parameter="m"]')).toBeFocused();
+ await page.locator('[data-parameter="m"]').fill('1');await page.locator('[data-parameter="c"]').fill('0');await expect(page.locator('#launch')).toBeEnabled();
  expect(errors).toEqual([]);
 });
 test('workshops preview locked items, equip free styles and persist them into the actual game',async({page},info)=>{
