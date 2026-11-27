@@ -25,7 +25,7 @@ for(const w of worlds)test('all twelve '+w.name+' levels appear in the correct l
    await expect(page.locator('.level-number[aria-pressed=true]')).toHaveCount(1);
    await expect(page.locator('.level-tier[data-selected=true]')).toHaveAttribute('data-cannons',String(tier.count));
    await expect(page.locator('.level-details-title')).toHaveText(l.title);await expect(page.locator('.level-details-tier')).toHaveText(tier.name.toUpperCase());
-   const count=l.cannons.length+(l.anchorPuzzle?.inventory.length??0);await expect(page.locator('.level-facts')).toContainText(count+' '+(count===1?'cannon':'cannons'));if(l.anchorPuzzle)await expect(page.locator('.level-facts')).toContainText(l.anchorPuzzle.anchors.length+' candidate mounts');await expect(page.locator('.selection-play')).toBeEnabled();
+   const cannonCount=l.cannons.length+(l.anchorPuzzle?.inventory.length??0);await expect(page.locator('.level-facts')).toContainText(cannonCount+' '+(cannonCount===1?'cannon':'cannons'));if(l.anchorPuzzle)await expect(page.locator('.level-facts')).toContainText(l.anchorPuzzle.anchors.length+' candidate mounts');await expect(page.locator('.selection-play')).toBeEnabled();
   }
  }
  const metrics=await page.evaluate(()=>({viewport:innerWidth,scroll:document.documentElement.scrollWidth}));
