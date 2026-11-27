@@ -4,6 +4,7 @@ import {coordinateSystem,type Point,type Bounds} from '../engine/coordinates';
 import {gridTicks} from '../rendering/grid';
 import {svgNode as el} from '../rendering/pip';
 import {renderCannonArt} from '../rendering/cannonArt';
+import {renderLiftDeck,renderBrokenDetails} from '../rendering/foundryScenery';
 import {BARREL_ANGLE} from '../animations/launch';
 import {lockedLiftEquation,lockedLiftText} from '../levels/liftSpec';
 import {isQuadratic} from '../engine/equations/linear';
@@ -161,10 +162,9 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
    if(c.lift){
     const equation=lockedLiftEquation(c),slope=isQuadratic(equation)?2*equation.quadratic*c.position.x+equation.linear:equation.gradient;
     angle=Math.atan(slope*c.direction)*180/Math.PI;
-    el('rect',{x:-.87,y:CANNON_FOOTPRINT.drop,width:1.02,height:.14,rx:.025,fill:'#eab64e',stroke:'#4c493e','stroke-width':.04},art);
-    for(let i=0;i<4;i++)el('path',{d:'M'+(-.84+i*.24)+' .48 l.1 0 -.08 .12 -.1 0Z',fill:'#514a3e'},art);
+    renderLiftDeck(art);
    }
-   renderCannonArt(art,c.type,angle,undefined,c.direction);g.append(art);
+   const barrel=renderCannonArt(art,c.type,angle,undefined,c.direction);if(c.lift)renderBrokenDetails(art,barrel);g.append(art);
    el('circle',{r:3.1,fill:'white',stroke:'#203d54','stroke-width':1.5},g);
    text(g,{x:0,y:-Math.max(15,s*.48),'text-anchor':'middle','font-size':12,'font-weight':850,fill:'#203d54',stroke:'#fffaf0','stroke-width':3,'paint-order':'stroke'},c.id+(c.lift?' 🔒':'')+(c.id===level.startId?' ★':'')+(c.direction===1?' →':' ←'));
    text(g,{x:0,y:Math.max(20,s*.68),'text-anchor':'middle','font-size':10,fill:'#203d54',stroke:'#fff','stroke-width':3,'paint-order':'stroke'},coord(c.position));

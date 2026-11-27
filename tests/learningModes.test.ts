@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {levels,worlds} from '../src/levels/catalog';
 import {learningModes,modePolicy,modeBudget,modeBudgetLabel,modeObjective,templates,cadetGuidance,type LearningMode} from '../src/game/learningModes';
-import {beginSelection,selectWorld,selectMode,selectLevel,selectedLevel,backToModes,backToWorlds} from '../src/game/levelSelection';
+import {beginSelection,categoryForWorld,selectWorld,selectMode,selectLevel,selectedLevel,backToModes,backToWorlds} from '../src/game/levelSelection';
 import {cannonTypes,type CannonType} from '../src/game/cannons';
 import {parseCannonEquation,evaluateCannonEquation,isAdvanced} from '../src/engine/equations/advanced';
 import {simulateRoute} from '../src/engine/simulation/linearRoute';
@@ -17,7 +17,7 @@ const near=(a:number,b:number,tol=1e-7)=>assert.ok(Math.abs(a-b)<=tol,a+' != '+b
 test('fresh selection requires world and explicit mode before any of the 84 levels can be played',()=>{
  const ids=new Set<string>();
  for(const w of worlds){
-  const modeChoice=selectWorld(beginSelection(),w.number);
+  const modeChoice=selectWorld(beginSelection(undefined,false,'pilot',categoryForWorld(w)),w.number);
   assert.equal(modeChoice.step,'modes');assert.equal(selectedLevel(modeChoice),undefined);
   assert.equal(selectLevel(modeChoice,w.levels[0].id),modeChoice);
   assert.equal(selectMode(modeChoice,'unknown' as LearningMode),modeChoice);
