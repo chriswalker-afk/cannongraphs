@@ -2,13 +2,30 @@ import {mountEquationEditor} from './equationEditor';
 import {formsFor,formFormula,parameterEquation,stepParameter,validParameter,polynomialParameters,type ParameterValues,type FormDrafts} from '../game/parameterForms';
 import {cannonTypes} from '../game/cannons';
 import type {Cannon,Level} from '../levels/schema';
+import {lockedLiftEquation,lockedLiftText} from '../levels/liftSpec';
 import {modePolicy,type LearningMode} from '../game/learningModes';
 export interface EditorMemory {readonly form:string;readonly values:ParameterValues;readonly raw:boolean;readonly drafts?:FormDrafts}
 function node<K extends keyof HTMLElementTagNameMap>(tag:K,cls:string,parent:Element,text?:string):HTMLElementTagNameMap[K]{
  const n=document.createElement(tag);n.className=cls;if(text!==undefined)n.textContent=text;parent.append(n);return n;
 }
-export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:Level,mode:LearningMode,text:string,memory?:EditorMemory){
+export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:Level,mode:LearningMode,text:string,memory?:EditorMemory,onLiftMove?:(id:string,y:number)=>void){
  root.replaceChildren();
+ if(cannon.lift){
+  let current=cannon;
+  const label=node('p','lift-lock-label',root,'Locked firing mechanism');
+  label.setAttribute('aria-label','Locked firing mechanism');
+  const equation=node('output','lift-equation',root);
+  const row=node('div','lift-popup-controls',root);
+  const down=node('button','lift-step',row,'↓ Lower');down.type='button';
+  const position=node('output','lift-position',row);
+  const up=node('button','lift-step',row,'↑ Raise');up.type='button';
+  node('p','parameter-help',root,'Drag the striped platform or use the arrows. Only the constant changes.');
+  function updateLift(next:Cannon){current=next;equation.textContent=lockedLiftText(lockedLiftEquation(current));position.textContent=modePolicy(mode).coordinates?'y = '+current.position.y:'Slide';}
+  down.onclick=()=>onLiftMove?.(current.id,current.position.y-1);
+  up.onclick=()=>onLiftMove?.(current.id,current.position.y+1);
+  updateLift(cannon);
+  return {getDraft:()=>({text:lockedLiftText(lockedLiftEquation(current)),equation:lockedLiftEquation(current)}),getMemory:():EditorMemory=>({form:'locked',values:{},raw:false}),focus:()=>up.focus(),updateLift};
+ }
  const forms=formsFor(cannon.type);
  let form=forms.find(f=>f.id===memory?.form)??forms[0],values={...memory?.values},rawMode=memory?.raw??!!text;
  // Each form has its own draft. Selecting a different form deliberately
@@ -76,5 +93,5 @@ export function mountCannonParameterEditor(root:HTMLElement,cannon:Cannon,level:
  });
  rawRoot.addEventListener('equationchange',()=>{if(rawMode)refresh();});
  render();refresh();syncMessage();
- return {getDraft:raw.getDraft,getMemory:():EditorMemory=>({form:form.id,values:{...values},raw:rawMode,drafts:{...drafts,[form.id]:{...values}}}),focus:()=>rawMode?raw.focus():first?.focus()};
+ return {getDraft:raw.getDraft,getMemory:():EditorMemory=>({form:form.id,values:{...values},raw:rawMode,drafts:{...drafts,[form.id]:{...values}}}),focus:()=>rawMode?raw.focus():first?.focus(),updateLift:undefined};
 }

@@ -659,3 +659,17 @@ main.custom-workshop,main.custom-library{gap:7px;min-width:0}
  .game-screen .tutorial-actions{gap:4px}
  .game-screen .tutorial-actions button{min-height:36px}
 }
+
+/* Broken Foundry preview: small physical handles, no permanent equation rail. */
+.lift-handle{cursor:ns-resize;touch-action:none;outline:none}
+.lift-handle:focus-visible>rect{stroke:#fff;stroke-width:3}
+.lift-handle[aria-disabled=true]{cursor:default;opacity:.65}
+.lift-lock-label{font-weight:800;color:#785519;margin:.3rem 0}
+.lift-equation{display:block;font-size:1.3rem;font-weight:750;padding:.45rem .6rem;background:#fff2ce;border-radius:.5rem;color:#49381d}
+.lift-popup-controls{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin:.6rem 0}
+.lift-step{min-height:36px}
+.lift-demo-menu{max-width:850px;margin:auto;padding:1rem;color:#243d4a}
+.lift-demo-menu header{display:flex;gap:1rem;align-items:center}
+.lift-demo-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+.lift-demo-choices section{padding:1rem;border:1px solid #c9b58e;border-radius:12px;background:#fff8e9}
+.lift-demo-choices button,.lift-demo-menu header button{padding:.65rem .85rem;margin:.2rem;border:1px solid #9c7840;border-radius:7px;background:#f9e1ab;color:#4d3821;font-weight:700;cursor:pointer}
