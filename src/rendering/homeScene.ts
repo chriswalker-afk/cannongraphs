@@ -5,6 +5,7 @@ import {createHomeClock} from '../animations/homeClock';
 import type {RapidFrame} from '../animations/rapidFire';
 import {createPip,svgNode as el,type PipSprite} from './pip';
 import type {PipLook} from '../game/pipCosmetics';
+import type {CannonLook} from '../game/cannonCosmetics';
 import {renderCannonArt} from './cannonArt';
 import {renderTerrain} from './terrain';
 import {flightPath} from './flightPath';
@@ -48,7 +49,7 @@ interface PaintedHome {
  demo:HomeDemo;project:(p:Point)=>Point;scale:number;barrels:Map<string,Element>;
  visual:ReturnType<typeof createRapidVisual>;queue:readonly PipSprite[];
 }
-function drawScene(svg:SVGSVGElement,demo:HomeDemo,width:number,height:number,look?:PipLook):PaintedHome{
+function drawScene(svg:SVGSVGElement,demo:HomeDemo,width:number,height:number,look?:PipLook,cannonLook?:CannonLook):PaintedHome{
  svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+width+' '+height);
  scenery(svg,width,height);
  const {level,result}=demo,{bounds:b}=level;
@@ -75,7 +76,7 @@ function drawScene(svg:SVGSVGElement,demo:HomeDemo,width:number,height:number,lo
   const c=level.cannons.find(c=>c.id===leg.cannonId)!,a=project(c.position);
   const group=el('g',{transform:'translate('+a.x+' '+a.y+') scale('+scale+')'},plot);
   const mirrored=el('g',{transform:'scale('+c.direction+' 1)'},group);
-  barrels.set(c.id,renderCannonArt(mirrored,c.type,leg.angle));
+  barrels.set(c.id,renderCannonArt(mirrored,c.type,leg.angle,cannonLook,c.direction));
   el('circle',{r:.045,fill:'#fff',stroke:'#203d54','stroke-width':.022},group);
  }
  const exit=project(level.exit),gate=el('g',{transform:'translate('+exit.x+' '+exit.y+') scale('+scale+')'},plot);
@@ -83,7 +84,7 @@ function drawScene(svg:SVGSVGElement,demo:HomeDemo,width:number,height:number,lo
  el('path',{d:'M-.3 .44 V-.05 A.3 .3 0 0 1 .3 -.05 V.44Z',fill:'url(#home-portal)',stroke:'#b27b29','stroke-width':.025},gate);
  el('path',{d:'M-.16 .20 Q-.25 -.09 0 -.15 Q.25 -.13 .14 .10 Q.03 .22 -.05 .08',stroke:'#fff7b8','stroke-width':.04,fill:'none','stroke-linecap':'round'},gate);
  const queue=Array.from({length:demo.schedule.count},(_,i)=>createPip(plot,i,look));
- const visual=createRapidVisual(plot,demo.schedule.count,0,result,look);
+ const visual=createRapidVisual(plot,demo.schedule.count,0,result,look,cannonLook);
  return {demo,project,scale,barrels,visual,queue};
 }
 function paintScene(p:PaintedHome,frame:RapidFrame,ms:number,still:boolean){
@@ -102,7 +103,7 @@ function paintScene(p:PaintedHome,frame:RapidFrame,ms:number,still:boolean){
  }
  visual.paint(frame,demo.result,project,scale,still);
 }
-export function mountHomeScene(host:HTMLElement,pauseButton:HTMLButtonElement,look?:PipLook){
+export function mountHomeScene(host:HTMLElement,pauseButton:HTMLButtonElement,look?:PipLook,cannonLook?:CannonLook){
  const svg=el('svg',{'aria-hidden':'true',focusable:'false'},host) as SVGSVGElement;
  const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
  let paused=motion.matches,forceStill=paused,painted:PaintedHome|undefined,disposed=false;
@@ -120,7 +121,7 @@ export function mountHomeScene(host:HTMLElement,pauseButton:HTMLButtonElement,lo
   const w=Math.max(100,host.clientWidth),h=Math.max(100,host.clientHeight),layout=homeLayout(w,h);
   let demo=painted?.demo;
   if(!demo||demo.layout!==layout){demo=createHomeDemo(layout);clock.reset();}
-  painted=drawScene(svg,demo,w,h,look);
+  painted=drawScene(svg,demo,w,h,look,cannonLook);
   render(clock.elapsed());
  }
  function toggle(){

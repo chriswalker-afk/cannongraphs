@@ -9,6 +9,7 @@ import {routeLegs} from '../engine/simulation/linearRoute';
 import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {createLaunchVisual} from './launchVisual';
 import type {PipLook} from '../game/pipCosmetics';
+import type {CannonLook} from '../game/cannonCosmetics';
 import {makeRapidSchedule,sampleRapidFire,type RapidSchedule,type RapidCounts} from '../animations/rapidFire';
 import {createRapidVisual} from './rapidVisual';
 import {renderTerrain,terrainInspection} from './terrain';
@@ -33,7 +34,7 @@ function el(tag:string,attrs:Record<string,string|number>={},parent?:Element,con
 const fmt=(n:number)=>String(Number(n.toFixed(4)));
 const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
-export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook}){
+export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook}){
  const policy=modePolicy(controls.mode??'pilot');
  const svg=el('svg',{role:'group','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
  let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
@@ -128,7 +129,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function playRapidFire(result:AttemptResult,count:number,variantOffset:number,progress:(counts:RapidCounts)=>void,done:()=>void):boolean{
   if(active||rapid||!rapidParent||result!==lastResult)return false;
   const schedule=makeRapidSchedule(result,count,motion.matches);
-  rapidParent.replaceChildren();rapidVisual=createRapidVisual(rapidParent,count,variantOffset,result,controls.look);
+  rapidParent.replaceChildren();rapidVisual=createRapidVisual(rapidParent,count,variantOffset,result,controls.look,controls.cannonLook);
   rapid={result,schedule,started:performance.now(),elapsed:0,variantOffset,progress,done};
   paintRapid();animationId=requestAnimationFrame(rapidStep);return true;
  }
@@ -226,7 +227,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    g.classList.add('cannon-target');cannonTargets.set(c.id,g);
    const body=el('g',{transform:'scale('+c.direction+' 1)'},g);
    el('rect',{x:-.84,y:-.30,width:1.16,height:.93,rx:.18,fill:'#fff1bd','fill-opacity':.65,stroke:'#a86e24','stroke-width':.037,'stroke-dasharray':'.085 .045',class:'planning-halo','pointer-events':'none'},body);
-   const barrel=renderCannonArt(body,c.type,BARREL_ANGLE);barrels.set(c.id,barrel);
+   const barrel=renderCannonArt(body,c.type,BARREL_ANGLE,controls.cannonLook,c.direction);barrels.set(c.id,barrel);
    el('circle',{r:.12,fill:'white','fill-opacity':.2,stroke:'#fff','stroke-width':.028},g);
    el('circle',{r:.044,fill:'#fff',stroke:'#203d54','stroke-width':.022},g);
    el('text',{x:0,y:-.35,'text-anchor':'middle','font-size':.25,'font-weight':800,fill:'#203d54',stroke:'#eaf8f8','stroke-width':.05,'paint-order':'stroke'},g,c.id+(c.direction===-1?' ←':' →'));
@@ -245,9 +246,9 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   }
   previewLayer=el('g',{'pointer-events':'none','aria-hidden':'true','data-layer':'cadet-graph-preview'},content);paintGraphPreview();
   trace=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;
-  visual=createLaunchVisual(content,controls.look);
+  visual=createLaunchVisual(content,controls.look,controls.cannonLook);
   rapidParent=el('g',{'pointer-events':'none','aria-hidden':'true'},content);
-  if(rapid)rapidVisual=createRapidVisual(rapidParent,rapid.schedule.count,rapid.variantOffset,rapid.result,controls.look);
+  if(rapid)rapidVisual=createRapidVisual(rapidParent,rapid.schedule.count,rapid.variantOffset,rapid.result,controls.look,controls.cannonLook);
   marker=el('g',{'pointer-events':'none','aria-hidden':'true'},content) as SVGGElement;paintAttempt();paintRapid();
   // Edge tick labels remain visible when the origin is offscreen.
   const bottom=Math.min(q.y+q.h,br.y),left=Math.max(q.x,tl.x);
