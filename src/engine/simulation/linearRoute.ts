@@ -2,6 +2,7 @@ import {validateLevel,type Level} from '../../levels/schema';
 import {isQuadratic} from '../equations/linear';
 import {isAdvanced,equationFamily,cannonEquationKey,type CannonEquation} from '../equations/advanced';
 import {lockedLiftEquation} from '../../levels/liftSpec';
+import {lockedAnchorEquation,unplacedInventory} from '../../levels/anchorSpec';
 import {simulateAdvancedAttempt} from './advancedAttempt';
 import {simulateQuadraticAttempt} from './quadraticAttempt';
 import {collectRouteGems,type GemHit} from './gemContacts';
@@ -16,13 +17,14 @@ export function routeLegs(r:AttemptResult):readonly AttemptResult[]{return isRou
 export function routeGemHits(r:AttemptResult):readonly GemHit[]{return isRouteResult(r)?r.gemHits:[];}
 export function simulateRoute(level:Level,equations:ReadonlyMap<string,CannonEquation>):RouteResult{
  validateLevel(level);
+ if(unplacedInventory(level).length)throw Error('Place every inventory cannon before launching.');
  // Validate the whole plan before an attempt is reserved, even for a cannon that is bypassed.
  const resolved=new Map<string,CannonEquation>();
  for(const c of level.cannons){
   const submitted=equations.get(c.id);
-  if(c.lift){
-   const locked=lockedLiftEquation(c);
-   if(submitted&&cannonEquationKey(submitted)!==cannonEquationKey(locked))throw new Error('Locked lift equation cannot be changed: '+c.id);
+  const locked=c.lift?lockedLiftEquation(c):lockedAnchorEquation(level,c);
+  if(locked){
+   if(submitted&&cannonEquationKey(submitted)!==cannonEquationKey(locked))throw new Error((c.lift?'Locked lift equation':'Locked anchor equation')+' cannot be changed: '+c.id);
    resolved.set(c.id,locked);
   }else{
    if(!submitted||c.type!==equationFamily(submitted))throw new Error('Program every '+c.type+' cannon with its own equation family before launching.');
@@ -37,7 +39,14 @@ export function simulateRoute(level:Level,equations:ReadonlyMap<string,CannonEqu
   visited.add(current.id);
   const equation=resolved.get(current.id)!;
   const leg=isAdvanced(equation)?simulateAdvancedAttempt(equation,current,level):isQuadratic(equation)?simulateQuadraticAttempt(equation,current,level):simulateLinearAttempt(equation,current,level);
-  legs.push(leg);event=leg.event;
+  event=leg.event;
+  // Reaching the exit without the complete supplied relay is a failed
+  // attempt in placement puzzles, even if the geometric flight is valid.
+  if(event.kind==='exit'&&level.anchorPuzzle&&visited.size!==level.cannons.length){
+   event={kind:'incomplete-relay',unusedCannonIds:level.cannons.filter(c=>!visited.has(c.id)).map(c=>c.id)};
+   legs.push({...leg,event});break;
+  }
+  legs.push(leg);
   if(event.kind!=='cannon')break;
   if(visited.has(event.cannonId)){event={kind:'loop',cannonId:event.cannonId};break;}
   const next=byId.get(event.cannonId);if(!next)throw new Error('Missing capture cannon');current=next;

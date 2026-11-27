@@ -11,6 +11,7 @@ export {PIP_RADIUS} from '../collisions/clearance';
 export const CAPTURE_EPSILON=1e-7;
 export type FlightEvent=
  |{kind:'exit'}
+ |{kind:'incomplete-relay';unusedCannonIds:readonly string[]}
  |{kind:'cannon';cannonId:string}
  |{kind:'loop';cannonId:string}
  |{kind:'obstacle';obstacleId:string;obstacleKind:Obstacle['kind'];normal:Point}

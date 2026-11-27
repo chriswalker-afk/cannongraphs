@@ -2,6 +2,7 @@ import type {AttemptResult} from '../engine/simulation/linearAttempt';
 import {isRouteResult} from '../engine/simulation/linearRoute';
 import {feedbackNumber as fmt} from './feedbackNumbers';
 export function attemptFeedback(result:AttemptResult):string{
+ if(result.event.kind==='incomplete-relay')return 'The Pip reached the exit, but skipped cannon'+(result.event.unusedCannonIds.length===1?' ':'s ')+result.event.unusedCannonIds.join(', ')+'. Use every cannon in the relay.';
  if(isRouteResult(result)){
   if(result.event.kind==='loop')return 'Loop! Your Pip returned to cannon '+result.event.cannonId+'. Adjust the route to reach the exit.';
   const last=result.legs[result.legs.length-1];

@@ -6,8 +6,9 @@ import {PIP_RADIUS} from '../engine/collisions/clearance';
 import {routeLegs} from '../engine/simulation/linearRoute';
 import type {Level} from '../levels/schema';
 import {terrainLabel} from '../levels/terrain';
+import {inventoryCannon} from '../levels/anchorSpec';
 import {feedbackNumber as n,feedbackPoint as point} from './feedbackNumbers';
-export type FailureKind='source'|'collision'|'missed-target'|'boundary'|'direction'|'loop'|'domain';
+export type FailureKind='source'|'collision'|'missed-target'|'boundary'|'direction'|'loop'|'domain'|'incomplete-relay';
 export type SupportLevel=1|2|3;
 export interface FlightDiagnosis {
  readonly cannonId:string;readonly kind:FailureKind;readonly key:string;
@@ -35,12 +36,18 @@ export function diagnoseFlight(level:Level,result:AttemptResult,equations:Readon
  const legs=routeLegs(result),leg=legs[legs.length-1],cannonId=leg.cannonId,event=result.event;
  const e=equations.get(cannonId);if(!e)return null;
  const advanced=isAdvanced(e),quadratic=!advanced&&isQuadratic(e),curved=advanced||quadratic,graph=curved?'curve':'line';
- const movable=level.cannons.some(c=>c.id===cannonId&&c.lift);
+ const movable=level.cannons.some(c=>c.id===cannonId&&c.lift),item=inventoryCannon(level,cannonId),lockedMount=item?.lockedShape!==undefined;
+ const mountMethod=quadratic?'The quadratic coefficients are locked. Choose an anchor (p, q) and use c = q − ap² − bp.':'The gradient is locked. Choose an anchor (p, q) and use c = q − mp.';
  const liftMethod=quadratic?'The arc shape is locked. Move the platform to change the constant in y = ax² + bx + c.':'The gradient is locked. Move the platform to change the constant in y = mx + c.';
- const method=movable?liftMethod:advanced?'Use the marked coordinates to constrain the function parameters. Check its domain and all turning points or extrema between the anchors.':quadratic?'Use the cannon and destination coordinates in y = ax² + bx + c. Choose a third point, or use a suitable turning point to control the shape.':linearMethod;
+ const method=lockedMount?mountMethod:movable?liftMethod:advanced?'Use the marked coordinates to constrain the function parameters. Check its domain and all turning points or extrema between the anchors.':quadratic?'Use the cannon and destination coordinates in y = ax² + bx + c. Choose a third point, or use a suitable turning point to control the shape.':linearMethod;
  const make=(kind:FailureKind,category:string,title:string,evidence:string,prompts:FlightDiagnosis['prompts']):FlightDiagnosis=>({
   cannonId,kind,key:JSON.stringify([cannonId,category]),title,evidence,prompts
  });
+ if(event.kind==='incomplete-relay')return make('incomplete-relay','incomplete-relay','Complete the relay','The Pip reached the exit but did not visit '+event.unusedCannonIds.join(', ')+'.',[
+  'Use every supplied cannon. Empty mounts are not destinations.',
+  'Check which mounted cannon is reached first along each graph.',
+  'Work backwards from the exit and choose anchor coordinates that connect each cannon without skipping one.'
+ ]);
  if(event.kind==='loop'){
   const sequence=[...legs.map(l=>l.cannonId),event.cannonId].join(' → ');
   return make('loop','loop','Break the loop','The attempted route was '+sequence+'. It returned to a cannon already visited.',[
@@ -72,7 +79,7 @@ export function diagnoseFlight(level:Level,result:AttemptResult,equations:Readon
   const comparison=above?'For a route above it, y must stay sufficiently above its top.':below?'For a route below it, y must stay sufficiently below its bottom.':'Decide whether the route should pass above or below it.';
   const name=terrainLabel(o,level.world);
   return make('collision','collision:'+o.id,'Clear the '+name.toLowerCase(),'The Pip hit the '+face+' with its centre near '+point(leg.end)+'. '+name+' spans x = '+n(b.minX)+' to '+n(b.maxX)+' and y = '+n(b.minY)+' to '+n(b.maxY)+'.',[
-   movable?'Check the platform height: the trajectory shape cannot change.':check,
+   lockedMount?'Choose another mount: the nonconstant coefficients cannot change.':movable?'Check the platform height: the trajectory shape cannot change.':check,
    'Use the obstacle’s bounds to compare the '+graph+'’s y-values with its top and bottom. '+comparison,
    (advanced?'Check the function across the obstacle’s x-interval, including any extrema within it. ':quadratic?'Check y = ax² + bx + c at the ends of the obstacle’s x-interval and at the turning point if it lies inside. ':'Calculate y = mx + c at both ends of the obstacle’s x-interval for a route across its full width. ')+comparison+' Allow '+n(PIP_RADIUS)+' units for the Pip’s body; touching is a collision.'
   ]);
@@ -95,18 +102,18 @@ export function diagnoseFlight(level:Level,result:AttemptResult,equations:Readon
    .sort((a,b)=>Math.abs(a.error)-Math.abs(b.error)||Math.abs(a.position.x-leg.source.x)-Math.abs(b.position.x-leg.source.x)||a.id.localeCompare(b.id));
   const target=passed[0];
   if(target){
-   const targetLift=level.cannons.some(c=>c.id===target.id&&c.lift);
+   const targetLift=level.cannons.some(c=>c.id===target.id&&c.lift),targetMount=inventoryCannon(level,target.id);
    const relation=target.error>0?'above':'below';
    const which=forward.length>1?'For example, at ':'At ';
-   return make('missed-target','missed-target',movable||targetLift?'Check the lift height':curved?'Check the curve':'Check the gradient',which+target.label+' ('+n(target.position.x)+', '+n(target.position.y)+'), the attempted '+graph+' gives y ≈ '+n(target.value)+', about '+n(Math.abs(target.error))+' units '+relation+' the marked point.',[
-    targetLift?'The flight missed a movable cannon. Compare the flight height with its platform.':movable?liftMethod:curved?'The curve missed the destination. Check the shape and parameters.':'The line left the level without reaching a destination. Check the gradient between your chosen points.',
+   return make('missed-target','missed-target',lockedMount||targetMount?'Check the anchor placement':movable||targetLift?'Check the lift height':curved?'Check the curve':'Check the gradient',which+target.label+' ('+n(target.position.x)+', '+n(target.position.y)+'), the attempted '+graph+' gives y ≈ '+n(target.value)+', about '+n(Math.abs(target.error))+' units '+relation+' the marked point.',[
+    targetMount?'Compare the incoming graph with the available anchor coordinates.':lockedMount?mountMethod:targetLift?'The flight missed a movable cannon. Compare the flight height with its platform.':movable?liftMethod:curved?'The curve missed the destination. Check the shape and parameters.':'The line left the level without reaching a destination. Check the gradient between your chosen points.',
     'Substitute the x-coordinate of your chosen destination into the equation and compare the y-values.',
-    (targetLift?'Evaluate the incoming equation at the lift’s x-coordinate, then position its platform at that height. Check where the locked outgoing trajectory leads.':method+' Check both marked points in your equation before trying again.')
+    (targetMount?'Substitute candidate anchor coordinates into the incoming equation, then check the outgoing equation from that mount.':targetLift?'Evaluate the incoming equation at the lift’s x-coordinate, then position its platform at that height. Check where the locked outgoing trajectory leads.':method+' Check both marked points in your equation before trying again.')
    ]);
   }
   const vertical=edge==='top'||edge==='bottom';
   return make('boundary','boundary:'+edge,'Keep the graph in the level','The attempted '+graph+' reached the '+edge+' edge near '+point(leg.end)+'.'+(vertical?' It did not reach a marked destination before leaving the level.':''),[
-   movable?liftMethod:advanced?'Check the function’s extrema, domain and values before it leaves the level.':quadratic?'Check the curve’s turning point and opening direction before it leaves the level.':vertical?'Is the line rising or falling too quickly for the route you chose?':'Check that your line meets the next marked point before leaving the level.',
+   lockedMount?mountMethod:movable?liftMethod:advanced?'Check the function’s extrema, domain and values before it leaves the level.':quadratic?'Check the curve’s turning point and opening direction before it leaves the level.':vertical?'Is the line rising or falling too quickly for the route you chose?':'Check that your line meets the next marked point before leaving the level.',
    advanced?'Check the function values and any extrema between the marked points.':quadratic?'Check the y-values at the cannon, destination and turning point.':'Compare the changes in x and y between the firing cannon and your chosen destination.',
    method+' Check that the graph remains inside the level until it reaches that destination.'
   ]);

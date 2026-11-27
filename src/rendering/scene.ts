@@ -351,7 +351,10 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  controls.up.addEventListener('click',()=>pan(0,viewport.height*.16));controls.down.addEventListener('click',()=>pan(0,-viewport.height*.16));
  function pointerWorld(e:PointerEvent){const point=svg.createSVGPoint();point.x=e.clientX;point.y=e.clientY;const matrix=svg.getScreenCTM();if(!matrix)return undefined;const q=point.matrixTransform(matrix.inverse());return t.toWorld(q);}
  svg.addEventListener('pointerdown',e=>{
-  const handle=(e.target as Element).closest('[data-lift-handle]');
+  // Chromium's touch adjustment can retarget a transparent deck hit to
+   // the nearby painted cannon. Prefer the actual contact coordinate
+   // when it lies on the deck's interaction area, not the adjusted node.
+   const handle=(e.pointerType==='touch'?document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-lift-handle]'):null)??(e.target as Element).closest('[data-lift-handle]');
   if(handle){if(!planningEditable||e.button!==0||liftDrag||drag)return;const id=handle.getAttribute('data-lift-handle')!,c=level.cannons.find(c=>c.id===id),p=pointerWorld(e);if(!c||!p)return;e.preventDefault();liftDrag={pointer:e.pointerId,id,offset:c.position.y-p.y};svg.setPointerCapture(e.pointerId);return;}
   if((e.target as Element).closest('[data-inspect]'))return;pinned=undefined;inspect();if(camera.zoom<=1||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};svg.setPointerCapture(e.pointerId);svg.classList.add('dragging');});
  svg.addEventListener('pointermove',e=>{if(liftDrag?.pointer===e.pointerId){const p=pointerWorld(e);if(p&&planningEditable)controls.onLiftMove?.(liftDrag.id,p.y+liftDrag.offset);return;}if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;pan(dx,dy);});
