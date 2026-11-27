@@ -5,7 +5,7 @@ import type {CannonType} from './cannons';
 import {isLearningMode,type LearningMode} from './learningModes';
 export type WorldCategory='normal'|'broken';
 // Classify by authored mechanics so future lift worlds use the same selector.
-export function categoryForWorld(world:World):WorldCategory{return world.levels.some(l=>l.cannons.some(c=>c.lift))?'broken':'normal';}
+export function categoryForWorld(world:World):WorldCategory{return world.levels.some(l=>!!l.anchorPuzzle||l.cannons.some(c=>c.lift))?'broken':'normal';}
 export function worldsInCategory(category:WorldCategory):readonly World[]{return worlds.filter(w=>categoryForWorld(w)===category);}
 export type SelectionState=
  |{readonly step:'worlds';readonly preferredId:string|null;readonly category:WorldCategory}

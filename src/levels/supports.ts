@@ -1,6 +1,7 @@
 import type {Point} from '../engine/coordinates';
 import {CANNON_FOOTPRINT,EXIT_FOOTPRINT} from '../game/anchorArtGeometry';
 import type {Level,Obstacle,SupportKind,SupportSpec} from './schema';
+import type {AnchorPoint} from './anchorSpec';
 export interface Deck {readonly minX:number;readonly maxX:number;readonly y:number}
 export interface SupportSegment {readonly from:Point;readonly to:Point;readonly role:'brace'|'hanger'}
 export interface SupportPlan{
@@ -98,3 +99,6 @@ function resolve(level:Level,id:string,anchor:Point,direction:1|-1,override?:Sup
 export function levelSupports(level:Level):readonly SupportPlan[]{
  return [...level.cannons.filter(c=>!c.lift).map(c=>resolve(level,c.id,c.position,c.direction,level.supports?.[c.id])),resolve(level,'exit',level.exit,1,level.supports?.exit)];
 }
+
+// Resolve decorative support for an empty mount without inserting a fake cannon into the simulation.
+export function emptyAnchorSupport(level:Level,anchor:AnchorPoint):SupportPlan{return resolve(level,anchor.id,anchor.position,1);}
