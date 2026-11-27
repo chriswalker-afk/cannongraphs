@@ -25,6 +25,7 @@ import {renderPeakScenery} from './peakScenery';
 import {renderRuinsScenery} from './ruinsScenery';
 import {renderFactoryScenery} from './factoryScenery';
 import {renderFoundryScenery,renderLiftRail,renderLiftDeck,renderBrokenDetails} from './foundryScenery';
+import {foundryPadding,liftGrip} from './foundryLayout';
 import {renderCosmicScenery} from './cosmicScenery';
 import {flightPath} from './flightPath';
 import {renderGem} from './gem';
@@ -49,8 +50,10 @@ const coord=(p:Point)=>'('+fmt(p.x)+', '+fmt(p.y)+')';
 
 export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButtonElement;in:HTMLButtonElement;reset:HTMLButtonElement;left:HTMLButtonElement;right:HTMLButtonElement;up:HTMLButtonElement;down:HTMLButtonElement;readout:HTMLElement;info:HTMLElement;onCannonSelect?:(id:string)=>void;onLiftMove?:(id:string,y:number)=>void;mode?:LearningMode;look?:PipLook;cannonLook?:CannonLook;onSound?:(sound:SoundEffect)=>void;budget?:number;reducedMotion?:()=>boolean;onViewChange?:()=>void}){
  const policy=modePolicy(controls.mode??'pilot');let supports=levelSupports(level);
- const svg=el('svg',{role:'group',tabindex:'-1','aria-label':policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates. Drag the background or use arrows to pan when zoomed.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access. Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
- let viewport:Viewport={width:960,height:620,padding:34},camera:Camera=initialCamera(level.bounds);
+ const hasLifts=level.cannons.some(c=>c.lift);
+ const guidance=()=>hasLifts?'Drag a striped platform to move it. Click a cannon to inspect its equation.':policy.coordinates?'Click a cannon to program it. Hover or focus an object to inspect it.':'Click a cannon to program it. Read coordinates from the axes.';
+ const svg=el('svg',{role:'group',tabindex:'-1','aria-label':(policy.coordinates?'Coordinate playground. Inspect marked objects for coordinates.':'Coordinate playground. Read marked positions from the axes. Object descriptions provide nonvisual access.')+(hasLifts?' Drag striped decks or use their arrow keys to move broken cannons.':'')+' Drag the background or use arrows to pan when zoomed.'},stage) as SVGSVGElement;
+ let viewport:Viewport={width:960,height:620,padding:level.world===7?foundryPadding(level.bounds,960,620):34},camera:Camera=initialCamera(level.bounds);
  let t=cameraTransform(level.bounds,viewport,camera),pinned:string|undefined,hovered:string|undefined,focused:string|undefined;
  let inspections=new Map<string,Inspection>(),tooltip:SVGGElement;
  let drag:{id:number;x:number;y:number}|undefined,liftDrag:{pointer:number;id:string;offset:number}|undefined;
@@ -93,7 +96,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  function setPlanningSelection(id:string,editable:boolean,open=false){
   if(id!==selectedCannon&&pinned&&cannonTargets.has(pinned))pinned=undefined;
   if(id!==selectedCannon||!editable){previewPaths=[];paintGraphPreview();}
-  selectedCannon=id;planningEditable=editable;popupOpen=open;paintSelection();for(const handle of Array.from(svg.querySelectorAll('[data-lift-handle]'))){handle.setAttribute('aria-disabled',String(!editable));handle.setAttribute('tabindex',editable?'0':'-1');}inspect();
+  selectedCannon=id;planningEditable=editable;popupOpen=open;paintSelection();for(const handle of Array.from(svg.querySelectorAll('[data-lift-handle]'))){handle.setAttribute('aria-disabled',String(!editable));handle.setAttribute('tabindex',editable?'0':'-1');handle.querySelector('[data-lift-hit]')?.setAttribute('pointer-events',editable?'all':'none');}inspect();
  }
  const reducedMotion=()=>controls.reducedMotion?.()??false;
  const crewTotal=controls.budget??level.creatures;
@@ -206,7 +209,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   if(!tooltip)return;
   tooltip.replaceChildren();
   const item=inspections.get(hovered??focused??pinned??'');
-  const infoText=item?((policy.coordinates?item.label+' · '+item.detail:item.label)+(statuses.has(item.id)?' · '+statusLabels[statuses.get(item.id)!]:'')):(policy.coordinates?'Click a cannon to program it. Hover or focus an object to inspect it.':'Click a cannon to program it. Read coordinates from the axes.');
+  const infoText=item?((policy.coordinates?item.label+' · '+item.detail:item.label)+(statuses.has(item.id)?' · '+statusLabels[statuses.get(item.id)!]:'')):guidance();
   if(controls.info.textContent!==infoText)controls.info.textContent=infoText;
   if(!item)return;
   const q=plot();let a=t.toScreen(item.point);
@@ -265,7 +268,7 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
   const b=level.bounds,p=t.toScreen,v=t.visible,scale=t.scale;
   const loX=Math.max(b.minX,v.minX),hiX=Math.min(b.maxX,v.maxX),loY=Math.max(b.minY,v.minY),hiY=Math.min(b.maxY,v.maxY);
   const tl=p({x:b.minX,y:b.maxY}),br=p({x:b.maxX,y:b.minY});
-  el('rect',{x:tl.x,y:tl.y,width:br.x-tl.x,height:br.y-tl.y,fill:'#fff','fill-opacity':.13,stroke:'#527d92','stroke-opacity':.4},content);
+  el('rect',{x:tl.x,y:tl.y,width:br.x-tl.x,height:br.y-tl.y,fill:foundry?'#fffdf4':'#fff','fill-opacity':foundry?.66:.13,stroke:foundry?'#78918a':'#527d92','stroke-opacity':foundry?.8:.4,'data-graph-plane':''},content);
   const supportLayer=el('g',{'data-layer':'anchor-supports','pointer-events':'none','aria-hidden':'true'},content);
   for(const support of supports)renderSupportArt(supportLayer,support,level.world,p,scale,controls.cannonLook);
   for(const c of level.cannons)if(c.lift)renderLiftRail(supportLayer,c,level,p,scale);
@@ -296,10 +299,13 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
    el('text',{x:0,y:-.35,'text-anchor':'middle','font-size':.25,'font-weight':800,fill:'#203d54',stroke:'#eaf8f8','stroke-width':.05,'paint-order':'stroke'},g,c.id+(c.direction===-1?' ←':' →'));
    target(g,{id:c.id,label:'Cannon '+c.id+' · '+style.label+(c.lift?' · Locked lift':''),detail:coord(c.position)+' · fires '+(c.direction===1?'right':'left'),point:c.position},true);
    if(c.lift){
-    const handle=el('g',{transform:'translate('+(a.x-c.direction*Math.max(39,scale*1.02))+' '+(a.y+scale*.35)+')','data-lift-handle':c.id,role:'slider',tabindex:'0','aria-label':'Move cannon '+c.id+' vertically','aria-orientation':'vertical','aria-valuemin':c.lift.minY,'aria-valuemax':c.lift.maxY,'aria-valuenow':c.position.y,class:'lift-handle','aria-disabled':String(!planningEditable)},content);handle.setAttribute('tabindex',planningEditable?'0':'-1');
-    el('rect',{x:-22,y:-24,width:44,height:48,rx:6,fill:'transparent','pointer-events':'all'},handle);
-    el('rect',{x:-14,y:-23,width:28,height:46,rx:6,fill:'#eab64e',stroke:'#544b35','stroke-width':2},handle);
-    el('path',{d:'M-6 -9 L0 -15 6 -9 M-6 9 L0 15 6 9 M-5 0 H5',stroke:'#4f4635','stroke-width':2.4,fill:'none','stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'},handle);
+    const grip=liftGrip(scale,c.direction),gw=grip.glyphWidth,gh=grip.glyphHeight;
+    const handle=el('g',{transform:'translate('+(a.x+grip.dx)+' '+(a.y+grip.dy)+')','data-lift-handle':c.id,role:'slider',tabindex:planningEditable?'0':'-1','aria-label':'Move cannon '+c.id+' vertically','aria-orientation':'vertical','aria-valuemin':c.lift.minY,'aria-valuemax':c.lift.maxY,'aria-valuenow':c.position.y,class:'lift-handle','aria-disabled':String(!planningEditable)},content);
+    // The transparent target covers the striped deck and the space below.
+    el('rect',{x:-grip.width/2,y:0,width:grip.width,height:grip.height,rx:4,fill:'transparent','pointer-events':planningEditable?'all':'none','data-lift-hit':''},handle);
+    el('rect',{x:-gw/2,y:Math.max(2,.17*scale),width:gw,height:gh,rx:Math.min(3,gh/3),fill:'#625335',stroke:'#f3d490','stroke-width':.8,'pointer-events':'none','data-lift-grip':''},handle);
+    const gy=Math.max(2,.17*scale)+gh/2;
+    el('path',{d:'M'+(-gw*.23)+' '+(gy-gh*.12)+' L0 '+(gy-gh*.35)+' '+(gw*.23)+' '+(gy-gh*.12)+' M'+(-gw*.23)+' '+(gy+gh*.12)+' L0 '+(gy+gh*.35)+' '+(gw*.23)+' '+(gy+gh*.12),stroke:'#fff4ce','stroke-width':Math.max(.8,Math.min(1.6,gh*.14)),fill:'none','stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'},handle);
     handle.addEventListener('keydown',event=>{const key=(event as KeyboardEvent).key;if(!planningEditable||!['ArrowUp','ArrowDown','Home','End'].includes(key))return;event.preventDefault();event.stopPropagation();controls.onLiftMove?.(c.id,key==='Home'?c.lift!.minY:key==='End'?c.lift!.maxY:c.position.y+(key==='ArrowUp'?1:-1));});
     handle.addEventListener('click',event=>event.stopPropagation());
    }
@@ -352,10 +358,17 @@ export function mountScene(stage:HTMLElement,level:Level,controls:{out:HTMLButto
  const stop=(e:PointerEvent)=>{if(liftDrag?.pointer===e.pointerId)liftDrag=undefined;if(drag?.id===e.pointerId){drag=undefined;svg.classList.remove('dragging');}};
  svg.addEventListener('pointerup',stop);svg.addEventListener('pointercancel',stop);svg.addEventListener('lostpointercapture',stop);
  svg.addEventListener('keydown',e=>{if(e.key==='Escape'){pinned=hovered=focused=undefined;inspect();}});
- const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100||width===viewport.width&&height===viewport.height)return;viewport={width,height,padding:Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
+ const observer=new ResizeObserver(()=>{const width=Math.round(stage.clientWidth),height=Math.round(stage.clientHeight);if(width<100||height<100||width===viewport.width&&height===viewport.height)return;viewport={width,height,padding:level.world===7?foundryPadding(level.bounds,width,height):Math.min(34,Math.max(27,Math.floor(Math.min(width,height)*.09)))};draw();});
  observer.observe(stage);draw();
  function revealCannon(id:string){const target=cannonTargets.get(id);if(target?.getAttribute('tabindex')==='-1'){camera=initialCamera(level.bounds);draw();}}
  function focusCannon(id:string){revealCannon(id);(cannonTargets.get(id) as SVGElement|undefined)?.focus({preventScroll:true});}
  function cannonRect(id:string){return cannonTargets.get(id)?.getBoundingClientRect();}
- return {playFlight,playRapidFire,clearFlight,setLevelGeometry,setPlanningSelection,setPlanStatuses,revealCannon,focusCannon,cannonRect,setTutorialGuides,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
+ function graphRect(){
+  const matrix=svg.getScreenCTM();if(!matrix)return undefined;
+  const q=plot(),a=t.toScreen({x:level.bounds.minX,y:level.bounds.maxY}),b=t.toScreen({x:level.bounds.maxX,y:level.bounds.minY});
+  const left=new DOMPoint(Math.max(q.x,a.x),Math.max(q.y,a.y)).matrixTransform(matrix),right=new DOMPoint(Math.min(q.x+q.w,b.x),Math.min(q.y+q.h,b.y)).matrixTransform(matrix);
+  return {left:left.x,top:left.y,right:right.x,bottom:right.y};
+ }
+ function occupiedRects(){return Array.from(svg.querySelectorAll('[data-inspect].cannon-target,[data-inspect="exit"],[data-lift-grip]')).map(g=>g.getBoundingClientRect());}
+ return {playFlight,playRapidFire,clearFlight,setLevelGeometry,setPlanningSelection,setPlanStatuses,revealCannon,focusCannon,cannonRect,graphRect,occupiedRects,setTutorialGuides,setGraphPreview,setWaitingCrew,destroy:()=>{observer.disconnect();if(animationId)cancelAnimationFrame(animationId);active=undefined;rapid=undefined;svg.remove();}};
 }

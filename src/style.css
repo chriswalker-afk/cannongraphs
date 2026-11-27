@@ -715,3 +715,22 @@ main[data-world="7"] .stage{background:#d2d5c5}
 main[data-world="7"] #world-label{font-size:clamp(11px,1.3vw,14px);line-height:1.2}
 main[data-world="7"] .lift-handle{filter:drop-shadow(0 1px 1px #38493855)}
 @media(max-height:620px){main[data-world="7"] #world-label{font-size:11px;line-height:1.1}}
+
+/* PR50: graph-first composition and platform-integrated lift controls. */
+.lift-handle{filter:none!important}
+.lift-handle:focus-visible>[data-lift-hit]{stroke:none}
+.lift-handle:focus-visible>[data-lift-grip]{stroke:#fff;stroke-width:2.5}
+.lift-handle[aria-disabled=true]{pointer-events:none;opacity:.58}
+.cannon-popup[data-locked=true]{gap:7px;padding:10px}
+.cannon-popup[data-locked=true] .lift-equation{font-size:clamp(15px,2.4vw,19px);overflow-wrap:anywhere}
+.cannon-popup[data-locked=true] .lift-popup-controls{margin:.35rem 0;gap:4px}
+.cannon-popup[data-locked=true] .lift-step{padding:6px 9px;font-size:12px}
+.cannon-popup[data-locked=true] .popup-nav{gap:4px}
+.cannon-popup[data-locked=true] .popup-nav button{padding:6px 7px;font-size:10px}
+main.game-screen[data-world="7"]{gap:5px;padding:6px}
+main.game-screen[data-world="7"]>header,main.game-screen[data-world="7"]>.planning-footer{padding:6px 10px;gap:5px 8px}
+main.game-screen[data-world="7"]>.toolbar{padding:4px 8px}
+main.game-screen[data-world="7"] #world-label{font-size:12px}
+main.game-screen[data-world="7"] #level-objective{font-size:12px;line-height:1.25}
+@media(min-width:801px){main.game-screen[data-world="7"] .brand h1{font-size:22px}main.game-screen[data-world="7"] .brand-mark{width:32px;height:32px}main.game-screen[data-world="7"] .queue-pip{width:27px;height:28px}}
+@media(max-height:550px){main.game-screen[data-world="7"]{padding:4px;gap:4px}main.game-screen[data-world="7"]>header,main.game-screen[data-world="7"]>.planning-footer{padding:4px 7px}main.game-screen[data-world="7"] #level-objective{font-size:11px}}
