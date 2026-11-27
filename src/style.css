@@ -804,3 +804,13 @@ main[data-has-anchors=true] .camera-tools button,main[data-has-anchors=true] .an
 @media(max-width:800px){.salvage-quadratic-choices{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:450px){.salvage-quadratic-choices{grid-template-columns:1fr}}
 /* Keep three parts readable without expanding the footer unnecessarily. */
 @media(max-width:650px){.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1 0 100%;gap:4px}.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part{min-width:0;padding:4px;display:grid;grid-template-columns:1fr;justify-items:center;text-align:center}.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part svg{height:24px;width:28px}.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part-copy{width:100%;font-size:10px}.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part-copy strong{font-size:10px}.anchor-tray:has(.anchor-part:nth-child(3)) .anchor-part-equation{overflow-wrap:anywhere}}
+
+/* Anchor authoring remains a separate mechanic; keep existing normal/lift
+   palettes and headers unchanged. Inventory tools never add collision bodies. */
+.custom-anchor-mode{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:750;color:#53614e;background:#eee9d9;padding:6px;border-radius:6px;border:1px solid #c7c2ab}
+.custom-anchor-mode input{margin:0;accent-color:#92713d;flex-shrink:0}
+.custom-inventory-tools{display:grid;gap:5px;border:1px solid #b7b7a1;padding:6px;border-radius:7px;background:#e8e6d8;font-size:11px}
+.custom-inventory-tools[hidden],.custom-tool[hidden]{display:none!important}
+.custom-inventory-tools strong{color:#53614e}.custom-inventory-tools .custom-secondary{font-size:11px;padding:6px 4px;text-align:left}
+.custom-part-panel .custom-lift-equation{overflow-wrap:anywhere}
+@media(max-width:850px){.custom-inventory-tools{grid-template-columns:repeat(2,minmax(0,1fr))}.custom-inventory-tools strong,.custom-inventory-tools p{grid-column:1/-1}.custom-anchor-mode{width:max-content;max-width:100%}}

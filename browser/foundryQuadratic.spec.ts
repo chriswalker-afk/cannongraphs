@@ -37,7 +37,16 @@ test('Foundry lift is touch draggable at phone width and remains usable after zo
   for(let i=1;i<=6;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y+delta*i/6}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await expect(handle).toHaveAttribute('aria-valuenow','3');
-  await page.locator('#zoom-in').tap();await page.locator('#zoom-reset').tap();
+  // Match the realistic touch timing used in the Salvage Yard regression.
+  // Avoid immediately mixing a CDP drag with another automation input driver.
+  const tap=async(selector:string)=>{
+   await page.locator(selector).scrollIntoViewIfNeeded();await page.waitForTimeout(250);
+   const b=await page.locator(selector).boundingBox();if(!b)throw Error('Missing '+selector);
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:b.x+b.width/2,y:b.y+b.height/2}]});
+   await page.waitForTimeout(50);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  };
+  await tap('#zoom-in');await expect(page.locator('#zoom-readout')).toHaveText('125%');
+  await tap('#zoom-reset');await expect(page.locator('#zoom-readout')).toHaveText('100%');
   await expect(handle).toHaveAttribute('aria-valuenow','3');
   const metrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));expect(metrics.scroll).toBeLessThanOrEqual(metrics.width+2);
   await info.attach('foundry-phone',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
