@@ -3,6 +3,7 @@ import type {Bounds,Point} from '../engine/coordinates';
 import {PIP_RADIUS,pointRectangleDistance} from '../engine/collisions/clearance';
 import {validateLevel,type Level,type Cannon,type Obstacle,type Gem} from '../levels/schema';
 import {floor} from '../levels/terrain';
+import {validateLiftSpec,type LiftSpec} from '../levels/liftSpec';
 import {levelSupports} from '../levels/supports';
 import {waitingCrewSlots} from '../animations/waitingCrew';
 import type {LevelState} from './levelState';
@@ -27,7 +28,8 @@ function point(v:unknown,b:Bounds):Point{const o=object(v),p={x:number(o.x),y:nu
 function list(v:unknown,max:number,label:string):unknown[]{if(!Array.isArray(v)||v.length>max)fail('Too many or invalid '+label+' (maximum '+max+').');return v;}
 function id(v:unknown,rx:RegExp,ids:Set<string>){if(typeof v!=='string'||!rx.test(v)||ids.has(v))fail('Invalid or duplicate object ID.');ids.add(v);return v;}
 // Normalise only whitelisted fields. Neither uploaded files nor local
-// drafts can supply equations, certificates, support overrides or HTML.
+// drafts can supply programmed equations, certificates, support overrides or HTML.
+// Only the authored locked shape of a lift is retained, parsed as bounded math.
 export function decodeDesign(value:unknown):CustomDesign{
  const o=object(value),b=bounds(o.bounds),w=o.world;
  if(!Object.values(b).every(Number.isInteger)||b.maxX-b.minX<6||b.maxX-b.minX>40||b.maxY-b.minY<5||b.maxY-b.minY>24)fail('Use integer grid limits: width 6–40, height 5–24 units.');
@@ -36,7 +38,14 @@ export function decodeDesign(value:unknown):CustomDesign{
  const cannons=list(o.cannons,MAX_CANNONS,'cannons').map(v=>{
   const c=object(v),type=c.type,direction=c.direction;
   if(typeof type!=='string'||!Object.hasOwn(cannonTypes,type)||direction!==1&&direction!==-1)fail('Unknown cannon type or direction.');
-  return {id:id(c.id,/^[A-H]$/,ids),type:type as CannonType,direction:direction as 1|-1,position:point(c.position,b)};
+  const cannon:Cannon={id:id(c.id,/^[A-H]$/,ids),type:type as CannonType,direction:direction as 1|-1,position:point(c.position,b)};
+  if(c.lift!==undefined){
+   const lift=object(c.lift);
+   cannon.lift={minY:number(lift.minY),maxY:number(lift.maxY),lockedShape:string(lift.lockedShape,180,'locked shape')};
+   if(cannon.lift.minY<b.minY+1||cannon.lift.maxY>b.maxY-.5)fail('Lift stops must leave room at the grid edges.');
+   validateLiftSpec(cannon,b);
+  }
+  return cannon;
  });
  const startId=o.startId;
  if(cannons.length?typeof startId!=='string'||!cannons.some(c=>c.id===startId):startId!==null)fail('Choose a valid starting cannon.');
@@ -66,15 +75,16 @@ export function buildCustomLevel(input:CustomDesign):Level{
  return l;
 }
 export function encodeCustomFile(d:CustomDesign):string{
- return JSON.stringify({format:'cannon-graphs-level',version:1,design:decodeDesign(d)},null,2)+'\n';
+ const design=decodeDesign(d);
+ return JSON.stringify({format:'cannon-graphs-level',version:design.cannons.some(c=>c.lift)?2:1,design},null,2)+'\n';
 }
 export function decodeCustomFile(raw:string):CustomDesign{
  if(raw.length>CUSTOM_FILE_LIMIT)fail('Level file is too large (maximum 64 KB).');
  let v:unknown;try{v=JSON.parse(raw);}catch{fail('This is not a valid JSON level file.');}
- const o=object(v);if(o.format!=='cannon-graphs-level'||o.version!==1)fail('This is not a supported Cannon Graphs level file.');
+ const o=object(v);if(o.format!=='cannon-graphs-level'||o.version!==1&&o.version!==2)fail('This is not a supported Cannon Graphs level file.');
  // Only complete, structurally playable levels can be shared. Importing
  // never imports an authorisation, solved equation, or confirmation flag.
- const d=decodeDesign(o.design);buildCustomLevel(d);return d;
+ const d=decodeDesign(o.design);if(o.version===1&&d.cannons.some(c=>c.lift))fail('Movable cannons require a version 2 level file.');buildCustomLevel(d);return d;
 }
 export type PlacementTool=CannonType|'exit'|'platform'|'wall'|'ceiling'|'gem';
 export const placementTools:readonly PlacementTool[]=[...Object.keys(cannonTypes) as CannonType[],'exit','platform','wall','ceiling','gem'];
@@ -106,7 +116,18 @@ export function moveObject(d:CustomDesign,id:string,p:Point):CustomDesign{
  const terrain=d.obstacles.find(o=>o.id===id),b=d.bounds;
  if(terrain){const w=terrain.bounds.maxX-terrain.bounds.minX,h=terrain.bounds.maxY-terrain.bounds.minY,x=clamp(p.x,b.minX,b.maxX-w),y=clamp(p.y,b.minY,b.maxY-h);return decodeDesign({...d,obstacles:d.obstacles.map(o=>o.id===id?{...o,bounds:{minX:x,maxX:x+w,minY:y,maxY:y+h}}:o)});}
  if(!objectPoint(d,id))return d;
- return decodeDesign({...d,exit:id==='exit'?p:d.exit,cannons:d.cannons.map(c=>c.id===id?{...c,position:p}:c),gems:d.gems.map(g=>g.id===id?{...g,position:p}:g)});
+ return decodeDesign({...d,exit:id==='exit'?p:d.exit,cannons:d.cannons.map(c=>c.id===id?{...c,position:c.lift?{x:p.x,y:clamp(Math.round(p.y),c.lift.minY,c.lift.maxY)}:p}:c),gems:d.gems.map(g=>g.id===id?{...g,position:p}:g)});
+}
+// Workshop-only design edit. The authored position is snapped into the
+// configured rail; the player cannot subsequently change x or the shape.
+export function setCustomLift(d:CustomDesign,id:string,lift:LiftSpec|null):CustomDesign{
+ if(!d.cannons.some(c=>c.id===id))fail('Choose a cannon first.');
+ return decodeDesign({...d,cannons:d.cannons.map(c=>{
+  if(c.id!==id)return c;
+  const {lift:previous,...ordinary}=c;
+  if(!lift)return ordinary;
+  return {...ordinary,lift,position:{x:c.position.x,y:clamp(Math.round(c.position.y),lift.minY,lift.maxY)}};
+ })});
 }
 export function deleteObject(d:CustomDesign,id:string):CustomDesign{
  const cannons=d.cannons.filter(c=>c.id!==id);
@@ -149,8 +170,35 @@ function decodeEntry(raw:unknown):CustomEntry{
 }
 // A successful run must match the selected design, revision, mode and
 // completed arrival state. The library never changes official progress.
-function completedRun(run:CustomRun,state:LevelState){
- const l=run.level,r=state.lastResult,start=l.cannons.find(c=>c.id===l.startId)!;
+function playedLayout(authored:Level,played:Level):Level|undefined{
+ // Reconstruct the only legal runtime change from the canonical design:
+ // the y-coordinate of a lift. Reject changed rails, shapes, terrain,
+ // direction, x positions or any other altered geometry.
+ try{
+  const canonical:Level={...authored,cannons:authored.cannons.map(c=>{
+   if(!c.lift)return c;
+   const moved=played.cannons.find(other=>other.id===c.id);
+   if(!moved)fail('Missing lift');
+   return {...c,position:{x:c.position.x,y:moved.position.y}};
+  })};
+  if(JSON.stringify(canonical)!==JSON.stringify(played))return;
+  validateLevel(canonical);
+  return canonical;
+ }catch{return;}
+}
+function completedRun(run:CustomRun,state:LevelState,played:Level){
+ const l=playedLayout(run.level,played),r=state.lastResult;
+ if(!l||!r)return false;
+ const start=l.cannons.find(c=>c.id===l.startId)!;
+ // Every reached leg must originate at the actual, legal runtime anchor.
+ // Transfers must join the following leg at its marked point.
+ const legs=routeLegs(r),near=(a:Point,b:Point)=>Math.hypot(a.x-b.x,a.y-b.y)<=1e-7;
+ if(!legs.length||legs[0].cannonId!==start.id||legs.some((leg,i)=>{
+  const c=l.cannons.find(c=>c.id===leg.cannonId);
+  if(!c||leg.direction!==c.direction||!near(leg.source,c.position)||!near(leg.start,c.position))return true;
+  const next=legs[i+1];
+  return next?leg.event.kind!=='cannon'||leg.event.cannonId!==next.cannonId||!near(leg.end,next.source):leg.event.kind!=='exit'||!near(leg.end,l.exit);
+ }))return false;
  const total=modeBudget(run.mode,l),unlimited=run.mode==='cadet';
  return state.phase==='success'&&!!r&&r.event.kind==='exit'&&!state.active&&!state.celebration&&state.waiting===0&&
   state.total===total&&state.unlimited===unlimited&&Number.isSafeInteger(state.failed)&&state.failed>=0&&
@@ -230,13 +278,13 @@ export function createCustomWorkshopStore(storage?:CustomStorage){
   remove:(id:string)=>{requireEntry(id);entries=entries.filter(e=>e.id!==id);if(activeId===id)activeId=entries[0]?.id??null;save();},
   beginTest:()=>begin(requireEntry().id,'test','cadet'),
   beginPlay:(id:string,mode:LearningMode)=>begin(id,'play',mode),
-  completeTest:(run:CustomRun,state:LevelState)=>{
-   const match=matching(run,'test');if(!match||!completedRun(match.run,state))return false;
+  completeTest:(run:CustomRun,state:LevelState,played:Level=run.level)=>{
+   const match=matching(run,'test');if(!match||!completedRun(match.run,state,played))return false;
    const e=match.entry;
    update(e.id,{...e,tested:true,notice:routeLegs(state.lastResult!).length<e.design.cannons.length?'Test passed, but some cannons were bypassed. Check whether that is intentional.':'Test passed! Confirm this design to enable download.'});return true;
   },
-  completePlay:(run:CustomRun,state:LevelState):{record:LevelRecord;improved:boolean}|undefined=>{
-   const match=matching(run,'play');if(!match||!completedRun(match.run,state))return;
+  completePlay:(run:CustomRun,state:LevelState,played:Level=run.level):{record:LevelRecord;improved:boolean}|undefined=>{
+   const match=matching(run,'play');if(!match||!completedRun(match.run,state,played))return;
    const e=match.entry,previous=e.records[run.mode],ids=new Set([...(previous?.gems??[]),...bankedGems(state.lastResult)]);
    const record:LevelRecord={bestAttempts:Math.min(previous?.bestAttempts??Infinity,state.failed+1),gems:e.design.gems.filter(g=>ids.has(g.id)).map(g=>g.id)};
    const improved=!previous||record.bestAttempts!==previous.bestAttempts||record.gems.length!==previous.gems.length;

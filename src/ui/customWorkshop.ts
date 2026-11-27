@@ -5,8 +5,11 @@ import {gridTicks} from '../rendering/grid';
 import {svgNode as el} from '../rendering/pip';
 import {renderCannonArt} from '../rendering/cannonArt';
 import {BARREL_ANGLE} from '../animations/launch';
+import {lockedLiftEquation,lockedLiftText} from '../levels/liftSpec';
+import {isQuadratic} from '../engine/equations/linear';
+import {CANNON_FOOTPRINT} from '../game/anchorArtGeometry';
 import {renderGem} from '../rendering/gem';
-import {buildCustomLevel,workshopTerrain,placeObject,moveObject,deleteObject,objectPoint,snapPoint,CUSTOM_FILE_LIMIT,MAX_CANNONS,MAX_TERRAIN,MAX_GEMS,type CustomDesign,type CustomWorkshopStore,type PlacementTool} from '../game/customLevels';
+import {buildCustomLevel,workshopTerrain,placeObject,moveObject,deleteObject,objectPoint,snapPoint,setCustomLift,CUSTOM_FILE_LIMIT,MAX_CANNONS,MAX_TERRAIN,MAX_GEMS,type CustomDesign,type CustomWorkshopStore,type PlacementTool} from '../game/customLevels';
 import {downloadCustomFile} from './customFile';
 type Tool='select'|PlacementTool;
 const fmt=(v:number)=>String(Number(v.toFixed(4)));
@@ -69,7 +72,7 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
   const status=store.read();let invalid='';try{buildCustomLevel(d);}catch(e){invalid=e instanceof Error?e.message:'Invalid design.';}
   const state=get('custom-state');state.textContent=status.confirmed?'Confirmed · ready to share':status.tested?'Playtest passed · ready to confirm':'Draft · needs a successful playtest';
   state.dataset.status=status.confirmed?'confirmed':status.tested?'tested':'draft';
-  get('custom-message').textContent=message||invalid||status.notice||(status.confirmed?'Download this level to share its geometry, without your equations.':'Complete the current design in the real game before confirming it.');
+  get('custom-message').textContent=message||invalid||status.notice||(status.confirmed?'Download to share the geometry and locked shapes, without your programmed equations.':'Complete the current design in the real game before confirming it.');
   get('custom-storage').textContent=status.persisted?'Design saved in Custom Levels on this browser.':'Session only — local saving unavailable.';
   test.disabled=!!invalid;confirm.disabled=!!invalid||!status.tested||status.confirmed;download.disabled=!!invalid||!status.confirmed;
  }
@@ -85,10 +88,31 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
   if(cannon){
    const l=element('label',properties,'custom-property','Graph family'),select=element('select',l);
    for(const type of Object.keys(cannonTypes) as CannonType[]){const o=element('option',select,'',cannonTypes[type].label);o.value=type;}
-   select.value=cannon.type;select.addEventListener('change',()=>tryEdit(()=>({...d,cannons:d.cannons.map(c=>c.id===selected?{...c,type:select.value as CannonType}:c)})));
+   select.value=cannon.type;select.disabled=!!cannon.lift;select.addEventListener('change',()=>tryEdit(()=>({...d,cannons:d.cannons.map(c=>c.id===selected?{...c,type:select.value as CannonType}:c)})));
    const l2=element('label',properties,'custom-property','Firing direction'),direction=element('select',l2);
    for(const [v,n] of [[1,'Right →'],[-1,'← Left']] as const){const o=element('option',direction,'',n);o.value=String(v);}direction.value=String(cannon.direction);
    direction.addEventListener('change',()=>tryEdit(()=>({...d,cannons:d.cannons.map(c=>c.id===selected?{...c,direction:Number(direction.value) as 1|-1}:c)})));
+   if(cannon.type==='linear'||cannon.type==='quadratic'){
+    const panel=element('section',properties,'custom-lift-panel');panel.setAttribute('aria-label','Movable platform');
+    const toggleLabel=element('label',panel,'custom-lift-toggle'),toggle=element('input',toggleLabel);toggle.type='checkbox';toggle.checked=!!cannon.lift;
+    element('span',toggleLabel,'','Broken cannon · movable platform');
+    toggle.addEventListener('change',()=>{
+     if(!toggle.checked){tryEdit(()=>setCustomLift(d,cannon.id,null));return;}
+     const minY=d.bounds.minY+1,maxY=d.bounds.maxY-1;
+     tryEdit(()=>setCustomLift(d,cannon.id,{minY,maxY,lockedShape:cannon.type==='quadratic'?'-x^2/2+x':'x'}));
+     toggle.checked=!!d.cannons.find(c=>c.id===cannon.id)?.lift;
+    });
+    if(cannon.lift){
+     const spec=cannon.lift;
+     element('p',panel,'custom-help','Set integer rail stops. Enter only the fixed x terms; the constant follows the platform. Disable the platform to change family.');
+     const limits=element('div',panel,'custom-lift-limits');
+     const limit=(label:string,value:number)=>{const l=element('label',limits,'custom-property',label),i=element('input',l);i.type='number';i.step='1';i.min=String(d.bounds.minY+1);i.max=String(d.bounds.maxY-1);i.value=String(value);return i;};
+     const min=limit('Lowest height',spec.minY),max=limit('Highest height',spec.maxY);
+     const shapeLabel=element('label',panel,'custom-property','Locked shape (no constant)'),shape=element('input',shapeLabel);shape.type='text';shape.maxLength=180;shape.value=spec.lockedShape;shape.placeholder=cannon.type==='quadratic'?'-x^2/2+6x':'-x/2';shape.spellcheck=false;
+     const current=element('output',panel,'custom-lift-equation',lockedLiftText(lockedLiftEquation(cannon)));current.setAttribute('aria-label','Initial locked equation');
+     const apply=action(panel,'Apply lift settings','custom-secondary',()=>tryEdit(()=>setCustomLift(d,cannon.id,{minY:min.valueAsNumber,maxY:max.valueAsNumber,lockedShape:shape.value})));apply.id='custom-apply-lift';
+    }
+   }
    const start=action(properties,cannon.id===d.startId?'Starting cannon':'Set as start','custom-secondary',()=>tryEdit(()=>({...d,startId:cannon.id})));start.disabled=cannon.id===d.startId;
   }
   if(terrain){
@@ -99,7 +123,7 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
  }
  function listObjects(){
   objects.replaceChildren();const add=(id:string,label:string)=>{const b=action(objects,label,'custom-object-button',()=>{selected=id;tool='select';refresh();});b.dataset.objectId=id;b.setAttribute('aria-pressed',String(id===selected));};
-  for(const c of d.cannons)add(c.id,c.id+' · '+cannonTypes[c.type].label+(c.id===d.startId?' · START':'')+' '+coord(c.position));
+  for(const c of d.cannons)add(c.id,c.id+' · '+cannonTypes[c.type].label+(c.lift?' · Lift':'')+(c.id===d.startId?' · START':'')+' '+coord(c.position));
   if(d.exit)add('exit','Exit '+coord(d.exit));
   for(const o of d.obstacles)add(o.id,labels[o.kind as PlacementTool]+' '+o.id);
   for(const g of d.gems)add(g.id,'Gem '+coord(g.position));
@@ -124,12 +148,25 @@ export function mountCustomWorkshop(root:HTMLElement,store:CustomWorkshopStore,o
    el('rect',{x:t.x,y:t.y,width:w,height:h,fill:o.kind==='ceiling'?'#84909b':'#a18c70',stroke:selected===o.id?'#d58a32':'#635b50','stroke-width':selected===o.id?3:1},g);
    el('rect',{x:t.x,y:t.y,width:w,height:Math.min(4,h*.3),fill:o.kind==='ceiling'?'#b5c2cb':'#73935b','pointer-events':'none'},g);
   }
+  for(const c of level.cannons){if(!c.lift)continue;
+   const x=c.position.x-c.direction*.5,a=p({x,y:c.lift.maxY}),z=p({x,y:c.lift.minY-CANNON_FOOTPRINT.drop});
+   const rail=el('g',{'data-custom-lift-rail':c.id,'pointer-events':'none'},svg);
+   el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#51636c','stroke-width':Math.max(5,s*.2),'stroke-linecap':'round'},rail);
+   el('line',{x1:a.x,y1:a.y,x2:z.x,y2:z.y,stroke:'#dbb35a','stroke-width':2,'stroke-dasharray':'4 3'},rail);
+  }
   for(const c of level.cannons){
    const q=p(c.position),g=el('g',{'data-custom-object':c.id,transform:'translate('+q.x+' '+q.y+')'},svg),art=el('g',{transform:'scale('+s*c.direction+' '+s+')'},g);
    el('circle',{r:Math.max(13,s*.52),fill:selected===c.id?'#ffe0a1':'#ffffff',opacity:.63,stroke:selected===c.id?'#d58a32':'#97aeb9','stroke-width':selected===c.id?2.5:1},g);
-   renderCannonArt(art,c.type,BARREL_ANGLE,undefined,c.direction);g.append(art);
+   let angle=BARREL_ANGLE;
+   if(c.lift){
+    const equation=lockedLiftEquation(c),slope=isQuadratic(equation)?2*equation.quadratic*c.position.x+equation.linear:equation.gradient;
+    angle=Math.atan(slope*c.direction)*180/Math.PI;
+    el('rect',{x:-.87,y:CANNON_FOOTPRINT.drop,width:1.02,height:.14,rx:.025,fill:'#eab64e',stroke:'#4c493e','stroke-width':.04},art);
+    for(let i=0;i<4;i++)el('path',{d:'M'+(-.84+i*.24)+' .48 l.1 0 -.08 .12 -.1 0Z',fill:'#514a3e'},art);
+   }
+   renderCannonArt(art,c.type,angle,undefined,c.direction);g.append(art);
    el('circle',{r:3.1,fill:'white',stroke:'#203d54','stroke-width':1.5},g);
-   text(g,{x:0,y:-Math.max(15,s*.48),'text-anchor':'middle','font-size':12,'font-weight':850,fill:'#203d54',stroke:'#fffaf0','stroke-width':3,'paint-order':'stroke'},c.id+(c.id===level.startId?' ★':'')+(c.direction===1?' →':' ←'));
+   text(g,{x:0,y:-Math.max(15,s*.48),'text-anchor':'middle','font-size':12,'font-weight':850,fill:'#203d54',stroke:'#fffaf0','stroke-width':3,'paint-order':'stroke'},c.id+(c.lift?' 🔒':'')+(c.id===level.startId?' ★':'')+(c.direction===1?' →':' ←'));
    text(g,{x:0,y:Math.max(20,s*.68),'text-anchor':'middle','font-size':10,fill:'#203d54',stroke:'#fff','stroke-width':3,'paint-order':'stroke'},coord(c.position));
   }
   if(level.exit){const q=p(level.exit),g=el('g',{'data-custom-object':'exit',transform:'translate('+q.x+' '+q.y+')'},svg),r=Math.max(11,s*.34);
